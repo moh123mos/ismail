@@ -16,6 +16,7 @@ let useArabicIndic = true;
 let soundOn = true;
 let availableVoices = [];
 let currentTimeLeft = 0;
+let questionStartTime = 0; // وقت بداية السؤال بالميلي ثانية
 
 const praisePhrases = [
   "أحسنت يا {name}!",
@@ -193,6 +194,7 @@ function startTimer(callback) {
   const timerInput = document.getElementById('timerInput');
   timerDuration = parseInt(timerInput?.value || 20);
   currentTimeLeft = timerDuration;
+  questionStartTime = Date.now(); // حفظ وقت بداية السؤال بالميلي ثانية
   
   const timerDisplay = document.getElementById('timerDisplay');
   if (timerDisplay) {
@@ -237,7 +239,7 @@ function pickNextStudent() {
   sel.value = currentStudent || '';
   
   if (currentStudent && !results[currentStudent]) {
-    results[currentStudent] = { ok: 0, bad: 0, time: 0 };
+    results[currentStudent] = { ok: 0, bad: 0, time: 0, avatar: '' };
   }
 }
 
@@ -260,7 +262,7 @@ function addStudent(saveCallback) {
   }
   
   students.push(name);
-  results[name] = { ok: 0, bad: 0, time: 0 };
+  results[name] = { ok: 0, bad: 0, time: 0, avatar: '' };
   
   const sel = document.getElementById('studentSelect');
   if (sel) {
@@ -352,7 +354,7 @@ function getSortedResultsArray() {
       name,
       ok: data.ok || 0,
       bad: data.bad || 0,
-      time: data.time || 0,
+      time: Math.round((data.time || 0) * 1000),
       score: (data.ok || 0) - (data.bad || 0) * 0.5
     }))
     .sort((a, b) => {
@@ -396,11 +398,29 @@ function updateResultsTable() {
     
     if (rowClass) tr.className = rowClass;
     
+    // بناء خلية الاسم مع الصورة
+    let nameCell = '';
+    if (medal) nameCell += '<span class="medal">' + medal + '</span>';
+    
+    // إضافة الصورة إذا كانت موجودة
+    const studentData = results[r.name];
+    if (studentData && studentData.avatar) {
+        /**
+         * https://ibb.co/h1MCq7zn
+            https://ibb.co/gLSBrftB
+            https://ibb.co/8nhVMY1c
+            https://ibb.co/DfnT6nv8
+            https://ibb.co/HpYXfmNq
+         */
+      nameCell += `<img src="${studentData.avatar}" alt="${r.name}" class="student-avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; object-fit: cover; vertical-align: middle; border: 3px solid #4CAF50; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease;">`;
+    }
+    nameCell += r.name;
+    
     tr.innerHTML = `
-      <td>${medal ? '<span class="medal">' + medal + '</span>' : ''}${r.name}</td>
+      <td>${nameCell}</td>
       <td>${r.ok}</td>
       <td>${r.bad}</td>
-      <td>${Math.round(r.time)}</td>
+      <td>${r.time}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -433,10 +453,10 @@ function exportResultsToExcel(filename = 'results.xlsx') {
   }
   
   const wb = XLSX.utils.book_new();
-  const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)"]];
+  const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)", "الصورة"]];
   
   for (const [name, r] of Object.entries(results)) {
-    ws_data.push([name, r.ok || 0, r.bad || 0, Math.round(r.time || 0)]);
+    ws_data.push([name, r.ok || 0, r.bad || 0, Math.round(r.time || 0), r.avatar || '']);
   }
   
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -487,7 +507,13 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
         
         students.push(name);
         results[name] = { ok, bad, time, avatar };
-        console.log(imageCell) // und
+        
+        // قراءة رابط الصورة من العمود E (index 4)
+        // ملاحظة: يجب أن يحتوي العمود على رابط نصي للصورة، وليس صورة مدرجة
+        const imageUrl = row[4] ? String(row[4]).trim() : '';
+        if (imageUrl) {
+          results[name].avatar = imageUrl;
+        }
         // إضافة للقائمة المنسدلة
         if (sel) {
           const opt = document.createElement('option');
