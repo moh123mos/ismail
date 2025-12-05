@@ -656,115 +656,26 @@
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- ملف JavaScript المشترك -->
+  <script src="common.js"></script>
 
   <script>
-    /* ===== إعدادات عامة ===== */
-    let students = [], results = {}, currentStudent = null, timer = null;
-    let timerDuration = 20, correctAnsGlobal = null, gameStarted = false, answered = false;
-    let useArabicIndic = true;
-    let soundOn = true, availableVoices = [];
-    let currentTimeLeft = 0;
-    const praisePhrases = ["أحسنت يا {name}!", "ممتاز يا {name}!", "عمل رائع يا {name}!", "مبدع يا {name}!", "رائع جدًا يا {name}!"];
-    const negativePhrases = ["حاول مرة أخرى يا {name}.", "قربت جدًا يا {name}.", "أعد التفكير يا {name}."];
-
-    /* ===== حفظ وتحميل من Local Storage ===== */
+    /* ===== إعدادات خاصة بصفحة العمليات الحسابية ===== */
     const STORAGE_KEY_STUDENTS = 'add_minus_students';
     const STORAGE_KEY_RESULTS = 'add_minus_results';
 
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(students));
-        localStorage.setItem(STORAGE_KEY_RESULTS, JSON.stringify(results));
-      } catch (e) {
-        console.error('خطأ في حفظ البيانات:', e);
-      }
+    // استخدام الدوال المشتركة
+    function saveData() {
+      saveToLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
     }
 
-    function loadFromLocalStorage() {
-      try {
-        const savedStudents = localStorage.getItem(STORAGE_KEY_STUDENTS);
-        const savedResults = localStorage.getItem(STORAGE_KEY_RESULTS);
-        
-        if (savedStudents) {
-          students = JSON.parse(savedStudents);
-          const sel = document.getElementById('studentSelect');
-          sel.innerHTML = '';
-          students.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = opt.textContent = name;
-            sel.appendChild(opt);
-          });
-        }
-        
-        if (savedResults) {
-          results = JSON.parse(savedResults);
-        }
-      } catch (e) {
-        console.error('خطأ في تحميل البيانات:', e);
-      }
+    function loadData() {
+      loadFromLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
+      updateResultsTable();
     }
 
-    /* ===== ألوان للخانات ===== */
-    const colors = ["#f44336", "#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#00bcd4"];
-    function getRandomColors(n) { 
-      let arr = []; 
-      for (let i = 0; i < n; i++) { 
-        arr.push(colors[i % colors.length]); 
-      } 
-      return arr.sort(() => Math.random() - 0.5); 
-    }
-
-    /* ===== تحويل أرقام (الهندية) ===== */
-    function toArabicNumber(num) {
-      const s = String(num);
-      if (!useArabicIndic) return s;
-      return s.replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
-    }
-
-    /* ===== صوت ElevenLabs ===== */
-    async function generateVoice(text) {
-      const player = document.getElementById("player");
-      if (!text.trim()) {
-        alert("Please enter text first!");
-        return;
-      }
-      const apiKey = "sk_80c831ceb22cab8dc351a9d581112ba704a7c01564a0c510";
-      const voiceId = "3nav5pHC1EYvWOd5LmnA"; // haytham Arabic
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-      const body = {
-        text: text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.7
-        }
-      };
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "xi-api-key": apiKey
-          },
-          body: JSON.stringify(body)
-        });
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        player.src = audioUrl;
-        player.play();
-      } catch (error) {
-        console.error(error);
-        alert("Error generating voice. Check your API key or text.");
-      }
-    }
-
-    async function speak(text) {
-      if (!soundOn) return;
-      await generateVoice(text);
-    }
-
-    /* ===== دوال مساعدة ===== */
-    function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    // تحميل البيانات عند بدء الصفحة
+    loadData();
 
     /* ===== توليد الأرقام للجمع والطرح ===== */
     function generateNumbers(d, type) {
@@ -973,71 +884,11 @@
       }
 
       saveToLocalStorage();
-      updateTable();
+      updateResultsTable();
       pickNextStudent();
 
       document.getElementById('startBtn').style.display = 'inline-block';
       gameStarted = false;
-    }
-
-    /* ===== اختيار طالب تالي ===== */
-    function pickNextStudent() {
-      const sel = document.getElementById('studentSelect');
-      if (!sel || students.length === 0) return;
-      let idx = students.indexOf(currentStudent);
-      if (idx === -1) currentStudent = students[0];
-      else currentStudent = students[(idx + 1) % students.length];
-      document.getElementById('studentSelect').value = currentStudent || '';
-      if (currentStudent && !results[currentStudent]) results[currentStudent] = { ok: 0, bad: 0, time: 0 };
-    }
-
-    /* ===== ترتيب وتحديث الجدول ===== */
-    function getSortedResultsArray() {
-      return Object.entries(results)
-        .map(([name, r]) => ({
-          name,
-          ok: r.ok || 0,
-          bad: r.bad || 0,
-          time: r.time || 0,
-          perc: (r.ok + r.bad) ? Math.round(r.ok / (r.ok + r.bad) * 100) : 0
-        }))
-        .sort((a, b) => {
-          if (b.perc !== a.perc) return b.perc - a.perc;
-          if (b.ok !== a.ok) return b.ok - a.ok;
-          return a.time - b.time;
-        });
-    }
-
-    function updateTable() {
-      const tbody = document.querySelector('#resultsTable tbody');
-      tbody.innerHTML = '';
-
-      const sorted = getSortedResultsArray();
-
-      for (let i = 0; i < sorted.length; i++) {
-        const r = sorted[i];
-        let cls = '';
-        if (i === 0) cls = 'gold';
-        else if (i === 1) cls = 'silver';
-        else if (i === 2) cls = 'bronze';
-        sorted[i].cls = cls;
-      }
-
-      sorted.forEach((r) => {
-        const tr = document.createElement('tr');
-        if (r.cls) tr.classList.add(r.cls);
-        let medal = '';
-        if (r.cls === 'gold') medal = '<span class="medal">🥇</span>';
-        else if (r.cls === 'silver') medal = '<span class="medal">🥈</span>';
-        else if (r.cls === 'bronze') medal = '<span class="medal">🥉</span>';
-        tr.innerHTML = `
-          <td>${medal}${r.name}</td>
-          <td>${r.ok}</td>
-          <td>${r.bad}</td>
-          <td>${r.time}</td>
-        `;
-        tbody.appendChild(tr);
-      });
     }
 
     /* ===== أزرار ووظائف واجهة المستخدم ===== */
@@ -1067,43 +918,20 @@
 
     // إضافة طالب
     document.getElementById('addStudent').addEventListener('click', () => {
-      const name = document.getElementById('newStudent').value.trim();
-      if (name && !students.includes(name)) {
-        students.push(name);
-        results[name] = { ok: 0, bad: 0, time: 0 };
-        const opt = document.createElement('option'); 
-        opt.value = opt.textContent = name;
-        document.getElementById('studentSelect').appendChild(opt);
-        document.getElementById('newStudent').value = '';
-        saveToLocalStorage();
-        updateTable();
-      }
+      addStudent();
+      saveData();
     });
 
     // حذف طالب
     document.getElementById('deleteStudent').addEventListener('click', () => {
-      const sel = document.getElementById('studentSelect'); 
-      const name = sel.value;
-      if (name && confirm(`هل تريد حذف ${name}?`)) {
-        students = students.filter(s => s !== name);
-        delete results[name];
-        const opt = document.querySelector(`#studentSelect option[value="${name}"]`);
-        if (opt) opt.remove();
-        currentStudent = null;
-        saveToLocalStorage();
-        updateTable();
-      }
+      deleteStudent();
+      saveData();
     });
 
     // حذف الجميع
     document.getElementById('deleteAll').addEventListener('click', () => {
-      if (confirm('هل تريد حذف جميع الطلاب؟')) {
-        students = []; 
-        results = {}; 
-        document.getElementById('studentSelect').innerHTML = '';
-        saveToLocalStorage();
-        updateTable();
-      }
+      deleteAllStudents();
+      saveData();
     });
 
     // تبديل الأرقام (الهندية <-> العربية)
@@ -1126,155 +954,28 @@
 
     // تصدير النتائج
     document.getElementById('exportBtn').addEventListener('click', () => {
-      const wb = XLSX.utils.book_new();
-      const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)"]];
-      for (const [name, r] of Object.entries(results)) {
-        const perc = (r.ok + r.bad) ? Math.round(r.ok / (r.ok + r.bad) * 100) : 0;
-        ws_data.push([name, r.ok, r.bad, r.time || 0]);
-      }
-      const ws = XLSX.utils.aoa_to_sheet(ws_data);
-      XLSX.utils.book_append_sheet(wb, ws, "النتائج");
-      XLSX.writeFile(wb, "add_minus_game_results.xlsx");
+      exportResultsToExcel('add_minus_game_results.xlsx');
     });
 
     // استيراد نتائج
     document.getElementById('importFile').addEventListener('change', e => {
-      const file = e.target.files[0]; 
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        students = []; 
-        results = {}; 
-        document.getElementById('studentSelect').innerHTML = '';
-        json.slice(1).forEach(row => { 
-          const name = row[0]; 
-          if (name) { 
-            students.push(name); 
-            results[name] = { ok: row[1] || 0, bad: row[2] || 0, time: row[3] || 0 }; 
-            const opt = document.createElement('option'); 
-            opt.value = opt.textContent = name; 
-            document.getElementById('studentSelect').appendChild(opt); 
-          } 
-        });
-        saveToLocalStorage();
-        updateTable();
-      };
-      reader.readAsArrayBuffer(file);
+      importResultsFromFile(e, saveData);
     });
 
     // إعادة ضبط النتائج
     document.getElementById('resetResults').addEventListener('click', () => {
-      if (confirm('هل تريد إعادة ضبط نتائج جميع الطلاب للصفر؟')) {
-        for (const s of students) results[s] = { ok: 0, bad: 0, time: 0 }; 
-        saveToLocalStorage();
-        updateTable();
-      }
+      resetAllResults();
+      saveData();
     });
 
-    // تحميل الأصوات والبيانات عند الفتح
-    window.addEventListener('load', () => { 
-      loadFromLocalStorage();
-      updateTable();
-    });
+    // تحديث الجدول عند التحميل (البيانات تُحمل تلقائياً من loadData())
+    // window.addEventListener لا داعي له لأن loadData() يتم استدعاؤه في البداية
 
     /* ===== زر حسم النتيجة (النهائي) + شريط التهنئة ===== */
     const finalizeBtn = document.getElementById('finalizeResultsBtn');
-    const banner = document.getElementById('resultsBanner');
-    const bannerContent = document.getElementById('bannerContent');
     const bannerClose = document.querySelector('#resultsBanner .banner-close');
     const bannerOverlay = document.getElementById('bannerOverlay');
 
-    function showBannerForTop3(top3) {
-      const medals = ['🥇', '🥈', '🥉'];
-      const classes = ['first', 'second', 'third'];
-      const titles = ['🎊 المركز الأول 🎊', '🌟 المركز الثاني 🌟', '✨ المركز الثالث ✨'];
-      
-      let html = '<div class="banner-title">🏆 نتائج المسابقة النهائية 🏆</div>';
-      
-      top3.forEach((p, i) => {
-        const cls = classes[i];
-        html += `
-          <div class="winner-row ${cls}">
-            <div class="winner-medal">${medals[i]}</div>
-            <div class="winner-info">
-              <div class="winner-name">${p.name}</div>
-              <div class="winner-stats">✅ ${p.ok} صحيح | ❌ ${p.bad} خاطئ | 📊 ${p.perc}%</div>
-            </div>
-          </div>
-        `;
-      });
-      
-      bannerContent.innerHTML = html;
-      bannerOverlay.style.display = 'block';
-      banner.style.display = 'block';
-      banner.classList.add('show');
-      
-      // مؤثرات الكونفيتي المتعددة
-      setTimeout(() => {
-        try {
-          // كونفيتي من اليسار
-          confetti({
-            particleCount: 150,
-            angle: 60,
-            spread: 100,
-            origin: { x: 0, y: 0.6 },
-            colors: ['#FFD700', '#FFA500', '#FF69B4', '#00CED1']
-          });
-          // كونفيتي من اليمين
-          confetti({
-            particleCount: 150,
-            angle: 120,
-            spread: 100,
-            origin: { x: 1, y: 0.6 },
-            colors: ['#FFD700', '#FFA500', '#FF69B4', '#00CED1']
-          });
-        } catch (e) { }
-      }, 200);
-      
-      // موجة ثانية من الكونفيتي
-      setTimeout(() => {
-        try {
-          confetti({
-            particleCount: 100,
-            spread: 120,
-            origin: { y: 0.4 },
-            colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1']
-          });
-        } catch (e) { }
-      }, 800);
-      
-      // نجوم متلألئة
-      setTimeout(() => {
-        try {
-          confetti({
-            particleCount: 50,
-            spread: 360,
-            ticks: 200,
-            gravity: 0,
-            decay: 0.94,
-            startVelocity: 30,
-            shapes: ['star'],
-            colors: ['#FFD700', '#FFA500', '#FFE873']
-          });
-        } catch (e) { }
-      }, 1200);
-    }
-
-    function hideBanner() {
-      banner.style.animation = 'fadeOut 0.4s ease both';
-      setTimeout(() => {
-        banner.style.display = 'none';
-        banner.classList.remove('show');
-        bannerOverlay.style.display = 'none';
-        bannerContent.innerHTML = '';
-        banner.style.animation = '';
-      }, 400);
-      speak('شكرًا لمشاركتكم جميعًا!');
-    }
     bannerClose.addEventListener('click', hideBanner);
     bannerOverlay.addEventListener('click', hideBanner);
 
@@ -1285,29 +986,11 @@
         return; 
       }
       const top3 = sorted.slice(0, 3);
-      
-      // النص الصوتي مع المزيد من الحماس
-      let speechText = '🎉 تهانينا! نتيجة المسابقة النهائية! ';
-      if (top3[0]) {
-        speechText += `المركز الأول يحصل عليه المتسابق المتميز ${top3[0].name} بعدد ${top3[0].ok} إجابة صحيحة! مبروك! `;
-      }
-      if (top3[1]) {
-        speechText += `المركز الثاني للمتسابق الرائع ${top3[1].name}! `;
-      }
-      if (top3[2]) {
-        speechText += `والمركز الثالث للمتسابق ${top3[2].name}! `;
-      }
-      speechText += 'مبروك للجميع وألف مبروك للفائزين!';
-      
-      showBannerForTop3(top3);
-      speak(speechText);
-      
-      // إخفاء تلقائي بعد 20 ثانية
-    //   setTimeout(hideBanner, 20000);
+      showWinnersBanner(top3);
     });
 
     /* ===== تحديث أولي للجدول ===== */
-    updateTable();
+    updateResultsTable();
 
   </script>
 </body>

@@ -431,11 +431,6 @@
         max="90"></div>
     <div class="group"><button id="toggleNums">🔢 الأرقام: هندية</button></div>
     <div class="group"><button id="toggleSound">🔊 الصوت: تشغيل</button></div>
-    <div class="group"><span class="label">الصوت:</span>
-      <select id="voiceSelect">
-        <option value="">جاري التحميل...</option>
-      </select>
-    </div>
   </div>
 
   <div class="students" style="width:92%">
@@ -469,7 +464,6 @@
     <table id="resultsTable" aria-live="polite">
       <thead>
         <tr>
-          <th>المركز</th>
           <th>الطالب</th>
           <th>صحيحة</th>
           <th>خاطئة</th>
@@ -490,102 +484,47 @@
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- ملف JavaScript المشترك -->
+  <script src="common.js"></script>
 
   <script>
-    /* ===== إعدادات عامة ===== */
-    let students = [], results = {}, currentStudent = null, timer = null;
-    let timerDuration = 20, correctAnsGlobal = null, gameStarted = false, answered = false;
-    let useArabicIndic = true; // الوضع الافتراضي: الأرقام الهندية كما طلبت
-    let soundOn = true, availableVoices = [];
-    let currentTimeLeft = 0;
-    const praisePhrases = ["أحسنت يا {name}!", "ممتاز يا {name}!", "عمل رائع يا {name}!", "مبدع يا {name}!", "رائع جدًا يا {name}!"];
-    const negativePhrases = ["حاول مرة أخرى يا {name}.", "قربت جدًا يا {name}.", "أعد التفكير يا {name}."];
+    /* ===== إعدادات خاصة بصفحة جداول الضرب ===== */
 
     /* ===== سجل الأسئلة المستخدمة ===== */
     const USED_Q_KEY = 'mul_game_used_questions_v2';
+    const STORAGE_KEY_STUDENTS = 'mul_game_students';
+    const STORAGE_KEY_RESULTS = 'mul_game_results';
+
     let usedQuestions = loadUsedQuestions();
-    function loadUsedQuestions() { try { const raw = localStorage.getItem(USED_Q_KEY); if (raw) return JSON.parse(raw); } catch (e) { } return []; }
-    function saveUsedQuestions() { try { localStorage.setItem(USED_Q_KEY, JSON.stringify(usedQuestions)); } catch (e) { } }
 
-    /* ===== تحويل أرقام (الهندية) ===== */
-    function toArabicNumber(num) {
-      const s = String(num);
-      if (!useArabicIndic) return s;
-      return s.replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
-    }
-
-    function parseDisplayedNumber(txt) {
-      // يحول النص الذي قد يحتوي على أرقام هندية أو عربية إلى عدد لاتيني
-      const map = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
-      let s = '';
-      for (const ch of ('' + txt)) {
-        if (map[ch] !== undefined) s += map[ch];
-        else if (ch >= '0' && ch <= '9') s += ch;
-        // أما الحروف الأخرى (مسافات، علامات) نتجاهلها
-      }
-      return parseInt(s, 10) || 0;
-    }
-
-    /* ===== صوت المتصفح ===== */
-    function populateVoices() {
-      if (typeof speechSynthesis === 'undefined') return;
-      availableVoices = speechSynthesis.getVoices() || [];
-      const sel = document.getElementById('voiceSelect'); sel.innerHTML = '';
-      const defaultOpt = document.createElement('option'); defaultOpt.value = ''; defaultOpt.textContent = 'افتراضي (ar-SA إن وُجد)'; sel.appendChild(defaultOpt);
-      const arabic = availableVoices.filter(v => (v.lang && v.lang.startsWith('ar')) || /Arabic|عربي/i.test(v.name));
-      (arabic.length ? arabic : availableVoices).forEach(v => { const opt = document.createElement('option'); opt.value = v.name; opt.textContent = `${v.name} — ${v.lang}`; sel.appendChild(opt); });
-    }
-    if (typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = populateVoices;
-    function getSelectedVoice() { const selName = document.getElementById('voiceSelect').value; if (!availableVoices.length) return null; if (selName) return availableVoices.find(v => v.name === selName) || null; return availableVoices.find(v => v.lang === 'ar-SA') || availableVoices.find(v => v.lang && v.lang.startsWith('ar')) || availableVoices[0]; }
-
-    async function generateVoice(text) {
-      const player = document.getElementById("player");
-      if (!text.trim()) {
-        alert("Please enter text first!");
-        return;
-      }
-      const apiKey = "sk_80c831ceb22cab8dc351a9d581112ba704a7c01564a0c510"; // ← ضع API Key هنا
-      // const voiceId = "21m00Tcm4TlvDq8ikWAM"; // (Rachel)
-      const voiceId = "IES4nrmZdUBHByLBde0P"; // haytham Arabic
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-      // إعداد الطلب
-      const body = {
-        text: text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.7
-        }
-      };
+    function loadUsedQuestions() {
       try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "xi-api-key": apiKey
-          },
-          body: JSON.stringify(body)
-        });
-        // تحويل الصوت إلى Blob
-        const audioBlob = await response.blob();
-        // إنشاء URL محلي للصوت
-        const audioUrl = URL.createObjectURL(audioBlob);
-        // تشغيل الصوت
-        player.src = audioUrl;
-        player.play();
-      } catch (error) {
-        console.error(error);
-        alert("Error generating voice. Check your API key or text.");
-      }
+        const raw = localStorage.getItem(USED_Q_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { }
+      return [];
     }
 
-    async function speak(text) {
-      const msg = await generateVoice(text);
+    function saveUsedQuestions() {
+      try {
+        localStorage.setItem(USED_Q_KEY, JSON.stringify(usedQuestions));
+      } catch (e) { }
     }
+
+    // استخدام الدوال المشتركة
+    function saveData() {
+      saveToLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
+    }
+
+    function loadData() {
+      loadFromLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
+      updateResultsTable();
+    }
+
+    // تحميل البيانات عند بدء الصفحة
+    loadData();
 
     /* ===== دوال مساعدة ===== */
-    function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    function fingerprint(obj) { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
 
     /* ===== إنشاء أزرار الجداول (2..12) + 2 أوضاع خاصة ===== */
     const tableButtonsContainer = document.getElementById('tableButtonsContainer');
@@ -760,79 +699,15 @@
         document.getElementById('status').textContent = '🔁 تم توليد سؤال جديد (لا يُحسب في النتائج)';
       }
 
-      updateTable();
+      updateResultsTable();
       pickNextStudent();
 
       document.getElementById('startBtn').style.display = 'inline-block';
       gameStarted = false;
     }
 
-    /* ===== اختيار طالب تالي ===== */
-    function pickNextStudent() {
-      const sel = document.getElementById('studentSelect');
-      if (!sel || students.length === 0) return;
-      let idx = students.indexOf(currentStudent);
-      if (idx === -1) currentStudent = students[0];
-      else currentStudent = students[(idx + 1) % students.length];
-      document.getElementById('studentSelect').value = currentStudent || '';
-      if (currentStudent && !results[currentStudent]) results[currentStudent] = { ok: 0, bad: 0, time: 0 };
-    }
-
-    /* ===== ترتيب وتحديث الجدول ===== */
-    function getSortedResultsArray() {
-      return Object.entries(results)
-        .map(([name, r]) => ({
-          name,
-          ok: r.ok || 0,
-          bad: r.bad || 0,
-          time: typeof r.time === 'number' ? r.time : (parseFloat(r.time) || 0)
-        }))
-        .sort((a, b) => {
-          if (b.ok !== a.ok) return b.ok - a.ok;
-          if (a.time !== b.time) return a.time - b.time;
-          return 0;
-        });
-    }
-
-    function updateTable() {
-      const tbody = document.querySelector('#resultsTable tbody');
-      tbody.innerHTML = '';
-
-      const sorted = getSortedResultsArray();
-
-      for (let i = 0; i < sorted.length; i++) {
-        if (i === 0) sorted[i].rank = 1;
-        else {
-          const prev = sorted[i - 1], cur = sorted[i];
-          const sameOk = (cur.ok === prev.ok);
-          const sameTime = Math.abs(cur.time - prev.time) < 0.0001;
-          sorted[i].rank = (sameOk && sameTime) ? prev.rank : i + 1;
-        }
-      }
-
-      sorted.forEach((r) => {
-        const tr = document.createElement('tr');
-        if (r.rank === 1) tr.classList.add('gold');
-        else if (r.rank === 2) tr.classList.add('silver');
-        else if (r.rank === 3) tr.classList.add('bronze');
-
-        let medal = '';
-        if (r.rank === 1) medal = ' <span class="medal">🥇</span>';
-        else if (r.rank === 2) medal = ' <span class="medal">🥈</span>';
-        else if (r.rank === 3) medal = ' <span class="medal">🥉</span>';
-
-        const sameCount = sorted.filter(s => s.rank === r.rank && s.ok === r.ok && Math.abs(s.time - r.time) < 0.0001).length;
-        const rankText = (sameCount > 1) ? `${r.rank} مكرر` : String(r.rank);
-        const timeStr = (typeof r.time === 'number') ? r.time.toFixed(2).replace('.', ',') : '0,00';
-
-        tr.innerHTML = `<td>${rankText}.${medal}</td><td>${r.name}</td><td>${r.ok}</td><td>${r.bad}</td><td>${timeStr}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
     /* ===== أزرار ووظائف واجهة المستخدم ===== */
     document.getElementById('startBtn').addEventListener('click', () => {
-      populateVoices();
       const sel = document.getElementById('studentSelect').value;
       if (!sel) { alert('اختر طالبًا'); return; }
       currentStudent = sel;
@@ -856,33 +731,20 @@
 
     // إضافة طالب
     document.getElementById('addStudent').addEventListener('click', () => {
-      const name = document.getElementById('newStudent').value.trim();
-      if (name && !students.includes(name)) {
-        students.push(name);
-        results[name] = { ok: 0, bad: 0, time: 0 };
-        const opt = document.createElement('option'); opt.value = opt.textContent = name;
-        document.getElementById('studentSelect').appendChild(opt);
-        document.getElementById('newStudent').value = '';
-        updateTable();
-      }
+      addStudent();
+      saveData();
     });
 
     // حذف طالب
     document.getElementById('deleteStudent').addEventListener('click', () => {
-      const sel = document.getElementById('studentSelect'); const name = sel.value;
-      if (name && confirm(`هل تريد حذف ${name}?`)) {
-        students = students.filter(s => s !== name); delete results[name];
-        const opt = document.querySelector(`#studentSelect option[value="${name}"]`); if (opt) opt.remove();
-        currentStudent = null; updateTable();
-      }
+      deleteStudent();
+      saveData();
     });
 
     // حذف الجميع
     document.getElementById('deleteAll').addEventListener('click', () => {
-      if (confirm('هل تريد حذف جميع الطلاب؟')) {
-        students = []; results = {}; document.getElementById('studentSelect').innerHTML = '';
-        updateTable();
-      }
+      deleteAllStudents();
+      saveData();
     });
 
     // تبديل الأرقام (الهندية <-> العربية)
@@ -905,46 +767,18 @@
 
     // تصدير النتائج
     document.getElementById('exportBtn').addEventListener('click', () => {
-      const wb = XLSX.utils.book_new();
-      const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)"]];
-      for (const [name, r] of Object.entries(results)) {
-        const row = [name, r.ok || 0, r.bad || 0, r.time || 0];
-        ws_data.push(row);
-      }
-      const ws = XLSX.utils.aoa_to_sheet(ws_data);
-      XLSX.utils.book_append_sheet(wb, ws, "النتائج");
-      XLSX.writeFile(wb, "multiplication_game_results.xlsx");
+      exportResultsToExcel('multiplication_game_results.xlsx');
     });
 
     // استيراد نتائج
     document.getElementById('importFile').addEventListener('change', e => {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        students = []; results = {}; document.getElementById('studentSelect').innerHTML = '';
-        json.slice(1).forEach(row => {
-          const name = row[0];
-          if (name) {
-            students.push(name);
-            results[name] = { ok: row[1] || 0, bad: row[2] || 0, time: row[3] || 0 };
-            const opt = document.createElement('option'); opt.value = opt.textContent = name; document.getElementById('studentSelect').appendChild(opt);
-          }
-        });
-        updateTable();
-      };
-      reader.readAsArrayBuffer(file);
+      importResultsFromFile(e, saveData);
     });
 
     // إعادة ضبط النتائج
     document.getElementById('resetResults').addEventListener('click', () => {
-      if (confirm('هل تريد إعادة ضبط نتائج جميع الطلاب للصفر؟')) {
-        for (const s of students) results[s] = { ok: 0, bad: 0, time: 0 };
-        updateTable();
-      }
+      resetAllResults();
+      saveData();
     });
 
     // مسح سجل الأسئلة المستخدمة
@@ -956,44 +790,23 @@
     });
 
     // تحميل الأصوات عند الفتح
-    window.addEventListener('load', () => { setTimeout(populateVoices, 250); });
+    window.addEventListener('load', () => { });
 
     /* ===== زر حسم النتيجة (النهائي) + شريط التهنئة ===== */
     const finalizeBtn = document.getElementById('finalizeResultsBtn');
-    const banner = document.getElementById('resultsBanner');
-    const bannerContent = document.getElementById('bannerContent');
     const bannerClose = document.querySelector('#resultsBanner .banner-close');
 
-    function showBannerForTop3(top3) {
-      const medals = ['🥇', '🥈', '🥉'];
-      const colors = ['gold', 'silver', 'bronze'];
-      let html = '';
-      top3.forEach((p, i) => {
-        const cls = colors[i] || '';
-        html += `<div class="row ${cls}"><div class="medal-col">${medals[i]}</div><div class="text-col"><div class="banner-medal">${p.name}</div><div class="banner-name">${p.ok} صحيح — ${p.bad} خاطئ</div></div></div>`;
-      });
-      bannerContent.innerHTML = html;
-      banner.style.display = 'block';
-      banner.style.animation = 'bannerIn 400ms ease both';
-    }
-
-    function hideBanner() { banner.style.display = 'none'; bannerContent.innerHTML = ''; }
     bannerClose.addEventListener('click', hideBanner);
 
     finalizeBtn.addEventListener('click', () => {
       const sorted = getSortedResultsArray();
       if (!sorted.length) { alert('لا توجد نتائج لحسمها بعد.'); return; }
       const top3 = sorted.slice(0, 3);
-      let speechText = 'نتيجة المسابقة النهائية: ';
-      top3.forEach((p, i) => { speechText += `المركز ${i + 1}: ${p.name}. `; });
-      showBannerForTop3(top3);
-      try { confetti({ particleCount: 120, spread: 90, origin: { y: 0.4 } }); } catch (e) { }
-      speak(speechText);
-      setTimeout(hideBanner, 15000);
+      showWinnersBanner(top3);
     });
 
     /* ===== تحديث أولي للجدول ===== */
-    updateTable();
+    updateResultsTable();
 
   </script>
 </body>
