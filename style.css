@@ -97,6 +97,7 @@ body::before {
   align-items: center;
   gap: 6px;
   margin-top: 6px;
+  font-size: 40px;
 }
 
 h1 {

@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>لعبة ضرب الجداول — نسخة نهائية</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
@@ -273,17 +274,17 @@
     }
 
     /* ===== المؤقت ===== */
-    function startTimer() {
-      clearInterval(timer);
-      timerDuration = parseInt(document.getElementById('timerInput').value) || 20;
-      currentTimeLeft = timerDuration;
-      document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
-      timer = setInterval(() => {
-        currentTimeLeft--;
-        document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
-        if (currentTimeLeft <= 0) { clearInterval(timer); checkAnswer(null, true); }
-      }, 1000);
-    }
+    // function startTimer() {
+    //   clearInterval(timer);
+    //   timerDuration = parseInt(document.getElementById('timerInput').value) || 20;
+    //   currentTimeLeft = timerDuration;
+    //   document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+    //   timer = setInterval(() => {
+    //     currentTimeLeft--;
+    //     document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+    //     if (currentTimeLeft <= 0) { clearInterval(timer); checkAnswer(null, true); }
+    //   }, 1000);
+    // }
 
     /* ===== عرض سؤال جديد ===== */
     let currentQuestion = null;

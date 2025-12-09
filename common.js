@@ -78,7 +78,7 @@ function loadFromLocalStorage(studentsKey, resultsKey) {
   try {
     const savedStudents = localStorage.getItem(studentsKey);
     const savedResults = localStorage.getItem(resultsKey);
-    
+
     if (savedStudents) {
       students = JSON.parse(savedStudents);
       const sel = document.getElementById('studentSelect');
@@ -91,7 +91,7 @@ function loadFromLocalStorage(studentsKey, resultsKey) {
         });
       }
     }
-    
+
     if (savedResults) {
       results = JSON.parse(savedResults);
     }
@@ -190,28 +190,28 @@ function getRandomColors(n) {
  */
 function startTimer(callback) {
   clearInterval(timer);
-  
+
   const timerInput = document.getElementById('timerInput');
   timerDuration = parseInt(timerInput?.value || 20);
   currentTimeLeft = timerDuration;
   questionStartTime = Date.now(); // حفظ وقت بداية السؤال بالميلي ثانية
-  
+
   const timerDisplay = document.getElementById('timerDisplay');
   if (timerDisplay) {
-    timerDisplay.textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+    timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
   }
-  
+
   timer = setInterval(() => {
-    currentTimeLeft--;
+    currentTimeLeft -= 0.1;
     if (timerDisplay) {
-      timerDisplay.textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+      timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
     }
-    
+
     if (currentTimeLeft <= 0) {
       clearInterval(timer);
       if (callback) callback();
     }
-  }, 1000);
+  }, 100);
 }
 
 /**
@@ -228,16 +228,16 @@ function stopTimer() {
 function pickNextStudent() {
   const sel = document.getElementById('studentSelect');
   if (!sel || students.length === 0) return;
-  
+
   let idx = students.indexOf(currentStudent);
   if (idx === -1) {
     currentStudent = students[0];
   } else {
     currentStudent = students[(idx + 1) % students.length];
   }
-  
+
   sel.value = currentStudent || '';
-  
+
   if (currentStudent && !results[currentStudent]) {
     results[currentStudent] = { ok: 0, bad: 0, time: 0, avatar: '' };
   }
@@ -249,21 +249,21 @@ function pickNextStudent() {
 function addStudent(saveCallback) {
   const input = document.getElementById('newStudent');
   if (!input) return false;
-  
+
   const name = input.value.trim();
   if (!name) {
     alert('يرجى إدخال اسم الطالب');
     return false;
   }
-  
+
   if (students.includes(name)) {
     alert('الطالب موجود بالفعل');
     return false;
   }
-  
+
   students.push(name);
   results[name] = { ok: 0, bad: 0, time: 0, avatar: '' };
-  
+
   const sel = document.getElementById('studentSelect');
   if (sel) {
     const opt = document.createElement('option');
@@ -271,13 +271,13 @@ function addStudent(saveCallback) {
     sel.appendChild(opt);
     sel.value = name;
   }
-  
+
   currentStudent = name;
   input.value = '';
-  
+
   updateResultsTable();
   if (saveCallback) saveCallback();
-  
+
   return true;
 }
 
@@ -287,36 +287,36 @@ function addStudent(saveCallback) {
 function deleteStudent(saveCallback) {
   const sel = document.getElementById('studentSelect');
   if (!sel) return false;
-  
+
   const name = sel.value;
   if (!name) {
     alert('يرجى اختيار طالب للحذف');
     return false;
   }
-  
+
   if (!confirm(`هل تريد حذف ${name}؟`)) {
     return false;
   }
-  
+
   const idx = students.indexOf(name);
   if (idx !== -1) {
     students.splice(idx, 1);
     delete results[name];
-    
+
     sel.innerHTML = '';
     students.forEach(n => {
       const opt = document.createElement('option');
       opt.value = opt.textContent = n;
       sel.appendChild(opt);
     });
-    
+
     if (students.length > 0) {
       sel.value = students[0];
       currentStudent = students[0];
     } else {
       currentStudent = null;
     }
-    
+
     updateResultsTable();
     if (saveCallback) saveCallback();
     return true;
@@ -331,14 +331,14 @@ function deleteAllStudents(saveCallback) {
   if (!confirm('هل تريد حذف جميع الطلاب؟')) {
     return false;
   }
-  
+
   students = [];
   results = {};
   currentStudent = null;
-  
+
   const sel = document.getElementById('studentSelect');
   if (sel) sel.innerHTML = '';
-  
+
   updateResultsTable();
   if (saveCallback) saveCallback();
   return true;
@@ -354,7 +354,7 @@ function getSortedResultsArray() {
       name,
       ok: data.ok || 0,
       bad: data.bad || 0,
-      time: Math.round((data.time || 0) * 1000),
+      time: (Math.round((data.time || 0) * 1000) / 1000).toFixed(2),
       score: (data.ok || 0) - (data.bad || 0) * 0.5
     }))
     .sort((a, b) => {
@@ -370,10 +370,10 @@ function getSortedResultsArray() {
 function updateResultsTable() {
   const tbody = document.querySelector('#resultsTable tbody');
   if (!tbody) return;
-  
+
   tbody.innerHTML = '';
   const sorted = getSortedResultsArray();
-  
+
   // تحديد المراكز الثلاثة الأولى
   const podium = [];
   for (let i = 0; i < sorted.length; i++) {
@@ -383,39 +383,32 @@ function updateResultsTable() {
       podium.push(i);
     }
   }
-  
+
   sorted.forEach((r, idx) => {
     const tr = document.createElement('tr');
     let medal = '';
     let rowClass = '';
-    
+
     if (podium.indexOf(idx) !== -1) {
       const pos = podium.indexOf(idx);
       if (pos === 0) { medal = '🥇'; rowClass = 'gold'; }
       else if (pos === 1) { medal = '🥈'; rowClass = 'silver'; }
       else if (pos === 2) { medal = '🥉'; rowClass = 'bronze'; }
     }
-    
+
     if (rowClass) tr.className = rowClass;
-    
+
     // بناء خلية الاسم مع الصورة
     let nameCell = '';
     if (medal) nameCell += '<span class="medal">' + medal + '</span>';
-    
+
     // إضافة الصورة إذا كانت موجودة
     const studentData = results[r.name];
     if (studentData && studentData.avatar) {
-        /**
-         * https://ibb.co/h1MCq7zn
-            https://ibb.co/gLSBrftB
-            https://ibb.co/8nhVMY1c
-            https://ibb.co/DfnT6nv8
-            https://ibb.co/HpYXfmNq
-         */
       nameCell += `<img src="${studentData.avatar}" alt="${r.name}" class="student-avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; object-fit: cover; vertical-align: middle; border: 3px solid #4CAF50; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease;">`;
     }
     nameCell += r.name;
-    
+
     tr.innerHTML = `
       <td>${nameCell}</td>
       <td>${r.ok}</td>
@@ -433,7 +426,7 @@ function resetAllResults(saveCallback) {
   if (!confirm('هل تريد إعادة ضبط نتائج جميع الطلاب للصفر؟')) {
     return false;
   }
-  
+
   for (const name in results) {
     results[name] = { ok: 0, bad: 0, time: 0 };
   }
@@ -451,14 +444,14 @@ function exportResultsToExcel(filename = 'results.xlsx') {
     alert('مكتبة XLSX غير متوفرة');
     return;
   }
-  
+
   const wb = XLSX.utils.book_new();
   const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)", "الصورة"]];
-  
+
   for (const [name, r] of Object.entries(results)) {
     ws_data.push([name, r.ok || 0, r.bad || 0, Math.round(r.time || 0), r.avatar || '']);
   }
-  
+
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
   XLSX.utils.book_append_sheet(wb, ws, "النتائج");
   XLSX.writeFile(wb, filename);
@@ -472,31 +465,31 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
     alert('مكتبة XLSX غير متوفرة');
     return;
   }
-  
+
   // تحديد الملف من Event أو File مباشرة
   const file = fileOrEvent.target ? fileOrEvent.target.files[0] : fileOrEvent;
   if (!file) return;
-  
+
   const reader = new FileReader();
-  reader.onload = function(evt) {
+  reader.onload = function (evt) {
     try {
       const data = new Uint8Array(evt.target.result);
       const wb = XLSX.read(data, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      
+
       // حذف جميع البيانات القديمة
       students = [];
       results = {};
-      
+
       const sel = document.getElementById('studentSelect');
       if (sel) sel.innerHTML = '';
-      
+
       // إضافة البيانات الجديدة من الملف
       for (let i = 1; i < json.length; i++) {
         const row = json[i];
         if (!row[0]) continue;
-        
+
         const name = String(row[0]).trim();
         const ok = parseInt(row[1]) || 0;
         const bad = parseInt(row[2]) || 0;
@@ -504,10 +497,10 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
         const avatar = row[4] ? String(row[4]).trim() : '';
         console.log(row[4])
         console.log(row[5])
-        
+
         students.push(name);
         results[name] = { ok, bad, time, avatar };
-        
+
         // قراءة رابط الصورة من العمود E (index 4)
         // ملاحظة: يجب أن يحتوي العمود على رابط نصي للصورة، وليس صورة مدرجة
         const imageUrl = row[4] ? String(row[4]).trim() : '';
@@ -521,7 +514,7 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
           sel.appendChild(opt);
         }
       }
-      
+
       // تحديث الطالب الحالي
       if (students.length > 0) {
         currentStudent = students[0];
@@ -529,11 +522,11 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
       } else {
         currentStudent = null;
       }
-      
+
       updateResultsTable();
       if (saveCallback) saveCallback();
-      
-    //   alert(`تم استيراد ${students.length} طالب بنجاح`);
+
+      //   alert(`تم استيراد ${students.length} طالب بنجاح`);
     } catch (error) {
       console.error('خطأ في استيراد البيانات:', error);
       alert('فشل استيراد البيانات');
@@ -550,13 +543,13 @@ function showWinnersBanner(top3) {
   const banner = document.getElementById('resultsBanner');
   const content = document.getElementById('bannerContent');
   const overlay = document.getElementById('bannerOverlay');
-  
+
   if (!banner || !content) return;
-  
+
   const medals = ['🥇', '🥈', '🥉'];
   const colors = ['gold', 'silver', 'bronze'];
   let html = '<div class="banner-title">🎉 نتائج المسابقة 🎉</div>';
-  
+
   top3.forEach((p, i) => {
     const cls = colors[i] || '';
     html += `
@@ -569,17 +562,53 @@ function showWinnersBanner(top3) {
       </div>
     `;
   });
-  
+
   content.innerHTML = html;
-  
+
   if (overlay) overlay.style.display = 'block';
   banner.style.display = 'block';
   banner.classList.add('show');
-  
+  speak(`
+    ألف مبروك للأبطال الفائزين!
+    في المركز الأول، بطلنا ${top3[0].name} بـ ${top3[0].ok} إجابة صحيحة رائعة!
+    وفي المركز الثاني، المتألق ${top3[1].name} بـ ${top3[1].ok} إجابة صحيحة ممتازة!
+    وفي المركز الثالث، المبدع ${top3[2].name} بـ ${top3[2].ok} إجابة صحيحة مميزة!
+    أحسنتم جميعاً، أنتم نجوم ساطعة!   `);  
   // تأثير الاحتفال
   try {
     if (typeof confetti !== 'undefined') {
-      confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
+      const duration = 15 * 1000,
+        animationEnd = Date.now() + duration,
+        defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+
+        // since particles fall down, start a bit higher than random
+        confetti(
+          Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          })
+        );
+        confetti(
+          Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          })
+        );
+      }, 250);
+      // confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
     }
   } catch (e) {
     console.error('خطأ في تشغيل confetti:', e);
@@ -592,16 +621,16 @@ function showWinnersBanner(top3) {
 function hideBanner() {
   const banner = document.getElementById('resultsBanner');
   const overlay = document.getElementById('bannerOverlay');
-  
+
   if (banner) {
     banner.style.display = 'none';
     banner.classList.remove('show');
   }
-  
+
   if (overlay) {
     overlay.style.display = 'none';
   }
-  
+
   const content = document.getElementById('bannerContent');
   if (content) content.innerHTML = '';
 }
