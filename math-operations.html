@@ -67,6 +67,51 @@
       font-weight: 700;
     }
 
+    /* تنسيق أزرار الاختيار المتعدد */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: 2px solid #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .checkbox-option:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    }
+
+    .checkbox-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: #ffd700;
+    }
+
+    .checkbox-option input[type="checkbox"]:checked + span {
+      font-weight: 800;
+    }
+
+    .checkbox-option.checked {
+      background: linear-gradient(135deg, #8a74f8 0%, #fa2c48 100%);
+      border-color: #ffd700;
+      box-shadow: 0 0 15px rgba(245, 87, 108, 0.6);
+    }
+
     @media (max-width: 720px) {
       .big-rect td {
         width: 42px;
@@ -76,6 +121,16 @@
 
       .op-sign {
         font-size: 2.6rem;
+      }
+
+      .checkbox-option {
+        font-size: 14px;
+        padding: 6px 10px;
+      }
+
+      .checkbox-option input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
       }
     }
   </style>
@@ -99,19 +154,45 @@
   <div class="toolbar" style="margin-top:6px">
     <div class="group"><span class="label">عدد الأرقام:</span><input type="number" id="digits" value="2" min="1"
         max="6"></div>
-    <div class="group"><span class="label">نوع العملية:</span>
-      <select id="operationType">
-        <option value="add_no_carry" selected>➕ جمع بدون إعادة تجميع</option>
-        <option value="add_carry">➕ جمع بإعادة تجميع</option>
-        <option value="sub_no_borrow">➖ طرح بدون استلاف</option>
-        <option value="sub_borrow">➖ طرح بالاستلاف</option>
-      </select>
+  </div>
+
+  <div class="toolbar" style="margin-top:10px">
+    <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+      <span class="label" style="font-size: 20px; font-weight: bold;">نوع العملية:</span>
+      <div class="checkbox-group">
+        <label class="checkbox-option checked">
+          <input type="checkbox" name="operationType" value="add_no_carry" checked>
+          <span>➕ جمع بدون إعادة تجميع</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="checkbox" name="operationType" value="add_carry">
+          <span>➕ جمع بإعادة تجميع</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="checkbox" name="operationType" value="sub_no_borrow">
+          <span>➖ طرح بدون استلاف</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="checkbox" name="operationType" value="sub_borrow">
+          <span>➖ طرح بالاستلاف</span>
+        </label>
+      </div>
     </div>
-    <div class="group"><span class="label">طريقة العرض:</span>
-      <select id="layout">
-        <option selected value="vertical">عمودية</option>
-        <option value="horizontal">أفقية</option>
-      </select>
+  </div>
+
+  <div class="toolbar" style="margin-top:10px">
+    <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+      <span class="label" style="font-size: 20px; font-weight: bold;">طريقة العرض:</span>
+      <div class="checkbox-group">
+        <label class="checkbox-option checked">
+          <input type="checkbox" name="layout" value="vertical" checked>
+          <span>عمودية</span>
+        </label>
+        <label class="checkbox-option">
+          <input type="checkbox" name="layout" value="horizontal">
+          <span>أفقية</span>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -304,8 +385,24 @@
       answered = false;
 
       const d = parseInt(document.getElementById('digits').value) || 2;
-      const type = document.getElementById('operationType').value;
-      const layout = document.getElementById('layout').value;
+      
+      // الحصول على جميع أنواع العمليات المحددة
+      const selectedOperations = Array.from(document.querySelectorAll('input[name="operationType"]:checked'))
+        .map(cb => cb.value);
+      if (selectedOperations.length === 0) {
+        alert('⚠️ يجب اختيار نوع عملية واحد على الأقل');
+        return;
+      }
+      const type = selectedOperations[Math.floor(Math.random() * selectedOperations.length)];
+      
+      // الحصول على جميع طرق العرض المحددة
+      const selectedLayouts = Array.from(document.querySelectorAll('input[name="layout"]:checked'))
+        .map(cb => cb.value);
+      if (selectedLayouts.length === 0) {
+        alert('⚠️ يجب اختيار طريقة عرض واحدة على الأقل');
+        return;
+      }
+      const layout = selectedLayouts[Math.floor(Math.random() * selectedLayouts.length)];
       
       // توليد سؤال غير مكرر
       let num1, num2, op, questionKey;
@@ -539,6 +636,18 @@
 
     /* ===== تحديث أولي للجدول ===== */
     updateResultsTable();
+
+    /* ===== تحديث مظهر أزرار checkbox ===== */
+    document.querySelectorAll('.checkbox-option').forEach(label => {
+      const checkbox = label.querySelector('input[type="checkbox"]');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          label.classList.add('checked');
+        } else {
+          label.classList.remove('checked');
+        }
+      });
+    });
 
   </script>
 </body>
