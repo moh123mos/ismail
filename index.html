@@ -826,6 +826,20 @@
     </div>
   </section>
 
+  <!-- Download Section -->
+  <section class="features fade-in" style="padding: 40px 20px;">
+    <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+      <h2 class="features-title">📥 تحميل الألعاب</h2>
+      <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 30px; font-size: 1.2rem;">
+        يمكنك تحميل ملفات الألعاب لاستخدامها بدون اتصال بالإنترنت
+      </p>
+      <button id="downloadMultiTablesBtn" class="btn btn-primary" style="font-size: 1.3rem; padding: 20px 45px;">
+        <span class="btn-icon">📥</span>
+        تحميل لعبة جداول الضرب
+      </button>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer>
     <p class="footer-text">
@@ -840,6 +854,42 @@
       const pagesSection = document.getElementById('pagesSection');
       pagesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // Download multi-tables.html file
+    document.getElementById('downloadMultiTablesBtn').addEventListener('click', async function() {
+      try {
+        // Fetch the multi-tables.html file
+        const response = await fetch('multi-tables.html');
+        if (!response.ok) throw new Error('فشل تحميل الملف');
+        
+        const htmlContent = await response.text();
+        
+        // Create blob and download
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'multi-tables.html';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Show success message
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="btn-icon">✅</span> تم التحميل بنجاح!';
+        btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
+        
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '';
+        }, 3000);
+      } catch (error) {
+        console.error('خطأ في التحميل:', error);
+        alert('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.');
+      }
+    });
 
     // Intersection Observer for fade-in animations
     const observerOptions = {
