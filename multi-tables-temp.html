@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لعبة ضرب الجداول — نسخة نهائية</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background: var(--bg) url('imgs/tables.png') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    /* ===== المتغيرات العامة ===== */
+    :root {
+      --bg: #0b1020;
+      --brand: #ff9800;
+      --brand-dark: #fb8c00;
+      --panel: #111217;
+      --accent: #ffb366;
+      --blue: #4FC3F7;
+      --fuchsia: #ff77d1;
+    }
+
+    /* ===== التنسيقات الأساسية ===== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Cairo", sans-serif;
+    }
+
+    body {
+      background-size: cover;
+      background-attachment: fixed;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 16, 32, 0.85);
+      z-index: -1;
+    }
+
+    /* ===== الهيدر والأزرار الرئيسية ===== */
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      position: relative;
+    }
+
+    .home-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--fuchsia) 100%);
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1rem;
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+      transition: all 0.3s ease;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .home-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+    }
+
+    .banner-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      background: #fff;
+      display: flex;
+      justify-content: center;
+    }
+
+    .banner-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
+    .h1-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 40px;
+    }
+
+    h1 {
+      color: var(--brand);
+      text-shadow: 2px 2px #000;
+      font-size: 1.6rem;
+      margin-top: 6px;
+    }
+
+    .credit {
+      color: #ffd966;
+      font-weight: 700;
+    }
+
+    /* ===== الأدوات والمجموعات ===== */
+    .toolbar,
+    .students {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 10px;
+      width: 92%;
+    }
+
+    .group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .label {
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    .label.blue {
+      color: var(--blue);
+    }
+
+    button {
+      cursor: pointer;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+
+    input,
+    select {
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+    }
+
+    /* ===== منطقة المسألة ===== */
+    #problem {
+      font-size: 4.0rem;
+      margin: 18px 0;
+      text-align: center;
+      line-height: 1.4;
+      min-width: 320px;
+      width: 92%;
+      background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(251, 140, 0, 0.15));
+      padding: 20px;
+      border-radius: 16px;
+      border: 2px solid rgba(255, 152, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ===== الخيارات ===== */
+    .choices {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 10px 0;
+      width: 92%;
+    }
+
+    .choice {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #000;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+
+    .choice:hover {
+      background: var(--brand-dark);
+    }
+
+    .choice.correct {
+      background: #4CAF50 !important;
+      color: #fff !important;
+      border: 2px solid #2e7d32 !important;
+    }
+
+    .choice.wrong {
+      background: #d32f2f !important;
+      color: #fff !important;
+      border: 2px solid #9a0007 !important;
+    }
+
+    /* ===== الحالة والوجه ===== */
+    .status {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      min-height: 28px;
+    }
+
+    .face {
+      font-size: 48px;
+      margin-top: 8px;
+      min-height: 50px;
+      transition: transform 0.3s;
+    }
+
+    .face.sad {
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-8px);
+      }
+
+      50% {
+        transform: translateX(8px);
+      }
+
+      75% {
+        transform: translateX(-8px);
+      }
+
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    /* ===== المؤقت ===== */
+    #timerDisplay {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 6px;
+      color: #00e676;
+      text-shadow: 1px 1px #000;
+    }
+
+    /* ===== الجداول والنتائج ===== */
+    .results-area {
+      width: 92%;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 12px;
+      width: 100%;
+      background: #111;
+      color: #fff;
+    }
+
+    th,
+    td {
+      border: 1px solid #333;
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    tr.gold {
+      background-color: #FFD70033;
+    }
+
+    tr.silver {
+      background-color: #C0C0C033;
+    }
+
+    tr.bronze {
+      background-color: #CD7F3233;
+    }
+
+    .medal {
+      font-size: 1.1rem;
+      margin-left: 6px;
+    }
+
+    /* ===== شاشة النتائج (Banner) ===== */
+    .banner-close {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255, 0, 0, 0.8);
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      z-index: 10001;
+    }
+
+    .banner-close:hover {
+      background: rgba(255, 0, 0, 1);
+      transform: scale(1.1);
+    }
+
+    #resultsBanner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 35px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.3);
+      z-index: 10000;
+      min-width: 320px;
+      max-width: 95%;
+      animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      border: 3px solid rgba(255, 215, 0, 0.6);
+    }
+
+    #resultsBanner::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      background: linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #ff0080);
+      border-radius: 28px;
+      opacity: 0;
+      z-index: -1;
+      animation: rotateBorder 3s linear infinite;
+    }
+
+    #resultsBanner.show::before {
+      opacity: 0.6;
+    }
+
+    @keyframes rotateBorder {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes bounceIn {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.3);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.05);
+      }
+
+      70% {
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    #bannerOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      backdrop-filter: blur(5px);
+    }
+
+    .banner-title {
+      font-size: 2.5rem;
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .winner-row {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .winner-row:hover {
+      transform: scale(1.05);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .winner-row.first {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 223, 0, 0.5));
+      border: 3px solid #FFD700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    .winner-row.second {
+      background: linear-gradient(135deg, rgba(192, 192, 192, 0.3), rgba(211, 211, 211, 0.5));
+      border: 3px solid #C0C0C0;
+    }
+
+    .winner-row.third {
+      background: linear-gradient(135deg, rgba(205, 127, 50, 0.3), rgba(184, 115, 51, 0.5));
+      border: 3px solid #CD7F32;
+    }
+
+    .winner-medal {
+      font-size: 3.5rem;
+      animation: rotate3d 3s ease-in-out infinite;
+    }
+
+    @keyframes rotate3d {
+
+      0%,
+      100% {
+        transform: rotateY(0deg);
+      }
+
+      50% {
+        transform: rotateY(180deg);
+      }
+    }
+
+    .winner-info {
+      text-align: right;
+    }
+
+    .winner-name {
+      font-size: 1.8rem;
+      font-weight: 900;
+      margin-bottom: 5px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .winner-stats {
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
+
+    /* ===== الملاحظات السفلية ===== */
+    .footer-note {
+      margin-top: 10px;
+      color: #aaa;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* ===== Media Queries ===== */
+    @media (max-width: 720px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+
+      #problem {
+        font-size: 1.4rem;
+      }
+    }
+
+    #problem {
+      font-size: 4rem;
+    }
+
+    .choice {
+      font-size: 2rem;
+    }
+
+    .h1-row {
+      font-size: 40px !important;
+    }
+
+    .table-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      max-width: 1200px;
+      width: 92%;
+    }
+
+    .table-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+      min-width: 64px;
+    }
+
+    .table-btn.active,
+    .special-btn.active {
+      background: var(--brand);
+      color: #000;
+      border: 2px solid #ff9c1a;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 152, 0, 0.12);
+    }
+
+    .special-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+      min-width: 120px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <a href="index.html" class="home-button">🏠 الصفحة الرئيسية</a>
+    <!-- <div class="banner-wrap" aria-hidden="false">
+      <img src="imgs/tables.png" alt="مهرجان جدول الضرب — بنر">
+    </div> -->
+
+    <div class="h1-row">
+      <h1 style="font-size: 40px;">🎯 لعبة جداول الضرب</h1>
+      <div class="credit">🌟 إعداد معلم الرياضيات <strong>إسماعيل مصطفى عامر</strong> 🌟</div>
+    </div>
+  </div>
+
+  <div class="toolbar" style="margin-top:6px">
+    <div class="group"><span class="label">اختر جداول الضرب (اضغط للتفعيل):</span></div>
+  </div>
+
+  <div class="table-buttons" id="tableButtonsContainer" aria-label="أزرار جداول الضرب">
+    <!-- الأزرار تُنشأ ديناميكياً عبر JavaScript -->
+  </div>
+
+  <div style="width:92%;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+    <div class="group"><span class="label">عدد الخيارات:</span>
+      <select id="numChoices">
+        <option value="3">3 خيارات</option>
+        <option value="4">4 خيارات</option>
+      </select>
+    </div>
+    <div class="group"><span class="label">زمن السؤال (ث):</span><input type="number" id="timerInput" value="20" min="5"
+        max="90"></div>
+    <div class="group"><button id="toggleNums">🔢 الأرقام: هندية</button></div>
+    <div class="group"><button id="toggleSound">🔊 الصوت: تشغيل</button></div>
+  </div>
+
+  <div class="students" style="width:92%">
+    <input type="text" id="newStudent" placeholder="أدخل اسم الطالب">
+    <button id="addStudent">➕ إضافة طالب</button>
+    <select id="studentSelect" style="min-width:300px;height:70px;font-size:30px;padding:6px;"></select>
+    <button id="deleteStudent">🗑 حذف الطالب</button>
+    <button id="deleteAll">🗑 حذف الجميع</button>
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;width:92%;justify-content:center">
+    <button id="startBtn">🚀 ابدأ اللعب</button>
+    <button id="regenerateBtn" style="display:none">🔁 أعد توليد السؤال</button>
+  </div>
+
+  <div id="problem" aria-live="polite"></div>
+  <div class="choices" id="choices" role="list"></div>
+  <div id="timerDisplay">⏱ 00</div>
+  <div class="status" id="status" style="font-size: 30px;"></div>
+  <div class="face" id="face"></div>
+
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:92%;justify-content:center">
+    <button id="exportBtn">📥 تصدير النتائج</button>
+    <input type="file" id="importFile" accept=".xlsx,.csv">
+    <button id="resetResults">🔄 إعادة ضبط النتائج</button>
+    <button id="clearUsed">🧹 مسح سجل الأسئلة المستخدمة</button>
+    <button id="finalizeResultsBtn">🎤 نتيجة المسابقة</button>
+  </div>
+
+  <div class="results-area">
+    <table id="resultsTable" aria-live="polite">
+      <thead>
+        <tr>
+          <th>الطالب</th>
+          <th>صحيحة</th>
+          <th>خاطئة</th>
+          <th>الزمن (ث)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="footer-note">نسخة تفاعلية محلية — تعمل مباشرة في المتصفح دون اتصال.</div>
+
+  <div id="resultsBanner" role="dialog" aria-modal="true">
+    <button class="banner-close" aria-label="إغلاق">✖</button>
+    <div id="bannerContent"></div>
+  </div>
+  <audio id="player" hidden></audio>
+  <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- ملف JavaScript المشترك -->
+  <script>
+    /**
+ * ملف JavaScript مشترك لجميع صفحات ألعاب الرياضيات
+ * إعداد: الأستاذ إسماعيل مصطفى عامر
+ */
+
+    /* ===== إعدادات عامة ===== */
+    let students = [];
+    let results = {};
+    let currentStudent = null;
+    let timer = null;
+    let timerDuration = 20;
+    let correctAnsGlobal = null;
+    let gameStarted = false;
+    let answered = false;
+    let useArabicIndic = true;
+    let soundOn = true;
+    let availableVoices = [];
+    let currentTimeLeft = 0;
+    let questionStartTime = 0; // وقت بداية السؤال بالميلي ثانية
+
+    const praisePhrases = [
+      "أحسنت يا {name}!",
+      "ممتاز يا {name}!",
+      "عمل رائع يا {name}!",
+      "مبدع يا {name}!",
+      "رائع جدًا يا {name}!"
+    ];
+
+    const negativePhrases = [
+      "حاول مرة أخرى يا {name}.",
+      "قربت جدًا يا {name}.",
+      "أعد التفكير يا {name}."
+    ];
+
+    /* ===== دوال تحويل الأرقام ===== */
+    /**
+     * تحويل الأرقام إلى الهندية أو العربية حسب الإعداد
+     */
+    function toArabicNumber(num) {
+      const s = String(num);
+      if (!useArabicIndic) return s;
+      return s.replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+    }
+
+    /**
+     * تحويل الأرقام الهندية/العربية إلى أرقام لاتينية
+     */
+    function parseDisplayedNumber(txt) {
+      const map = {
+        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+      };
+      let s = '';
+      for (const ch of ('' + txt)) {
+        if (map[ch] !== undefined) s += map[ch];
+        else if (ch >= '0' && ch <= '9') s += ch;
+      }
+      return parseInt(s, 10) || 0;
+    }
+
+    /* ===== دوال Local Storage ===== */
+    /**
+     * حفظ البيانات إلى Local Storage
+     */
+    function saveToLocalStorage(studentsKey, resultsKey) {
+      try {
+        localStorage.setItem(studentsKey, JSON.stringify(students));
+        localStorage.setItem(resultsKey, JSON.stringify(results));
+      } catch (e) {
+        console.error('خطأ في حفظ البيانات:', e);
+      }
+    }
+
+    /**
+     * تحميل البيانات من Local Storage
+     */
+    function loadFromLocalStorage(studentsKey, resultsKey) {
+      try {
+        const savedStudents = localStorage.getItem(studentsKey);
+        const savedResults = localStorage.getItem(resultsKey);
+
+        if (savedStudents) {
+          students = JSON.parse(savedStudents);
+          const sel = document.getElementById('studentSelect');
+          if (sel) {
+            sel.innerHTML = '';
+            students.forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = opt.textContent = name;
+              sel.appendChild(opt);
+            });
+          }
+        }
+
+        if (savedResults) {
+          results = JSON.parse(savedResults);
+        }
+      } catch (e) {
+        console.error('خطأ في تحميل البيانات:', e);
+      }
+    }
+
+    /* ===== دوال الصوت (ElevenLabs) ===== */
+    const ELEVENLABS_API_KEY = "sk_5c2b3a6f2cf9483e525c752522cf09c1c5bf6b3320aec24e";
+    const VOICE_ID_HAYTHAM = "IES4nrmZdUBHByLBde0P"; // haytham Arabic
+    const VOICE_ID_SUDIA = "3nav5pHC1EYvWOd5LmnA"; // SUDIA voice
+
+    /**
+     * توليد صوت باستخدام ElevenLabs API
+     */
+    async function generateVoice(text, voiceId = VOICE_ID_SUDIA) {
+      const player = document.getElementById("player");
+      if (!text.trim()) {
+        console.warn("لا يوجد نص لتحويله إلى صوت");
+        return;
+      }
+
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+      const body = {
+        text: text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.7
+        }
+      };
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        player.src = audioUrl;
+        await player.play();
+      } catch (error) {
+        console.error("خطأ في توليد الصوت:", error);
+      }
+    }
+
+    /**
+     * تشغيل النص كصوت (إذا كان الصوت مفعلاً)
+     */
+    async function speak(text, voiceId) {
+      if (soundOn && text) {
+        await generateVoice(text, voiceId);
+      }
+    }
+
+    /* ===== دوال مساعدة ===== */
+    /**
+     * توليد رقم عشوائي بين min و max
+     */
+    function rnd(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    /**
+     * إنشاء بصمة للكائن (fingerprint)
+     */
+    function fingerprint(obj) {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+    }
+
+    /**
+     * الحصول على ألوان عشوائية
+     */
+    function getRandomColors(n) {
+      const colors = ["#f44336", "#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#00bcd4"];
+      let arr = [];
+      for (let i = 0; i < n; i++) {
+        arr.push(colors[i % colors.length]);
+      }
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    /* ===== دوال المؤقت ===== */
+    /**
+     * بدء المؤقت
+     */
+    function startTimer(callback) {
+      clearInterval(timer);
+
+      const timerInput = document.getElementById('timerInput');
+      timerDuration = parseInt(timerInput?.value || 20);
+      currentTimeLeft = timerDuration;
+      questionStartTime = Date.now(); // حفظ وقت بداية السؤال بالميلي ثانية
+
+      const timerDisplay = document.getElementById('timerDisplay');
+      if (timerDisplay) {
+        timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
+      }
+
+      timer = setInterval(() => {
+        currentTimeLeft -= 0.1;
+        if (timerDisplay) {
+          timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
+        }
+
+        if (currentTimeLeft <= 0) {
+          clearInterval(timer);
+          if (callback) callback();
+        }
+      }, 100);
+    }
+
+    /**
+     * إيقاف المؤقت
+     */
+    function stopTimer() {
+      clearInterval(timer);
+    }
+
+    /* ===== دوال الطلاب ===== */
+    /**
+     * اختيار الطالب التالي
+     */
+    function pickNextStudent() {
+      const sel = document.getElementById('studentSelect');
+      if (!sel || students.length === 0) return;
+
+      let idx = students.indexOf(currentStudent);
+      if (idx === -1) {
+        currentStudent = students[0];
+      } else {
+        currentStudent = students[(idx + 1) % students.length];
+      }
+
+      sel.value = currentStudent || '';
+
+      if (currentStudent && !results[currentStudent]) {
+        results[currentStudent] = { ok: 0, bad: 0, time: 0, avatar: '' };
+      }
+    }
+
+    /**
+     * إضافة طالب جديد
+     */
+    function addStudent(saveCallback) {
+      const input = document.getElementById('newStudent');
+      if (!input) return false;
+
+      const name = input.value.trim();
+      if (!name) {
+        alert('يرجى إدخال اسم الطالب');
+        return false;
+      }
+
+      if (students.includes(name)) {
+        alert('الطالب موجود بالفعل');
+        return false;
+      }
+
+      students.push(name);
+      results[name] = { ok: 0, bad: 0, time: 0, avatar: '' };
+
+      const sel = document.getElementById('studentSelect');
+      if (sel) {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = name;
+        sel.appendChild(opt);
+        sel.value = name;
+      }
+
+      currentStudent = name;
+      input.value = '';
+
+      updateResultsTable();
+      if (saveCallback) saveCallback();
+
+      return true;
+    }
+
+    /**
+     * حذف طالب
+     */
+    function deleteStudent(saveCallback) {
+      const sel = document.getElementById('studentSelect');
+      if (!sel) return false;
+
+      const name = sel.value;
+      if (!name) {
+        alert('يرجى اختيار طالب للحذف');
+        return false;
+      }
+
+      if (!confirm(`هل تريد حذف ${name}؟`)) {
+        return false;
+      }
+
+      const idx = students.indexOf(name);
+      if (idx !== -1) {
+        students.splice(idx, 1);
+        delete results[name];
+
+        sel.innerHTML = '';
+        students.forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = n;
+          sel.appendChild(opt);
+        });
+
+        if (students.length > 0) {
+          sel.value = students[0];
+          currentStudent = students[0];
+        } else {
+          currentStudent = null;
+        }
+
+        updateResultsTable();
+        if (saveCallback) saveCallback();
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * حذف جميع الطلاب
+     */
+    function deleteAllStudents(saveCallback) {
+      if (!confirm('هل تريد حذف جميع الطلاب؟')) {
+        return false;
+      }
+
+      students = [];
+      results = {};
+      currentStudent = null;
+
+      const sel = document.getElementById('studentSelect');
+      if (sel) sel.innerHTML = '';
+
+      updateResultsTable();
+      if (saveCallback) saveCallback();
+      return true;
+    }
+
+    /* ===== دوال الجدول والنتائج ===== */
+    /**
+     * الحصول على النتائج مرتبة
+     */
+    function getSortedResultsArray() {
+      return Object.entries(results)
+        .map(([name, data]) => ({
+          name,
+          ok: data.ok || 0,
+          bad: data.bad || 0,
+          time: (Math.round((data.time || 0) * 1000) / 1000).toFixed(2),
+          score: (data.ok || 0) - (data.bad || 0) * 0.5
+        }))
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          if (a.time !== b.time) return a.time - b.time;
+          return a.name.localeCompare(b.name, 'ar');
+        });
+    }
+
+    /**
+     * تحديث جدول النتائج
+     */
+    function updateResultsTable() {
+      const tbody = document.querySelector('#resultsTable tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      const sorted = getSortedResultsArray();
+
+      // تحديد المراكز الثلاثة الأولى
+      const podium = [];
+      for (let i = 0; i < sorted.length; i++) {
+        if (i === 0 || sorted[i].score === sorted[i - 1].score) {
+          if (i < 3) podium.push(i);
+        } else if (podium.length < 3) {
+          podium.push(i);
+        }
+      }
+
+      sorted.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        let medal = '';
+        let rowClass = '';
+
+        if (podium.indexOf(idx) !== -1) {
+          const pos = podium.indexOf(idx);
+          if (pos === 0) { medal = '🥇'; rowClass = 'gold'; }
+          else if (pos === 1) { medal = '🥈'; rowClass = 'silver'; }
+          else if (pos === 2) { medal = '🥉'; rowClass = 'bronze'; }
+        }
+
+        if (rowClass) tr.className = rowClass;
+
+        // بناء خلية الاسم مع الصورة
+        let nameCell = '';
+        if (medal) nameCell += '<span class="medal">' + medal + '</span>';
+
+        // إضافة الصورة إذا كانت موجودة
+        const studentData = results[r.name];
+        if (studentData && studentData.avatar) {
+          nameCell += `<img src="${studentData.avatar}" alt="${r.name}" class="student-avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; object-fit: cover; vertical-align: middle; border: 3px solid #4CAF50; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease;">`;
+        }
+        nameCell += r.name;
+
+        tr.innerHTML = `
+      <td>${nameCell}</td>
+      <td>${r.ok}</td>
+      <td>${r.bad}</td>
+      <td>${r.time}</td>
+    `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /**
+     * إعادة ضبط النتائج للصفر
+     */
+    function resetAllResults(saveCallback) {
+      if (!confirm('هل تريد إعادة ضبط نتائج جميع الطلاب للصفر؟')) {
+        return false;
+      }
+
+      for (const name in results) {
+        results[name] = { ok: 0, bad: 0, time: 0 };
+      }
+      updateResultsTable();
+      if (saveCallback) saveCallback();
+      return true;
+    }
+
+    /* ===== دوال التصدير والاستيراد ===== */
+    /**
+     * تصدير النتائج إلى Excel
+     */
+    function exportResultsToExcel(filename = 'results.xlsx') {
+      if (typeof XLSX === 'undefined') {
+        alert('مكتبة XLSX غير متوفرة');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const ws_data = [["الطالب", "صحيحة", "خاطئة", "الزمن (ثواني)", "الصورة"]];
+
+      for (const [name, r] of Object.entries(results)) {
+        ws_data.push([name, r.ok || 0, r.bad || 0, Math.round(r.time || 0), r.avatar || '']);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      XLSX.utils.book_append_sheet(wb, ws, "النتائج");
+      XLSX.writeFile(wb, filename);
+    }
+
+    /**
+     * استيراد النتائج من Excel
+     */
+    function importResultsFromFile(fileOrEvent, saveCallback) {
+      if (typeof XLSX === 'undefined') {
+        alert('مكتبة XLSX غير متوفرة');
+        return;
+      }
+
+      // تحديد الملف من Event أو File مباشرة
+      const file = fileOrEvent.target ? fileOrEvent.target.files[0] : fileOrEvent;
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+          // حذف جميع البيانات القديمة
+          students = [];
+          results = {};
+
+          const sel = document.getElementById('studentSelect');
+          if (sel) sel.innerHTML = '';
+
+          // إضافة البيانات الجديدة من الملف
+          for (let i = 1; i < json.length; i++) {
+            const row = json[i];
+            if (!row[0]) continue;
+
+            const name = String(row[0]).trim();
+            const ok = parseInt(row[1]) || 0;
+            const bad = parseInt(row[2]) || 0;
+            const time = parseFloat(row[3]) || 0;
+            const avatar = row[4] ? String(row[4]).trim() : '';
+            console.log(row[4])
+            console.log(row[5])
+
+            students.push(name);
+            results[name] = { ok, bad, time, avatar };
+
+            // قراءة رابط الصورة من العمود E (index 4)
+            // ملاحظة: يجب أن يحتوي العمود على رابط نصي للصورة، وليس صورة مدرجة
+            const imageUrl = row[4] ? String(row[4]).trim() : '';
+            if (imageUrl) {
+              results[name].avatar = imageUrl;
+            }
+            // إضافة للقائمة المنسدلة
+            if (sel) {
+              const opt = document.createElement('option');
+              opt.value = opt.textContent = name;
+              sel.appendChild(opt);
+            }
+          }
+
+          // تحديث الطالب الحالي
+          if (students.length > 0) {
+            currentStudent = students[0];
+            if (sel) sel.value = currentStudent;
+          } else {
+            currentStudent = null;
+          }
+
+          updateResultsTable();
+          if (saveCallback) saveCallback();
+
+          //   alert(`تم استيراد ${students.length} طالب بنجاح`);
+        } catch (error) {
+          console.error('خطأ في استيراد البيانات:', error);
+          alert('فشل استيراد البيانات');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    /* ===== دوال العرض والتفاعل ===== */
+    /**
+     * عرض شاشة التهنئة للفائزين
+     */
+    function showWinnersBanner(top3) {
+      const banner = document.getElementById('resultsBanner');
+      const content = document.getElementById('bannerContent');
+      const overlay = document.getElementById('bannerOverlay');
+
+      if (!banner || !content) return;
+
+      const medals = ['🥇', '🥈', '🥉'];
+      const colors = ['gold', 'silver', 'bronze'];
+      let html = '<div class="banner-title">🎉 نتائج المسابقة 🎉</div>';
+
+      top3.forEach((p, i) => {
+        const cls = colors[i] || '';
+        html += `
+      <div class="winner-row ${cls === 'gold' ? 'first' : cls === 'silver' ? 'second' : cls === 'bronze' ? 'third' : ''}">
+        <div class="winner-medal">${medals[i]}</div>
+        <div class="winner-info">
+          <div class="winner-name">${p.name}</div>
+          <div class="winner-stats">${p.ok} صحيح — ${p.bad} خاطئ</div>
+        </div>
+      </div>
+    `;
+      });
+
+      content.innerHTML = html;
+
+      if (overlay) overlay.style.display = 'block';
+      banner.style.display = 'block';
+      banner.classList.add('show');
+      speak(`
+    ألف مبروك للأبطال الفائزين!
+    في المركز الأول، بطلنا ${top3[0].name} بـ ${top3[0].ok} إجابة صحيحة رائعة!
+    وفي المركز الثاني، المتألق ${top3[1].name} بـ ${top3[1].ok} إجابة صحيحة ممتازة!
+    وفي المركز الثالث، المبدع ${top3[2].name} بـ ${top3[2].ok} إجابة صحيحة مميزة!
+    أحسنتم جميعاً، أنتم نجوم ساطعة!   `);
+      // تأثير الاحتفال
+      try {
+        if (typeof confetti !== 'undefined') {
+          const duration = 15 * 1000,
+            animationEnd = Date.now() + duration,
+            defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+          function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+          }
+
+          const interval = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+
+            // since particles fall down, start a bit higher than random
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              })
+            );
+            confetti(
+              Object.assign({}, defaults, {
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              })
+            );
+          }, 250);
+          // confetti({ particleCount: 150, spread: 100, origin: { y: 0.4 } });
+        }
+      } catch (e) {
+        console.error('خطأ في تشغيل confetti:', e);
+      }
+    }
+
+    /**
+     * إخفاء شاشة التهنئة
+     */
+    function hideBanner() {
+      const banner = document.getElementById('resultsBanner');
+      const overlay = document.getElementById('bannerOverlay');
+
+      if (banner) {
+        banner.style.display = 'none';
+        banner.classList.remove('show');
+      }
+
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+
+      const content = document.getElementById('bannerContent');
+      if (content) content.innerHTML = '';
+    }
+
+    /* ===== تهيئة عند تحميل الصفحة ===== */
+    window.addEventListener('load', () => {
+    });
+
+  </script>
+
+  <script>
+    /* ===== إعدادات خاصة بصفحة جداول الضرب ===== */
+
+    /* ===== سجل الأسئلة المستخدمة ===== */
+    const USED_Q_KEY = 'mul_game_used_questions_v2';
+    const STORAGE_KEY_STUDENTS = 'mul_game_students';
+    const STORAGE_KEY_RESULTS = 'mul_game_results';
+
+    let usedQuestions = loadUsedQuestions();
+
+    /* ===== سجل الأسئلة المستخدمة في الجلسة ===== */
+    let sessionUsedQuestions = [];
+
+    function loadUsedQuestions() {
+      try {
+        const raw = localStorage.getItem(USED_Q_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { }
+      return [];
+    }
+
+    function saveUsedQuestions() {
+      try {
+        localStorage.setItem(USED_Q_KEY, JSON.stringify(usedQuestions));
+      } catch (e) { }
+    }
+
+    // استخدام الدوال المشتركة
+    function saveData() {
+      saveToLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
+    }
+
+    function loadData() {
+      loadFromLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
+      updateResultsTable();
+    }
+
+    // تحميل البيانات عند بدء الصفحة
+    loadData();
+
+    /* ===== دوال مساعدة ===== */
+
+    /* ===== إنشاء أزرار الجداول (2..12) + 2 أوضاع خاصة ===== */
+    const tableButtonsContainer = document.getElementById('tableButtonsContainer');
+    const tableOptions = [];
+    for (let t = 2; t <= 12; t++) { tableOptions.push({ type: 'table', val: t }); }
+    tableOptions.push({ type: '1x2', label: 'ضرب رقم × رقمين' });
+    tableOptions.push({ type: '2x2', label: 'ضرب رقمين × رقمين' });
+
+    function createTableButtons() {
+      const prevActive = Array.from(tableButtonsContainer.querySelectorAll('button.active')).map(b => b.dataset.type + (b.dataset.val ? ':' + b.dataset.val : ''));
+      tableButtonsContainer.innerHTML = '';
+      tableOptions.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.dataset.type = opt.type;
+        if (opt.type === 'table') {
+          btn.className = 'table-btn';
+          btn.dataset.val = opt.val;
+          btn.textContent = '× ' + toArabicNumber(opt.val);
+          btn.title = 'اضغط للاختيار: جدول ' + opt.val;
+        } else {
+          btn.className = 'special-btn';
+          btn.textContent = opt.label;
+          btn.title = 'اضغط للاختيار: ' + opt.label;
+        }
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+        });
+        // إعادة تفعيل الأزرار التي كانت فعّالة قبلاً
+        const key = btn.dataset.type + (btn.dataset.val ? ':' + btn.dataset.val : '');
+        if (prevActive.includes(key)) btn.classList.add('active');
+        tableButtonsContainer.appendChild(btn);
+      });
+    }
+    createTableButtons();
+
+    /* ===== قراءة الإختيارات الحالية ===== */
+    function getSelectedModes() {
+      const btns = Array.from(tableButtonsContainer.querySelectorAll('button.active'));
+      if (btns.length === 0) return [];
+      return btns.map(b => {
+        const t = b.dataset.type;
+        if (t === 'table') return { type: 'table', val: parseInt(b.dataset.val, 10) };
+        return { type: t };
+      });
+    }
+
+    /* ===== توليد سؤال ضرب بناء على الإعدادات المختارة ===== */
+    function genMultiplicationQuestion() {
+      const selected = getSelectedModes();
+      let a, b;
+
+      if (selected.length === 0) {
+        a = rnd(2, 9);
+        b = rnd(1, 12);
+        return { display: `${toArabicNumber(a)} × ${toArabicNumber(b)} = ?`, solution: a * b, key: `${a}×${b}` };
+      }
+      const opt = selected[rnd(0, selected.length - 1)];
+      if (opt.type === 'table') {
+        a = opt.val;
+        b = rnd(1, 12);
+        return { display: `${toArabicNumber(a)} × ${toArabicNumber(b)} = ?`, solution: a * b, key: `${a}×${b}` };
+      } else if (opt.type === '1x2') {
+        a = rnd(1, 9);
+        b = rnd(10, 99);
+        return { display: `${toArabicNumber(a)} × ${toArabicNumber(b)} = ?`, solution: a * b, key: `${a}×${b}` };
+      } else if (opt.type === '2x2') {
+        a = rnd(10, 99);
+        b = rnd(10, 99);
+        return { display: `${toArabicNumber(a)} × ${toArabicNumber(b)} = ?`, solution: a * b, key: `${a}×${b}` };
+      } else {
+        a = rnd(2, 9);
+        b = rnd(1, 12);
+        return { display: `${toArabicNumber(a)} × ${toArabicNumber(b)} = ?`, solution: a * b, key: `${a}×${b}` };
+      }
+    }
+
+    /* ===== المؤقت ===== */
+    // function startTimer() {
+    //   clearInterval(timer);
+    //   timerDuration = parseInt(document.getElementById('timerInput').value) || 20;
+    //   currentTimeLeft = timerDuration;
+    //   document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+    //   timer = setInterval(() => {
+    //     currentTimeLeft--;
+    //     document.getElementById('timerDisplay').textContent = '⏱ ' + toArabicNumber(currentTimeLeft);
+    //     if (currentTimeLeft <= 0) { clearInterval(timer); checkAnswer(null, true); }
+    //   }, 1000);
+    // }
+
+    /* ===== عرض سؤال جديد ===== */
+    let currentQuestion = null;
+    function newProblem(markUsed = true) {
+      document.getElementById('choices').innerHTML = '';
+      document.getElementById('status').textContent = '';
+      document.getElementById('face').textContent = '';
+      answered = false;
+
+      // توليد سؤال غير مكرر
+      let q;
+      let attempts = 0;
+      const maxAttempts = 50;
+
+      do {
+        q = genMultiplicationQuestion();
+        attempts++;
+      } while (sessionUsedQuestions.includes(q.key) && attempts < maxAttempts);
+
+      // إضافة السؤال لسجل الجلسة
+      if (markUsed) {
+        sessionUsedQuestions.push(q.key);
+      }
+
+      currentQuestion = { kind: 'solve', text: q.display, solution: q.solution };
+
+      document.getElementById('problem').innerHTML = `<div>${currentQuestion.text}</div>`;
+
+      const numChoices = parseInt(document.getElementById('numChoices').value, 10) || 3;
+      let answers = [currentQuestion.solution];
+      const spread = Math.max(3, Math.floor(String(currentQuestion.solution).length * 3));
+      while (answers.length < numChoices) {
+        const delta = rnd(1, Math.max(spread, Math.round(currentQuestion.solution * 0.15) + 1));
+        let wrong = currentQuestion.solution + (Math.random() < 0.5 ? -delta : delta);
+        if (wrong < 0) wrong = Math.abs(wrong) + delta;
+        if (!answers.includes(wrong)) answers.push(wrong);
+      }
+      answers.sort(() => Math.random() - 0.5);
+
+      const choicesDiv = document.getElementById('choices');
+      answers.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.textContent = toArabicNumber(a);
+        btn.onclick = () => checkAnswer(a, markUsed);
+        choicesDiv.appendChild(btn);
+      });
+
+      correctAnsGlobal = currentQuestion.solution;
+      startTimer();
+    }
+
+    /* ===== التحقق من الإجابة مع تظليل الأزرار ===== */
+    function checkAnswer(ans, markUsed = true) {
+      if (!gameStarted) { alert('⚠️ اضغط على زر ابدأ اللعبة أولاً'); return; }
+      if (answered) return;
+      answered = true;
+      clearInterval(timer);
+
+      const studentName = currentStudent || '';
+      let correct = false;
+      if (currentQuestion.kind === 'solve') correct = (ans === correctAnsGlobal);
+
+      // تظليل الأزرار بناءً على النتيجة
+      const buttons = document.querySelectorAll('.choice');
+      if (correct) {
+        buttons.forEach(b => {
+          const val = parseDisplayedNumber(b.textContent);
+          if (val === correctAnsGlobal) { b.classList.add('correct'); }
+          b.disabled = true; // منع الضغط مجددًا
+        });
+      } else {
+        buttons.forEach(b => {
+          const val = parseDisplayedNumber(b.textContent);
+          if (ans !== null && val === ans) { b.classList.add('wrong'); }
+          if (val === correctAnsGlobal) { b.classList.add('correct'); }
+          b.disabled = true;
+        });
+      }
+
+      const elapsedMs = Date.now() - questionStartTime; // الوقت المستغرق بالميلي ثانية
+      const elapsed = elapsedMs / 1000; // تحويل للثواني للحفظ
+      if (markUsed && studentName) {
+        if (!results[studentName]) results[studentName] = { ok: 0, bad: 0, time: 0 };
+        if (correct) {
+          results[studentName].ok++;
+          const phrase = praisePhrases[rnd(0, praisePhrases.length - 1)].replace('{name}', studentName);
+          document.getElementById('status').textContent = `✅ ${phrase}`;
+          document.getElementById('face').textContent = '🎉';
+          speak(phrase);
+          try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } }); } catch (e) { }
+        } else {
+          results[studentName].bad++;
+          const phrase = negativePhrases[rnd(0, negativePhrases.length - 1)].replace('{name}', studentName);
+          document.getElementById('status').textContent = `❌ ${phrase}`;
+          document.getElementById('face').textContent = '😢';
+          document.getElementById('face').classList.add('sad');
+          setTimeout(() => document.getElementById('face').classList.remove('sad'), 600);
+          speak(phrase);
+        }
+        results[studentName].time = (results[studentName].time || 0) + elapsed;
+      } else {
+        document.getElementById('status').textContent = '🔁 تم توليد سؤال جديد (لا يُحسب في النتائج)';
+      }
+
+      updateResultsTable();
+      pickNextStudent();
+
+      document.getElementById('startBtn').style.display = 'inline-block';
+      gameStarted = false;
+    }
+
+    /* ===== أزرار ووظائف واجهة المستخدم ===== */
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const sel = document.getElementById('studentSelect').value;
+      if (!sel) { alert('اختر طالبًا'); return; }
+      currentStudent = sel;
+      if (!results[currentStudent]) results[currentStudent] = { ok: 0, bad: 0, time: 0 };
+      timerDuration = parseInt(document.getElementById('timerInput').value) || 20;
+
+      if (getSelectedModes().length === 0) {
+        if (!confirm('لم تختَر أي جدول أو وضع خاص. هل ترغب في الاستمرار بتوليد أسئلة ضرب عشوائية؟')) return;
+      }
+
+      // مسح سجل الأسئلة المستخدمة عند بدء لعبة جديدة
+      sessionUsedQuestions = [];
+
+      newProblem();
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('regenerateBtn').style.display = 'inline-block';
+      gameStarted = true;
+    });
+
+    document.getElementById('regenerateBtn').addEventListener('click', () => {
+      if (!gameStarted) { alert('ابدأ اللعبة أولاً'); return; }
+      newProblem(false);
+    });
+
+    // إضافة طالب
+    document.getElementById('addStudent').addEventListener('click', () => {
+      addStudent();
+      saveData();
+    });
+
+    // حذف طالب
+    document.getElementById('deleteStudent').addEventListener('click', () => {
+      deleteStudent();
+      saveData();
+    });
+
+    // حذف الجميع
+    document.getElementById('deleteAll').addEventListener('click', () => {
+      deleteAllStudents();
+      saveData();
+    });
+
+    // تبديل الأرقام (الهندية <-> العربية)
+    const toggleNumsBtn = document.getElementById('toggleNums');
+    function refreshToggleNumsText() { toggleNumsBtn.textContent = useArabicIndic ? '🔢 الأرقام: هندية' : '🔢 الأرقام: عربية'; }
+    toggleNumsBtn.addEventListener('click', () => {
+      useArabicIndic = !useArabicIndic;
+      refreshToggleNumsText();
+      // إعادة بناء أزرار الجداول لإظهار أرقام الجداول بالصورة المطلوبة
+      createTableButtons();
+      if (gameStarted) newProblem();
+    });
+    refreshToggleNumsText();
+
+    // تشغيل/إيقاف الصوت
+    document.getElementById('toggleSound').addEventListener('click', () => {
+      soundOn = !soundOn;
+      document.getElementById('toggleSound').textContent = soundOn ? '🔊 الصوت: تشغيل' : '🔇 الصوت: إيقاف';
+    });
+
+    // تصدير النتائج
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      exportResultsToExcel('multiplication_game_results.xlsx');
+    });
+
+    // استيراد نتائج
+    document.getElementById('importFile').addEventListener('change', e => {
+      importResultsFromFile(e, saveData);
+    });
+
+    // إعادة ضبط النتائج
+    document.getElementById('resetResults').addEventListener('click', () => {
+      resetAllResults();
+      saveData();
+    });
+
+    // مسح سجل الأسئلة المستخدمة
+    document.getElementById('clearUsed').addEventListener('click', () => {
+      if (confirm('هل تريد مسح سجل الأسئلة المستخدمة (سيؤدي ذلك لإمكانية تكرار أسئلة قديمة)؟')) {
+        usedQuestions = []; saveUsedQuestions(); localStorage.removeItem(USED_Q_KEY);
+        alert('تم مسح سجل الأسئلة.');
+      }
+    });
+
+    // تحميل الأصوات عند الفتح
+    window.addEventListener('load', () => { });
+
+    /* ===== زر حسم النتيجة (النهائي) + شريط التهنئة ===== */
+    const finalizeBtn = document.getElementById('finalizeResultsBtn');
+    const bannerClose = document.querySelector('#resultsBanner .banner-close');
+
+    bannerClose.addEventListener('click', hideBanner);
+
+    finalizeBtn.addEventListener('click', () => {
+      const sorted = getSortedResultsArray();
+      if (!sorted.length) { alert('لا توجد نتائج لحسمها بعد.'); return; }
+      const top3 = sorted.slice(0, 3);
+      showWinnersBanner(top3);
+    });
+
+    /* ===== تحديث أولي للجدول ===== */
+    updateResultsTable();
+
+  </script>
+</body>
+
+</html>
