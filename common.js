@@ -495,8 +495,6 @@ function importResultsFromFile(fileOrEvent, saveCallback) {
         const bad = parseInt(row[2]) || 0;
         const time = parseFloat(row[3]) || 0;
         const avatar = row[4] ? String(row[4]).trim() : '';
-        console.log(row[4])
-        console.log(row[5])
 
         students.push(name);
         results[name] = { ok, bad, time, avatar };
