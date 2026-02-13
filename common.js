@@ -105,7 +105,7 @@ const ELEVENLABS_API_KEY = "sk_556898af74b1dec110fc164bfbfa389cebdcd3063fe3f6de"
 // const ELEVENLABS_API_KEY = "sk_d74b0f18fc5eedf41e6576f45cca73d6d0ccca10b8c9eeb4";
 // const ELEVENLABS_API_KEY = "sk_6f5a7bac90bd71e376824ac11425aeaf33a817fe98c55fc0";
 // const VOICE_ID_HAYTHAM = "IES4nrmZdUBHByLBde0P"; // haytham Arabic
-const VOICE_ID_DEFAULT = "3nav5pHC1EYvWOd5LmnA";
+const VOICE_ID_DEFAULT = "JBFqnCBsd6RMkjVDRZzb";
 
 /**
  * توليد صوت باستخدام ElevenLabs API
