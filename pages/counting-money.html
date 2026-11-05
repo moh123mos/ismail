@@ -1,600 +1,241 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>لعبة عدّ النقود السعودية</title>
-    <link rel="stylesheet" href="../style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-    <style>
-      body {
-        background: linear-gradient(
-          135deg,
-          #1a5e20 0%,
-          #2e7d32 50%,
-          #1a5e20 100%
-        );
-      }
 
-      /* صور العملات السعودية */
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لعبة عدّ النقود السعودية</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a5e20 0%, #2e7d32 50%, #1a5e20 100%);
+    }
+
+    /* صور العملات السعودية */
+    .money-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      justify-items: center;
+      align-items: center;
+      margin: 30px auto;
+      max-width: 90%;
+    }
+
+    .currency-item {
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+    }
+
+    .currency-item:hover {
+      transform: scale(1.1) rotate(2deg);
+      filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.4));
+    }
+
+    .currency-item:active {
+      transform: scale(0.95);
+    }
+
+    .currency-item.disabled {
+      pointer-events: none;
+      opacity: 0.5;
+      filter: grayscale(100%) opacity(0.5);
+    }
+
+    .currency-img {
+      width: 160px;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      object-fit: cover;
+    }
+
+    .currency-item .coin-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+    }
+
+    .currency-label {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #fff;
+      font-size: 16px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 15px;
+      border-radius: 20px;
+    }
+
+    #problem {
+      font-size: 2.5em;
+      text-align: center;
+      margin: 30px auto;
+      color: #fff;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 720px) {
       .money-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 20px;
-        justify-items: center;
-        align-items: center;
-        margin: 30px auto;
-        max-width: 90%;
-      }
-
-      .currency-item {
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
-      }
-
-      .currency-item:hover {
-        transform: scale(1.1) rotate(2deg);
-        filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.4));
-      }
-
-      .currency-item:active {
-        transform: scale(0.95);
-      }
-
-      .currency-item.disabled {
-        pointer-events: none;
-        opacity: 0.5;
-        filter: grayscale(100%) opacity(0.5);
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
       }
 
       .currency-img {
-        width: 160px;
-        height: auto;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        border: 3px solid rgba(255, 255, 255, 0.8);
-        object-fit: cover;
+        width: 120px;
       }
 
       .currency-item .coin-img {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
+        width: 80px;
+        height: 80px;
       }
 
       .currency-label {
-        margin-top: 10px;
-        font-weight: bold;
-        color: #fff;
-        font-size: 16px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-        background: rgba(0, 0, 0, 0.5);
-        padding: 5px 15px;
-        border-radius: 20px;
+        font-size: 14px;
+        padding: 4px 10px;
       }
 
       #problem {
-        font-size: 2.5em;
-        text-align: center;
-        margin: 30px auto;
-        color: #fff;
-        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
-        min-height: 80px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        font-size: 1.8em;
       }
+    }
+  </style>
+</head>
 
-      @media (max-width: 720px) {
-        .money-grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-        }
-        .currency-img {
-          width: 120px;
-        }
-        .currency-item .coin-img {
-          width: 80px;
-          height: 80px;
-        }
-        .currency-label {
-          font-size: 14px;
-          padding: 4px 10px;
-        }
-        #problem {
-          font-size: 1.8em;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <a href="../index.html" class="home-button">🏠 الصفحة الرئيسية</a>
-      <div class="banner-wrap" style="height: 50vh" aria-hidden="false">
-        <img
-          src="../imgs/money-banner.jpg"
-          alt="عد النقود السعودية"
-          onerror="this.style.display = 'none'"
-        />
-      </div>
-      <div class="h1-row" style="margin-top: 4px; margin-bottom: 30px">
-        <h1>🇸🇦 لعبة عدّ النقود السعودية 💰</h1>
-        <div class="credit">
-          🌟 إعداد معلم الرياضيات <strong>إسماعيل مصطفى عامر</strong> 🌟
-        </div>
-      </div>
-    </div>
+<body>
+  <div id="app"></div>
 
-    <div class="toolbar" style="margin-top: 6px">
-      <div class="group">
-        <span class="label">زمن السؤال (ث):</span>
-        <input type="number" id="timerInput" value="30" min="10" max="90" />
-      </div>
-      <div class="group">
-        <span class="label">مستوى الصعوبة:</span>
-        <select id="level" onchange="updateLevelDisplay()">
-          <option value="easy">مبتدئ (5-25 ريال)</option>
-          <option value="medium">متوسط (26-80 ريال)</option>
-          <option value="hard">صعب (81-150 ريال)</option>
-          <option value="pro">خبير (151-300 ريال)</option>
-        </select>
-      </div>
-    </div>
+  <script src="../common.js"></script>
+  <script src="../game-shell.js"></script>
+  <script>
+    /* ===== حالة الجولة ===== */
+    let targetAmount = 0;
+    let currentAmount = 0;
+    let roundCounted = true;   // false بعد "أعد توليد السؤال": لا تُحسب في النتائج
 
-    <div
-      style="
-        width: 92%;
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 6px;
-      "
-    >
-      <div class="group">
-        <button id="toggleNums">🔢 الأرقام: عربية</button>
-      </div>
-      <div class="group">
-        <button id="toggleSound">🔊 الصوت: تشغيل</button>
-      </div>
-    </div>
+    const LEVELS = {
+      easy: [5, 25],
+      medium: [26, 80],
+      hard: [81, 150],
+      pro: [151, 300]
+    };
 
-    <div class="students" style="width: 92%">
-      <input type="text" id="newStudent" placeholder="أدخل اسم الطالب" />
-      <button id="addStudent">➕ إضافة طالب</button>
-      <select
-        id="studentSelect"
-        style="min-width: 300px; height: 70px; font-size: 30px; padding: 6px"
-      ></select>
-      <button id="deleteStudent">🗑 حذف الطالب</button>
-    </div>
+    // ورقة المئة ريال تظهر في المستويين الصعب والخبير فقط
+    function updateLevelDisplay() {
+      const level = document.getElementById('level').value;
+      document.getElementById('item-100').style.display = (level === 'hard' || level === 'pro') ? 'flex' : 'none';
+    }
 
-    <div
-      style="
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        width: 92%;
-        justify-content: center;
-      "
-    >
-      <button id="startBtn">🚀 ابدأ اللعب</button>
-      <button id="regenerateBtn" style="display: none">
-        🔁 أعد توليد السؤال
-      </button>
-    </div>
+    function renderProblem() {
+      document.getElementById('problem').innerHTML = `
+        اجمع <span style="color:#ffd700;font-size:1.2em">${toArabicNumber(targetAmount)}</span> ريال سعودي
+        <div style="font-size:0.6em;margin-top:10px">المبلغ الحالي: <span id="currentDisplay">${toArabicNumber(currentAmount)}</span> ريال</div>`;
+    }
 
-    <div id="problem" aria-live="polite">اختر طالباً واضغط "ابدأ اللعب" 🚀</div>
+    function setBillsDisabled(disabled) {
+      document.querySelectorAll('.currency-item').forEach(item => item.classList.toggle('disabled', disabled));
+    }
 
-    <div class="money-grid">
-      <div class="currency-item" id="item-100" style="display: none" data-val="100">
-        <img src="../imgs/currency/100-riyal.png" alt="مائة ريال" class="currency-img">
-        <span class="currency-label">💵 مائة ريال</span>
-      </div>
-      <div class="currency-item" data-val="50">
-        <img src="../imgs/currency/50-riyal.png" alt="خمسون ريالاً" class="currency-img">
-        <span class="currency-label">💵 خمسون ريالاً</span>
-      </div>
-      <div class="currency-item" data-val="10">
-        <img src="../imgs/currency/10-riyal.png" alt="عشرة ريالات" class="currency-img">
-        <span class="currency-label">💵 عشرة ريالات</span>
-      </div>
-      <div class="currency-item" data-val="5">
-        <img src="../imgs/currency/5-riyal.png" alt="خمسة ريالات" class="currency-img">
-        <span class="currency-label">💵 خمسة ريالات</span>
-      </div>
-      <div class="currency-item" data-val="2">
-        <img src="../imgs/currency/2-riyal.png" alt="ريالان" class="currency-img coin-img">
-        <span class="currency-label">🪙 ريالان</span>
-      </div>
-      <div class="currency-item" data-val="1">
-        <img src="../imgs/currency/1-riyal.png" alt="ريال واحد" class="currency-img coin-img">
-        <span class="currency-label">🪙 ريال واحد</span>
-      </div>
-    </div>
+    /* ===== جولة جديدة (تستدعيها المنصة) ===== */
+    function newRound(ctx, { counted }) {
+      roundCounted = counted;
+      const [min, max] = LEVELS[document.getElementById('level').value] || LEVELS.easy;
+      targetAmount = rnd(min, max);
+      currentAmount = 0;
+      renderProblem();
+      setBillsDisabled(false);
+      startTimer(() => finish(false, '❌ الوقت انتهى!'));
+    }
 
-    <div id="timerDisplay">⏱ 00</div>
-    <div class="status" id="status" style="font-size: 30px"></div>
-    <div class="face" id="face"></div>
+    function finish(correct, message) {
+      setBillsDisabled(true);
+      // نترك ثانيتين لعرض النتيجة قبل الانتقال للطالب التالي
+      game.finishRound(correct, { counted: roundCounted, message, delay: 2000 });
+    }
 
-    <div
-      style="
-        margin-top: 12px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-        width: 92%;
-        justify-content: center;
-      "
-    >
-      <button id="exportBtn">📥 تصدير</button>
-      <input
-        type="file"
-        id="importFile"
-        accept=".xlsx,.csv"
-        style="display: none"
-      />
-      <button onclick="document.getElementById('importFile').click()">
-        📤 استيراد
-      </button>
-      <button id="deleteAll">🗑 حذف الجميع</button>
-      <button id="resetResults">🔄 إعادة ضبط النتائج</button>
-      <button id="finalizeResultsBtn">🎤 حسم النتيجة</button>
-    </div>
+    function addMoney(amount) {
+      if (!gameStarted || answered) return;
+      currentAmount += amount;
+      document.getElementById('currentDisplay').textContent = toArabicNumber(currentAmount);
+      if (currentAmount === targetAmount) finish(true);
+      else if (currentAmount > targetAmount) finish(false, '❌ عذراً! تجاوزت المبلغ المطلوب');
+    }
 
-    <div class="results-area">
-      <table id="resultsTable" aria-live="polite">
-        <thead>
-          <tr>
-           <th>الطالب</th>
-          <th>صحيحة</th>
-          <th>خاطئة</th>
-          <th>الزمن (ث)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="footer-note">
-      <p>💡 "النقود وسيلة، وليست غاية. استخدمها بحكمة لتحقيق أهدافك." 💡</p>
-    </div>
-
-    <div id="bannerOverlay"></div>
-    <div id="resultsBanner" role="dialog" aria-modal="true">
-      <button class="banner-close" aria-label="إغلاق">✖</button>
-      <div id="bannerContent"></div>
-    </div>
-
-    <audio id="player" hidden></audio>
-
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="../common.js"></script>
-
-    <script>
-      // Game variables
-      let targetAmount = 0;
-      let currentAmount = 0;
-      let useArabicNums = false;
-      let soundEnabled = true;
-      let timerInterval = null;
-      let isPlaying = false;
-
-      const STORAGE_KEY_STUDENTS = "counting_money_students";
-      const STORAGE_KEY_RESULTS = "counting_money_results";
-
-      const problemEl = document.getElementById("problem");
-      const statusEl = document.getElementById("status");
-      const faceEl = document.getElementById("face");
-      const timerDisplay = document.getElementById("timerDisplay");
-      const bill100 = document.getElementById("item-100");
-
-      // Data management - استخدام دوال common.js
-      function saveData() {
-        saveToLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
-      }
-
-      function loadData() {
-        loadFromLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
-      }
-
-      // Helper functions - استخدام دوال common.js (rnd, toArabicNumber)
-
-      function displayNumber(num) {
-        return useArabicNums ? toArabicNumber(num) : num;
-      }
-
-      function updateLevelDisplay() {
-        const level = document.getElementById("level").value;
-        bill100.style.display =
-          level === "hard" || level === "pro" ? "flex" : "none";
-      }
-
-      // Student management - استخدام دوال common.js
-      function updateStudentSelect() {
-        const select = document.getElementById("studentSelect");
-        select.innerHTML = '<option value="">-- اختر طالباً --</option>';
-        students.forEach((student) => {
-          const option = document.createElement("option");
-          option.value = student;
-          option.textContent = student;
-          select.appendChild(option);
+    const game = GameShell.mount({
+      id: 'counting-money',
+      storagePrefix: 'counting_money',   // مفتاح التخزين القديم: نحافظ عليه كي لا تضيع بيانات الطلاب المحفوظة
+      title: 'لعبة عدّ النقود السعودية',
+      heading: '🇸🇦 لعبة عدّ النقود السعودية 💰',
+      banner: { src: '../imgs/money-banner.jpg', alt: 'عد النقود السعودية' },
+      exportFilename: 'نتائج_عد_النقود.xlsx',
+      timer: { value: 30, min: 10, max: 90 },
+      intro: 'اختر طالباً واضغط "ابدأ اللعب" 🚀',
+      footerHTML: '💡 "النقود وسيلة، وليست غاية. استخدمها بحكمة لتحقيق أهدافك." 💡',
+      settingsHTML: `
+        <div class="toolbar" style="margin-top: 6px">
+          <div class="group">
+            <span class="label">مستوى الصعوبة:</span>
+            <select id="level">
+              <option value="easy">مبتدئ (5-25 ريال)</option>
+              <option value="medium">متوسط (26-80 ريال)</option>
+              <option value="hard">صعب (81-150 ريال)</option>
+              <option value="pro">خبير (151-300 ريال)</option>
+            </select>
+          </div>
+        </div>`,
+      gameAreaHTML: `
+        <div class="money-grid">
+          <div class="currency-item" id="item-100" style="display: none" data-val="100">
+            <img src="../imgs/currency/100-riyal.png" alt="مائة ريال" class="currency-img">
+            <span class="currency-label">💵 مائة ريال</span>
+          </div>
+          <div class="currency-item" data-val="50">
+            <img src="../imgs/currency/50-riyal.png" alt="خمسون ريالاً" class="currency-img">
+            <span class="currency-label">💵 خمسون ريالاً</span>
+          </div>
+          <div class="currency-item" data-val="10">
+            <img src="../imgs/currency/10-riyal.png" alt="عشرة ريالات" class="currency-img">
+            <span class="currency-label">💵 عشرة ريالات</span>
+          </div>
+          <div class="currency-item" data-val="5">
+            <img src="../imgs/currency/5-riyal.png" alt="خمسة ريالات" class="currency-img">
+            <span class="currency-label">💵 خمسة ريالات</span>
+          </div>
+          <div class="currency-item" data-val="2">
+            <img src="../imgs/currency/2-riyal.png" alt="ريالان" class="currency-img coin-img">
+            <span class="currency-label">🪙 ريالان</span>
+          </div>
+          <div class="currency-item" data-val="1">
+            <img src="../imgs/currency/1-riyal.png" alt="ريال واحد" class="currency-img coin-img">
+            <span class="currency-label">🪙 ريال واحد</span>
+          </div>
+        </div>`,
+      newRound,
+      onNumbersToggle() {
+        // أرقام المسألة الحالية تتبع نوع الأرقام (الصور نفسها لا تتغير)
+        if (gameStarted && !answered) renderProblem();
+        return false;   // لا نبدّل المسألة، فقط نعيد رسمها
+      },
+      onReady() {
+        document.getElementById('level').addEventListener('change', updateLevelDisplay);
+        document.querySelectorAll('.currency-item').forEach(item => {
+          item.addEventListener('click', () => addMoney(parseInt(item.dataset.val, 10)));
         });
-      }
-
-      // Results management - استخدام دوال common.js (updateResultsTable, resetAllResults)
-
-      // Game logic
-      function newProblem() {
-        if (!currentStudent) {
-          alert("الرجاء اختيار طالب أولاً!");
-          return;
-        }
-
-        const level = document.getElementById("level").value;
-        let min, max;
-
-        switch (level) {
-          case "easy":
-            min = 5;
-            max = 25;
-            break;
-          case "medium":
-            min = 26;
-            max = 80;
-            break;
-          case "hard":
-            min = 81;
-            max = 150;
-            break;
-          case "pro":
-            min = 151;
-            max = 300;
-            break;
-          default:
-            min = 5;
-            max = 25;
-        }
-
-        targetAmount = rnd(min, max);
-        currentAmount = 0;
-
-        problemEl.innerHTML = `
-        اجمع <span style="color:#ffd700;font-size:1.2em">${displayNumber(targetAmount)}</span> ريال سعودي
-        <div style="font-size:0.6em;margin-top:10px">المبلغ الحالي: <span id="currentDisplay">${displayNumber(0)}</span> ريال</div>
-      `;
-
-        statusEl.textContent = "";
-        faceEl.textContent = "";
-        isPlaying = true;
-        questionStartTime = Date.now(); // حفظ وقت بداية السؤال
-
-        // Enable currency items
-        document.querySelectorAll(".currency-item").forEach((item) => {
-          item.classList.remove("disabled");
-        });
-
-        // Start timer
-        const duration = parseInt(document.getElementById("timerInput").value);
-        let timeLeft = duration;
-        timerDisplay.textContent = `⏱ ${displayNumber(timeLeft)}`;
-
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          timerDisplay.textContent = `⏱ ${displayNumber(timeLeft)}`;
-          if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            handleTimeout();
-          }
-        }, 1000);
-
-        if (soundEnabled) {
-        //   generateVoice(`اجمع ${targetAmount} ريال سعودي`);
-        }
-      }
-
-      function addMoney(amount) {
-        if (!isPlaying) return;
-
-        currentAmount += amount;
-        document.getElementById("currentDisplay").textContent =
-          displayNumber(currentAmount);
-
-        if (currentAmount === targetAmount) {
-          checkAnswer(true);
-        } else if (currentAmount > targetAmount) {
-          checkAnswer(false);
-        }
-      }
-
-      function checkAnswer(isCorrect) {
-        clearInterval(timerInterval);
-        isPlaying = false;
-
-        // Disable currency items
-        document.querySelectorAll(".currency-item").forEach((item) => {
-          item.classList.add("disabled");
-        });
-
-        if (!results[currentStudent]) {
-          results[currentStudent] = { ok: 0, bad: 0, time: 0 };
-        }
-
-        // حساب الوقت المستغرق
-        const elapsedMs = Date.now() - questionStartTime;
-        const elapsed = elapsedMs / 1000;
-
-        if (isCorrect) {
-          results[currentStudent].ok = (results[currentStudent].ok || 0) + 1;
-          statusEl.textContent = "🎉 ممتاز! المبلغ صحيح!";
-          statusEl.style.color = "#4caf50";
-          faceEl.textContent = "😃";
-
-          if (soundEnabled) generateVoice("ممتاز! المبلغ صحيح!");
-
-          // Confetti
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
-        } else {
-          results[currentStudent].bad = (results[currentStudent].bad || 0) + 1;
-          statusEl.textContent =
-            currentAmount > targetAmount
-              ? "❌ عذراً! تجاوزت المبلغ المطلوب"
-              : "❌ الوقت انتهى!";
-          statusEl.style.color = "#f44336";
-          faceEl.textContent = "😢";
-
-          if (soundEnabled) generateVoice(statusEl.textContent);
-        }
-        
-        results[currentStudent].time = (results[currentStudent].time || 0) + elapsed;
-
-        saveData();
-        updateResultsTable();
-
-        // إعادة إظهار زر ابدأ اللعب
-        setTimeout(() => {
-          document.getElementById("startBtn").style.display = "inline-block";
-          document.getElementById("regenerateBtn").style.display = "none";
-          pickNextStudent(); // اختيار الطالب التالي للجولة القادمة
-        }, 2000);
-      }
-
-      function handleTimeout() {
-        if (isPlaying) {
-          checkAnswer(false);
-        }
-      }
-
-      function regenerateProblem() {
-        clearInterval(timerInterval);
-        newProblem();
-      }
-
-      function startGame() {
-        if (students.length === 0) {
-          alert("الرجاء إضافة طلاب أولاً!");
-          return;
-        }
-
-        document.getElementById("startBtn").style.display = "none";
-        document.getElementById("regenerateBtn").style.display = "inline-block";
-
-        const select = document.getElementById("studentSelect");
-        if (!select.value) {
-          currentStudent = students[0];
-          select.value = currentStudent;
-        } else {
-          currentStudent = select.value;
-        }
-
-        newProblem();
-      }
-
-      // Toggle functions
-      function toggleNumberType() {
-        useArabicNums = !useArabicNums;
-        const btn = document.getElementById("toggleNums");
-        btn.textContent = useArabicNums
-          ? "🔢 الأرقام: هندية"
-          : "🔢 الأرقام: عربية";
-
-        // Update problem display only (currency images already show the values)
-        if (isPlaying) {
-          document.getElementById("currentDisplay").textContent =
-            displayNumber(currentAmount);
-          problemEl.innerHTML = `
-          اجمع <span style="color:#ffd700;font-size:1.2em">${displayNumber(targetAmount)}</span> ريال سعودي
-          <div style="font-size:0.6em;margin-top:10px">المبلغ الحالي: <span id="currentDisplay">${displayNumber(currentAmount)}</span> ريال</div>
-        `;
-        }
-      }
-
-      function toggleSound() {
-        soundEnabled = !soundEnabled;
-        soundOn = soundEnabled; // sync with common.js variable
-        const btn = document.getElementById("toggleSound");
-        btn.textContent = soundEnabled ? "🔊 الصوت: تشغيل" : "🔇 الصوت: إيقاف";
-      }
-
-      // Export/Import - استخدام دوال common.js
-
-      // Winners display - استخدام دوال common.js (showWinnersBanner, hideBanner)
-
-      // Event listeners - setup on money items
-      document.querySelectorAll(".currency-item").forEach((item) => {
-        const amount = parseInt(item.getAttribute("data-val"));
-        if (amount) {
-          item.onclick = () => addMoney(amount);
-        }
-      });
-
-      // Initialize
-      window.addEventListener("DOMContentLoaded", () => {
-        loadData();
-        updateStudentSelect();
-        updateResultsTable();
         updateLevelDisplay();
+      }
+    });
+  </script>
+</body>
 
-        document
-          .getElementById("startBtn")
-          .addEventListener("click", startGame);
-        document
-          .getElementById("regenerateBtn")
-          .addEventListener("click", regenerateProblem);
-        document
-          .getElementById("addStudent")
-          .addEventListener("click", () => addStudent(saveData));
-        document
-          .getElementById("deleteStudent")
-          .addEventListener("click", () => deleteStudent(saveData));
-        document
-          .getElementById("deleteAll")
-          .addEventListener("click", () => deleteAllStudents(saveData));
-        document
-          .getElementById("exportBtn")
-          .addEventListener("click", () => exportResultsToExcel("نتائج_عد_النقود.xlsx"));
-        document
-          .getElementById("importFile")
-          .addEventListener("change", (e) => importResultsFromFile(e, saveData));
-        document
-          .getElementById("resetResults")
-          .addEventListener("click", () => resetAllResults(saveData));
-        document
-          .getElementById("finalizeResultsBtn")
-          .addEventListener("click", () => {
-            const sorted = getSortedResultsArray();
-            if (sorted.length >= 3) {
-              showWinnersBanner(sorted.slice(0, 3));
-            } else {
-              alert("يجب أن يكون هناك 3 طلاب على الأقل");
-            }
-          });
-        document
-          .getElementById("toggleNums")
-          .addEventListener("click", toggleNumberType);
-        document
-          .getElementById("toggleSound")
-          .addEventListener("click", toggleSound);
-        document
-          .querySelector(".banner-close")
-          .addEventListener("click", hideBanner);
-        document
-          .getElementById("bannerOverlay")
-          .addEventListener("click", hideBanner);
-      });
-    </script>
-  </body>
 </html>

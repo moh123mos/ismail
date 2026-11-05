@@ -6,10 +6,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>لعبة المعادلات والعبارات الجبرية</title>
   <link rel="stylesheet" href="../style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
   <style>
     body {
-      background: var(--bg) url('imgs/eq-banner.png') no-repeat center center fixed;
+      background: var(--bg) url('../imgs/eq-banner.png') no-repeat center center fixed;
       background-size: cover;
     }
 
@@ -23,248 +22,25 @@
       font-weight: 700;
     }
 
-    .select-accent {
-      background: linear-gradient(180deg, var(--accent), #ffc88c);
-      color: #000;
-      border: 2px solid #ff9c1a;
-    }
-
-    .select-accent-blue {
-      background: linear-gradient(180deg, var(--blue), #8fe6ff);
-      color: #000;
-      border: 2px solid #2aa7d6;
-    }
-
-    /* تنسيق أزرار الاختيار المتعدد */
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .checkbox-option {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: 2px solid #fff;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 18px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .checkbox-option:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
-    }
-
-    .checkbox-option input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      accent-color: #ffd700;
-    }
-
-    .checkbox-option.checked {
-      background: linear-gradient(135deg, #8a74f8 0%, #fa2c48 100%);
-      border-color: #ffd700;
-      box-shadow: 0 4px 12px rgba(250, 44, 72, 0.6);
-      transform: scale(1.05);
-    }
-
     @media (max-width: 720px) {
       #problem {
         font-size: 1.6rem;
-      }
-
-      .checkbox-option {
-        font-size: 16px;
-        padding: 6px 10px;
-      }
-
-      .checkbox-option input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
       }
     }
   </style>
 </head>
 
 <body>
+  <div id="app"></div>
 
-  <div class="header">
-    <a href="../index.html" class="home-button">🏠 الصفحة الرئيسية</a>
-    <div class="banner-wrap" style="height: 50vh;" aria-hidden="false">
-      <img src="../imgs/eq-banner.png" alt="ميزان المعادلات" class="banner-image" width="100%" />
-    </div>
-    <div class="h1-row" style="margin-top: 4px; margin-bottom: 30px;">
-      <h1 style="font-size: 40px;">🎯 لعبة المعادلات والعبارات الجبرية</h1>
-      <div class="credit">🌟 إعداد معلم الرياضيات <strong>إسماعيل مصطفى عامر</strong> 🌟</div>
-    </div>
-  </div>
-
-  <div class="toolbar" style="margin-top:6px">
-    <div class="group"><span class="label">عدد الأرقام:</span><input type="number" id="digits" value="1" min="1"
-        max="3"></div>
-    <div class="group"><span class="label">زمن السؤال (ث):</span><input type="number" id="timerInput" value="20" min="5"
-        max="60"></div>
-    <div class="group"><span class="label">مستوى:</span>
-      <select id="difficulty">
-        <option value="easy" selected>سهل</option>
-        <option value="medium">متوسط</option>
-        <option value="hard">صعب</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="toolbar" style="margin-top:10px">
-    <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-      <span class="label" style="font-size: 20px; font-weight: bold;">نوع المعادلات:</span>
-      <div class="checkbox-group">
-        <label class="checkbox-option checked">
-          <input type="checkbox" name="equationKind" value="addsub" checked>
-          <span>➕➖ جمع/طرح</span>
-        </label>
-        <label class="checkbox-option">
-          <input type="checkbox" name="equationKind" value="multiply">
-          <span>✖️ ضرب</span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <div class="toolbar" style="margin-top:10px">
-    <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-      <span class="label blue" style="font-size: 20px; font-weight: bold;">نوع السؤال:</span>
-      <div class="checkbox-group">
-        <label class="checkbox-option checked">
-          <input type="checkbox" name="questionType" value="solve_equation" checked>
-          <span>🔢 حل المعادلات</span>
-        </label>
-        <label class="checkbox-option">
-          <input type="checkbox" name="questionType" value="classify">
-          <span>📋 تصنيف المعادلات والعبارات</span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <div style="width:92%;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-    <div class="group"><button id="toggleNums">🔢 الأرقام: عربية</button></div>
-    <div class="group"><button id="toggleSound">🔊 الصوت: تشغيل</button></div>
-  </div>
-
-  <div class="students" style="width:92%">
-    <input type="text" id="newStudent" placeholder="أدخل اسم الطالب">
-    <button id="addStudent">➕ إضافة طالب</button>
-    <select id="studentSelect" style="min-width:300px;height:70px;font-size:30px;padding:6px;"></select>
-    <button id="deleteStudent">🗑 حذف الطالب</button>
-    <button id="deleteAll">🗑 حذف الجميع</button>
-  </div>
-
-  <div style="display:flex;gap:8px;align-items:center;width:92%;justify-content:center">
-    <button id="startBtn">🚀 ابدأ اللعب</button>
-    <button id="regenerateBtn" style="display:none">🔁 أعد توليد السؤال</button>
-  </div>
-
-  <div id="problem" aria-live="polite"></div>
-  <div class="choices" id="choices" role="list"></div>
-  <div id="timerDisplay">⏱ 00</div>
-  <div class="status" style="font-size: 30px;" id="status"></div>
-  <div class="face" id="face"></div>
-
-  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:92%;justify-content:center">
-    <button id="exportBtn">📥 تصدير النتائج</button>
-    <input type="file" id="importFile" accept=".xlsx,.csv">
-    <button id="resetResults">🔄 إعادة ضبط النتائج</button>
-    <button id="clearUsed">🧹 مسح سجل الأسئلة المستخدمة</button>
-    <button id="finalizeResultsBtn">🎤 حسم النتيجة</button>
-  </div>
-
-  <div class="results-area">
-    <table id="resultsTable" aria-live="polite">
-      <thead>
-        <tr>
-          <th>الطالب</th>
-          <th>صحيحة</th>
-          <th>خاطئة</th>
-          <th>الزمن (ث)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="footer-note">نسخة تفاعلية محلية — تعمل مباشرة في المتصفح دون اتصال.</div>
-
-  <div id="bannerOverlay"></div>
-  <div id="resultsBanner" role="dialog" aria-modal="true">
-    <button class="banner-close" aria-label="إغلاق">✖</button>
-    <div id="bannerContent"></div>
-  </div>
-  <audio id="player" hidden></audio>
-
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="../common.js"></script>
-
+  <script src="../game-shell.js"></script>
   <script>
+    /* ===== سجل الأسئلة المستخدمة ===== */
+    const used = GameShell.createUsedStore('eq_game_used_questions_final_v1');
 
-    /* ===== مفاتيح التخزين ===== */
-    const STORAGE_KEY_STUDENTS = 'equations_students';
-    const STORAGE_KEY_RESULTS = 'equations_results';
-
-    // استخدام الدوال المشتركة
-    function saveData() {
-      saveToLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
-    }
-
-    function loadData() {
-      loadFromLocalStorage(STORAGE_KEY_STUDENTS, STORAGE_KEY_RESULTS);
-      updateResultsTable();
-    }
-
-    // تحميل البيانات عند بدء الصفحة
-    loadData();
-
-    /* ===== تخزين الأسئلة المستخدمة ===== */
-    const USED_Q_KEY = 'eq_game_used_questions_final_v1';
-    let usedQuestions = loadUsedQuestions();
-    function loadUsedQuestions() { try { const raw = localStorage.getItem(USED_Q_KEY); if (raw) return JSON.parse(raw); } catch (e) { } return []; }
-    function saveUsedQuestions() { try { localStorage.setItem(USED_Q_KEY, JSON.stringify(usedQuestions)); } catch (e) { } }
-
-    /* ===== تحويل أرقام ===== */
-    function toArabicNumber(num) {
-      if (useArabicIndic) return String(num).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
-      return String(num);
-    }
-
-    // function getSelectedVoice() { const selName = document.getElementById('voiceSelect').value; if (!availableVoices.length) return null; if (selName) return availableVoices.find(v => v.name === selName) || null; return availableVoices.find(v => v.lang === 'ar-SA') || availableVoices.find(v => v.lang && v.lang.startsWith('ar')) || availableVoices[0]; }
-    // function speak(text) { if (!soundOn) return; if (typeof speechSynthesis === 'undefined') return; const msg = new SpeechSynthesisUtterance(text); msg.lang = 'ar-SA'; const v = getSelectedVoice(); if (v) msg.voice = v; try { speechSynthesis.cancel(); speechSynthesis.speak(msg); } catch (e) { console.warn(e); } }
-
-    /* ===== دوال مساعدة وتوليد (كما كانت) ===== */
-    function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    /* ===== دوال مساعدة خاصة بهذه اللعبة ===== */
     function randWithDigits(d) { if (d <= 1) return rnd(0, 9); const min = Math.pow(10, d - 1); const max = Math.pow(10, d) - 1; return rnd(min, max); }
-    function fingerprint(obj) { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
-
-    /* ===== دوال التوليد الخاصة بالمعادلات ===== */
-
-    // إضافة event listeners للـ checkboxes
-    document.querySelectorAll('.checkbox-option input[type="checkbox"]').forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const label = this.closest('.checkbox-option');
-        if (this.checked) {
-          label.classList.add('checked');
-        } else {
-          label.classList.remove('checked');
-        }
-      });
-    });
 
     // دالة للحصول على نوع معادلة عشوائي من المحدد
     function getRandomEquationKind() {
@@ -273,8 +49,7 @@
         alert('يرجى اختيار نوع معادلة واحد على الأقل');
         return 'addsub';
       }
-      const randomIndex = rnd(0, checked.length - 1);
-      return checked[randomIndex].value;
+      return checked[rnd(0, checked.length - 1)].value;
     }
 
     // دالة للحصول على نوع سؤال عشوائي من المحدد
@@ -284,10 +59,10 @@
         alert('يرجى اختيار نوع سؤال واحد على الأقل');
         return 'solve_equation';
       }
-      const randomIndex = rnd(0, checked.length - 1);
-      return checked[randomIndex].value;
+      return checked[rnd(0, checked.length - 1)].value;
     }
 
+    /* ===== دوال التوليد الخاصة بالمعادلات ===== */
     function genEquation(difficulty, digits, equationKind) {
       const numericProb = 0.05;
       const attempts = 80;
@@ -350,14 +125,11 @@
         }
 
         const fp = fingerprint({ kind: 'solve', text: q.display });
-        if (!usedQuestions.includes(fp)) {
-          usedQuestions.push(fp); saveUsedQuestions();
-          return q;
-        } else continue;
+        if (!used.has(fp)) { used.add(fp); return q; }
       }
       const fallback = { display: 'س + 1 = 2', solution: 1, kind: 'variable' };
       const fp = fingerprint({ kind: 'solve', text: fallback.display });
-      if (!usedQuestions.includes(fp)) { usedQuestions.push(fp); saveUsedQuestions(); }
+      if (!used.has(fp)) used.add(fp);
       return fallback;
     }
 
@@ -365,7 +137,7 @@
     function getVar() { return varsPool[rnd(0, varsPool.length - 1)]; }
     function getVarColorClass() { return Math.random() < 0.5 ? 'var-blue' : 'var-fuchsia'; }
 
-    function genExpressionForClassify(difficulty, digits, equationKind) {
+    function genExpressionForClassify(difficulty, digits) {
       const attempts = 60;
       for (let t = 0; t < attempts; t++) {
         const v = getVar();
@@ -391,7 +163,7 @@
             text = `${toArabicNumber(a)} - ${varHTML} = ${toArabicNumber(b)}`;
           }
           const fp = fingerprint({ type: 'classify', text });
-          if (!usedQuestions.includes(fp)) { usedQuestions.push(fp); saveUsedQuestions(); return { text, type: 'معادلة' }; }
+          if (!used.has(fp)) { used.add(fp); return { text, type: 'معادلة' }; }
         } else {
           const count = Math.random() < 0.6 ? 2 : 3;
           let parts = [];
@@ -403,219 +175,96 @@
           }
           const expr = parts.join('');
           const fp = fingerprint({ type: 'classify', text: expr });
-          if (!usedQuestions.includes(fp)) { usedQuestions.push(fp); saveUsedQuestions(); return { text: expr, type: 'عبارة جبرية' }; }
+          if (!used.has(fp)) { used.add(fp); return { text: expr, type: 'عبارة جبرية' }; }
         }
       }
       return { text: 'س + 2 = 4', type: 'معادلة' };
     }
 
-
-
-    /* ===== عرض سؤال جديد ===== */
-    let currentQuestion = null;
-    function newProblem(markUsed = true) {
-      const qType = getRandomQuestionType(); // استخدام الاختيار العشوائي
+    /* ===== بناء السؤال (تستدعيه المنصة عند بدء كل جولة) ===== */
+    function buildQuestion() {
+      const qType = getRandomQuestionType();
       const diff = document.getElementById('difficulty').value;
       const digits = Math.max(1, parseInt(document.getElementById('digits').value) || 1);
-      const eqKind = getRandomEquationKind(); // استخدام الاختيار العشوائي
-
-      document.getElementById('choices').innerHTML = '';
-      document.getElementById('status').textContent = '';
-      document.getElementById('face').textContent = '';
-      answered = false;
+      const eqKind = getRandomEquationKind();
 
       if (qType === 'solve_equation') {
         const eq = genEquation(diff, digits, eqKind);
         let display = eq.display;
         if (display.includes('س')) {
-          const v = getVar();
-          const cls = getVarColorClass();
-          display = display.replace(/س/g, `<span class="${cls}">${v}</span>`);
+          display = display.replace(/س/g, `<span class="${getVarColorClass()}">${getVar()}</span>`);
         }
-        currentQuestion = { kind: 'solve', text: display, solution: eq.solution, variableKind: eq.kind };
-        document.getElementById('problem').innerHTML = `<div style="font-size:2.0rem">${currentQuestion.text}</div>`;
-        let answers = [currentQuestion.solution];
+        const answers = [eq.solution];
         while (answers.length < 3) {
-          let delta = Math.max(1, rnd(1, 8));
-          let wrong = currentQuestion.solution + (Math.random() < 0.5 ? -delta : delta);
+          const delta = Math.max(1, rnd(1, 8));
+          let wrong = eq.solution + (Math.random() < 0.5 ? -delta : delta);
           if (wrong < 0) wrong = Math.abs(wrong) + delta;
           if (!answers.includes(wrong)) answers.push(wrong);
         }
         answers.sort(() => Math.random() - 0.5);
-        const choicesDiv = document.getElementById('choices');
-        answers.forEach(a => {
-          const btn = document.createElement('button');
-          btn.className = 'choice'; btn.textContent = toArabicNumber(a);
-          btn.onclick = () => checkAnswer(a, markUsed);
-          choicesDiv.appendChild(btn);
-        });
-        correctAnsGlobal = currentQuestion.solution;
-      } else {
-        const ex = genExpressionForClassify(diff, digits, eqKind);
-        currentQuestion = { kind: 'classify', text: ex.text, correctType: ex.type };
-        document.getElementById('problem').innerHTML = `<div style="font-size:2.0rem">${currentQuestion.text}</div><div class="small">صنّف العبارة التالية:</div>`;
-        const options = ['معادلة', 'عبارة جبرية'];
-        const choicesDiv = document.getElementById('choices');
-        options.forEach(opt => {
-          const btn = document.createElement('button');
-          btn.className = 'choice'; btn.textContent = opt;
-          btn.onclick = () => checkAnswer(opt, markUsed);
-          choicesDiv.appendChild(btn);
-        });
-        correctAnsGlobal = currentQuestion.correctType;
+        return { html: `<div style="font-size:2.0rem">${display}</div>`, choices: answers, answer: eq.solution };
       }
 
-      startTimer(() => checkAnswer(null, true));
+      const ex = genExpressionForClassify(diff, digits);
+      return {
+        html: `<div style="font-size:2.0rem">${ex.text}</div><div class="small">صنّف العبارة التالية:</div>`,
+        choices: ['معادلة', 'عبارة جبرية'],
+        answer: ex.type
+      };
     }
 
-    /* ===== التحقق من الإجابة ===== */
-    function checkAnswer(ans, markUsed = true) {
-      if (!gameStarted) { 
-        alert('⚠️ اضغط على زر ابدأ اللعبة أولاً'); 
-        return; 
-      }
-      if (answered) return;
-      answered = true;
-      stopTimer();
+    GameShell.mount({
+      id: 'equations',
+      title: 'لعبة المعادلات والعبارات الجبرية',
+      heading: '🎯 لعبة المعادلات والعبارات الجبرية',
+      banner: { src: '../imgs/eq-banner.png', alt: 'ميزان المعادلات' },
+      exportFilename: 'equations_game_results.xlsx',
+      used,
+      settingsHTML: `
+        <div class="toolbar" style="margin-top:6px">
+          <div class="group"><span class="label">عدد الأرقام:</span><input type="number" id="digits" value="1" min="1" max="3"></div>
+          <div class="group"><span class="label">مستوى:</span>
+            <select id="difficulty">
+              <option value="easy" selected>سهل</option>
+              <option value="medium">متوسط</option>
+              <option value="hard">صعب</option>
+            </select>
+          </div>
+        </div>
 
-      const studentName = currentStudent || '';
-      let correct = false;
-      if (currentQuestion.kind === 'solve') correct = (ans === correctAnsGlobal);
-      else correct = (ans === correctAnsGlobal);
+        <div class="toolbar" style="margin-top:10px">
+          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <span class="label" style="font-size: 20px; font-weight: bold;">نوع المعادلات:</span>
+            <div class="checkbox-group">
+              <label class="checkbox-option checked">
+                <input type="checkbox" name="equationKind" value="addsub" checked>
+                <span>➕➖ جمع/طرح</span>
+              </label>
+              <label class="checkbox-option">
+                <input type="checkbox" name="equationKind" value="multiply">
+                <span>✖️ ضرب</span>
+              </label>
+            </div>
+          </div>
+        </div>
 
-      const elapsedMs = Date.now() - questionStartTime;
-      const elapsed = elapsedMs / 1000;
-
-      if (markUsed && studentName) {
-        if (!results[studentName]) results[studentName] = { ok: 0, bad: 0, time: 0 };
-        if (correct) {
-          results[studentName].ok++;
-          const phrase = praisePhrases[rnd(0, praisePhrases.length - 1)].replace('{name}', studentName);
-          document.getElementById('status').textContent = `✅ ${phrase}`;
-          document.getElementById('face').textContent = '🎉';
-          speak(phrase);
-          try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } }); } catch (e) { }
-        } else {
-          results[studentName].bad++;
-          const phrase = negativePhrases[rnd(0, negativePhrases.length - 1)].replace('{name}', studentName);
-          document.getElementById('status').textContent = `❌ ${phrase}`;
-          document.getElementById('face').textContent = '😢';
-          document.getElementById('face').classList.add('sad');
-          setTimeout(() => document.getElementById('face').classList.remove('sad'), 600);
-          speak(phrase);
-        }
-        results[studentName].time = (results[studentName].time || 0) + elapsed;
-      } else {
-        document.getElementById('status').textContent = '🔁 تم توليد سؤال جديد (لا يُحسب في النتائج)';
-      }
-
-      updateResultsTable();
-      currentStudent = pickNextStudent();
-      saveData();
-
-      document.getElementById('startBtn').style.display = 'inline-block';
-      document.getElementById('regenerateBtn').style.display = 'none';
-      gameStarted = false;
-    }
-
-    /* ===== وظائف واجهة المستخدم: أزرار ووظائف تحميل/حفظ/استيراد (كما كانت) ===== */
-
-    // ابدأ اللعب
-    document.getElementById('startBtn').addEventListener('click', () => {
-      const sel = document.getElementById('studentSelect').value;
-      if (!sel) { alert('اختر طالبًا'); return; }
-      currentStudent = sel;
-      if (!results[currentStudent]) results[currentStudent] = { ok: 0, bad: 0, time: 0 };
-      timerDuration = parseInt(document.getElementById('timerInput').value) || 20;
-      newProblem();
-      document.getElementById('startBtn').style.display = 'none';
-      document.getElementById('regenerateBtn').style.display = 'inline-block';
-      gameStarted = true;
+        <div class="toolbar" style="margin-top:10px">
+          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <span class="label blue" style="font-size: 20px; font-weight: bold;">نوع السؤال:</span>
+            <div class="checkbox-group">
+              <label class="checkbox-option checked">
+                <input type="checkbox" name="questionType" value="solve_equation" checked>
+                <span>🔢 حل المعادلات</span>
+              </label>
+              <label class="checkbox-option">
+                <input type="checkbox" name="questionType" value="classify">
+                <span>📋 تصنيف المعادلات والعبارات</span>
+              </label>
+            </div>
+          </div>
+        </div>`,
+      buildQuestion
     });
-
-    // زر إعادة التوليد
-    document.getElementById('regenerateBtn').addEventListener('click', () => {
-      if (!gameStarted) { alert('ابدأ اللعبة أولاً'); return; }
-      newProblem(false);
-    });
-
-    // إضافة طالب
-    document.getElementById('addStudent').addEventListener('click', () => {
-      addStudent(() => saveData());
-    });
-
-    // حذف طالب
-    document.getElementById('deleteStudent').addEventListener('click', () => {
-      deleteStudent(() => saveData());
-    });
-
-    // حذف الجميع
-    document.getElementById('deleteAll').addEventListener('click', () => {
-      deleteAllStudents(() => saveData());
-    });
-
-    // تبديل الأرقام
-    document.getElementById('toggleNums').addEventListener('click', () => {
-      useArabicIndic = !useArabicIndic;
-      document.getElementById('toggleNums').textContent = useArabicIndic ? '🔢 الأرقام: هندية' : '🔢 الأرقام: عربية';
-      if (gameStarted) newProblem();
-    });
-
-    // تشغيل/إيقاف الصوت
-    document.getElementById('toggleSound').addEventListener('click', () => {
-      soundOn = !soundOn;
-      document.getElementById('toggleSound').textContent = soundOn ? '🔊 الصوت: تشغيل' : '🔇 الصوت: إيقاف';
-    });
-
-    // تصدير النتائج
-    document.getElementById('exportBtn').addEventListener('click', () => {
-      exportResultsToExcel('equations_game_results.xlsx');
-    });
-
-    // استيراد نتائج
-    document.getElementById('importFile').addEventListener('change', e => {
-      importResultsFromFile(e, () => saveData());
-    });
-
-    // إعادة ضبط النتائج
-    document.getElementById('resetResults').addEventListener('click', () => {
-      resetAllResults(() => saveData());
-    });
-
-    // مسح سجل الأسئلة المستخدمة
-    document.getElementById('clearUsed').addEventListener('click', () => {
-      if (confirm('هل تريد مسح سجل الأسئلة المستخدمة (سيؤدي ذلك لإمكانية تكرار أسئلة قديمة)؟')) {
-        usedQuestions = [];
-        saveUsedQuestions();
-        localStorage.removeItem(USED_Q_KEY);
-        alert('تم مسح سجل الأسئلة. نسبة الأسئلة العددية ثابتة جداً (5%).');
-      }
-    });
-
-    /* ===== زر حسم النتيجة (النهائي) + شريط التهنئة ===== */
-    const finalizeBtn = document.getElementById('finalizeResultsBtn');
-    const bannerClose = document.querySelector('#resultsBanner .banner-close');
-    const bannerOverlay = document.getElementById('bannerOverlay');
-
-    bannerClose.addEventListener('click', hideBanner);
-    bannerOverlay.addEventListener('click', hideBanner);
-
-    finalizeBtn.addEventListener('click', () => {
-      const sorted = getSortedResultsArray();
-      if (!sorted.length) {
-        alert('لا توجد نتائج لحسمها بعد.');
-        return;
-      }
-      const top3 = sorted.slice(0, 3);
-      let speechText = 'نتيجة المسابقة النهائية: ';
-      top3.forEach((p, i) => { speechText += `المركز ${i + 1}: ${p.name}. `; });
-      showWinnersBanner(top3);
-      speak(speechText);
-    });
-
-    /* ===== تحديث أولي للجدول ===== */
-    updateResultsTable();
-
   </script>
 </body>
 

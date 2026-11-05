@@ -206,7 +206,8 @@ function startTimer(callback) {
   timer = setInterval(() => {
     currentTimeLeft -= 0.1;
     if (timerDisplay) {
-      timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
+      // never show a negative time on the last tick
+      timerDisplay.textContent = '⏱ ' + toArabicNumber(Math.max(0, currentTimeLeft).toFixed(2));
     }
 
     if (currentTimeLeft <= 0) {
@@ -568,12 +569,16 @@ function showWinnersBanner(top3) {
   if (overlay) overlay.style.display = 'block';
   banner.style.display = 'block';
   banner.classList.add('show');
-  speak(`
-    ألف مبروك للأبطال الفائزين!
-    في المركز الأول، بطلنا ${top3[0].name} بـ ${top3[0].ok} إجابة صحيحة رائعة!
-    وفي المركز الثاني، المتألق ${top3[1].name} بـ ${top3[1].ok} إجابة صحيحة ممتازة!
-    وفي المركز الثالث، المبدع ${top3[2].name} بـ ${top3[2].ok} إجابة صحيحة مميزة!
-    أحسنتم جميعاً، أنتم نجوم ساطعة!   `);  
+  // The spoken text follows however many winners there are (1 to 3).
+  const places = ['الأول', 'الثاني', 'الثالث'];
+  const titles = ['بطلنا', 'المتألق', 'المبدع'];
+  const praise = ['رائعة', 'ممتازة', 'مميزة'];
+  let speech = 'ألف مبروك للأبطال الفائزين! ';
+  top3.forEach((p, i) => {
+    speech += `${i === 0 ? 'في' : 'وفي'} المركز ${places[i]}، ${titles[i]} ${p.name} بـ ${p.ok} إجابة صحيحة ${praise[i]}! `;
+  });
+  speech += 'أحسنتم جميعاً، أنتم نجوم ساطعة!';
+  speak(speech);
   // تأثير الاحتفال
   try {
     if (typeof confetti !== 'undefined') {

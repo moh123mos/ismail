@@ -473,3 +473,57 @@ tr.bronze {
     font-size: 1.4rem;
   }
 }
+
+/* ===== خيارات الـ checkbox المصمّمة (تُستخدم في إعدادات الألعاب: <label class="checkbox-option">) ===== */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.checkbox-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.checkbox-option input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #ffd700;
+}
+
+.checkbox-option.checked {
+  background: linear-gradient(135deg, #8a74f8 0%, #fa2c48 100%);
+  border-color: #ffd700;
+  box-shadow: 0 4px 12px rgba(250, 44, 72, 0.6);
+  transform: scale(1.05);
+}
+
+@media (max-width: 720px) {
+  .checkbox-option {
+    font-size: 16px;
+    padding: 6px 10px;
+  }
+
+  .checkbox-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+}

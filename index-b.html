@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الأستاذ إسماعيل مصطفى - معلم الرياضيات</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+  <style>
+    /* ============ B · كراسة الرياضيات الملوّنة ============ */
+    *,
+    *::before,
+    *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --paper: oklch(0.965 0.025 92);
+      --paper-edge: oklch(0.92 0.04 88);
+      --grid: oklch(0.84 0.045 235 / 0.5);
+      --white: oklch(0.99 0.008 92);
+      --ink: oklch(0.22 0.04 275);
+      --ink-soft: oklch(0.38 0.04 275);
+      --tomato: oklch(0.7 0.19 33);
+      --sun: oklch(0.88 0.17 96);
+      --teal: oklch(0.8 0.12 185);
+      --sky: oklch(0.76 0.13 245);
+
+      --f-display: 'Lalezar', 'Readex Pro', sans-serif;
+      --f-body: 'Readex Pro', sans-serif;
+
+      --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem;
+      --s-6: 1.5rem; --s-8: 2rem; --s-12: 3rem; --s-16: 4rem; --s-24: 6rem;
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --off: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--f-body);
+      font-size: 1.25rem;
+      line-height: 1.7;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 32px 32px;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+
+    :focus-visible {
+      outline: 4px solid var(--ink);
+      outline-offset: 4px;
+      border-radius: 6px;
+    }
+
+    .wrap { width: min(100% - 2rem, 76rem); margin-inline: auto; }
+
+    /* ---------- the "sticker": flat color, thick ink outline, hard offset shadow ---------- */
+    /* ::before = hard shadow, ::after = colored face with ink outline (both sit behind the content) */
+    .sticker {
+      position: relative;
+      isolation: isolate;
+      border-radius: 1.25rem;
+      rotate: var(--rot, 0deg);
+      transition: transform 0.28s var(--ease-out);
+    }
+    .sticker::before,
+    .sticker::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+    .sticker::before {
+      z-index: -2;
+      background: var(--ink);
+      transform: translate(calc(var(--off) * -1), var(--off));
+      transition: transform 0.28s var(--ease-out);
+    }
+    .sticker::after {
+      z-index: -1;
+      background: var(--c, var(--white));
+      border: 3px solid var(--ink);
+    }
+    a.sticker, button.sticker { cursor: pointer; text-decoration: none; color: var(--ink); }
+    a.sticker:hover, button.sticker:hover { transform: translate(3px, -3px); }
+    a.sticker:hover::before, button.sticker:hover::before {
+      transform: translate(calc(var(--off) * -1 - 3px), calc(var(--off) + 3px));
+    }
+    a.sticker:active, button.sticker:active { transform: translate(calc(var(--off) * -1), var(--off)); transition-duration: 0.08s; }
+    a.sticker:active::before, button.sticker:active::before { transform: translate(0, 0); transition-duration: 0.08s; }
+
+    /* ---------- header ---------- */
+    .top { padding-block: var(--s-6); }
+    .brand {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      font-family: var(--f-display); font-size: 1.5rem; line-height: 1;
+      padding: var(--s-2) var(--s-4) var(--s-2) var(--s-4);
+      --c: var(--white); --off: 4px;
+    }
+    .brand i { font-size: 1.6rem; color: var(--tomato); }
+
+    /* ---------- hero ---------- */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: var(--s-12);
+      align-items: center;
+      padding-block: var(--s-6) var(--s-16);
+    }
+
+    .kicker {
+      display: inline-flex; align-items: center; gap: var(--s-2);
+      font-weight: 600; font-size: 1.125rem;
+      padding: var(--s-1) var(--s-4);
+      --c: var(--teal); --off: 4px; --rot: 1.5deg;
+      border-radius: 999px;
+      margin-bottom: var(--s-6);
+    }
+
+    h1 {
+      font-family: var(--f-display);
+      font-weight: 400;
+      font-size: clamp(3.25rem, 2rem + 5vw, 6.25rem);
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      text-wrap: balance;
+      margin-bottom: var(--s-6);
+    }
+    .mark { position: relative; z-index: 0; white-space: nowrap; }
+    .mark::after {
+      content: ""; position: absolute; z-index: -1;
+      inset-inline: -0.1em; inset-block: 0.5em 0.02em;
+      background: var(--sun);
+      transform-origin: right center;
+      transform: scaleX(1) rotate(-1.5deg);
+    }
+
+    .lead { max-width: 34ch; font-size: 1.375rem; color: var(--ink-soft); }
+
+    /* interactive equation */
+    .board { padding: var(--s-6); --off: 10px; --rot: 1.2deg; }
+    .board__hint {
+      display: flex; align-items: center; gap: var(--s-2);
+      font-weight: 600; font-size: 1rem; color: var(--ink-soft);
+      margin-bottom: var(--s-4);
+    }
+    .eq {
+      display: flex; align-items: center; justify-content: center;
+      gap: clamp(0.4rem, 1.4vw, 0.9rem);
+      direction: ltr;
+      font-family: var(--f-display);
+      padding-block: var(--s-2) var(--s-4);
+    }
+    .tile {
+      --size: clamp(3.4rem, 1.2rem + 7.5vw, 6.25rem);
+      --off: 5px;
+      width: var(--size); aspect-ratio: 1; border-radius: 1rem;
+      display: grid; place-items: center;
+      font: 400 calc(var(--size) * 0.72) / 1 var(--f-display);
+      padding-bottom: calc(var(--size) * 0.08);
+    }
+    .tile--num { --c: var(--sky); }
+    .tile--op { --c: var(--tomato); }
+    .tile--res { --c: var(--sun); cursor: default; }
+    .eq__sign { font-size: clamp(2rem, 1rem + 4vw, 3.5rem); line-height: 1; }
+    .teacher {
+      position: absolute; z-index: 3;
+      inset-block-start: -4.75rem; inset-inline-end: -1rem;
+      width: clamp(5.5rem, 11vw, 7.5rem); aspect-ratio: 1;
+      border-radius: 50%; --off: 6px; --rot: -6deg;
+      overflow: visible;
+    }
+    .teacher img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+    }
+    .bubble {
+      position: absolute; z-index: 2;
+      inset-block-end: -1.75rem; inset-inline-start: 1.25rem;
+      display: flex; align-items: center; gap: var(--s-2);
+      padding: var(--s-2) var(--s-4);
+      font-weight: 700; font-size: 1.125rem;
+      --c: var(--sun); --off: 4px; --rot: -2deg; border-radius: 999px;
+    }
+    .emoji { display: inline-block; width: 2.25rem; height: 2.25rem; flex: none; }
+    .emoji svg { display: block; }
+
+    /* ---------- section headings ---------- */
+    .section-title {
+      font-family: var(--f-display); font-weight: 400;
+      font-size: clamp(2.25rem, 1.4rem + 3vw, 3.75rem); line-height: 1.2;
+      margin-bottom: var(--s-8);
+      display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap;
+    }
+    .section-title .squig { width: 5.5rem; height: auto; color: var(--tomato); }
+
+    /* ---------- games (bento) ---------- */
+    .games { padding-block: var(--s-8) var(--s-24); }
+    .bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--s-12) var(--s-8); }
+    .game { grid-column: span 6; container-type: inline-size; --off: 10px; }
+    .game--wide { grid-column: span 7; }
+    .game--narrow { grid-column: span 5; }
+    .game__inner {
+      display: grid; gap: var(--s-6);
+      padding: var(--s-8) var(--s-6) var(--s-6);
+      height: 100%;
+      grid-template-rows: auto 1fr;
+    }
+    .game__text { display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
+    .game__glyph {
+      font-family: var(--f-display); font-size: clamp(3.5rem, 2rem + 3.2vw, 5.5rem); line-height: 0.95;
+      letter-spacing: 0.04em; direction: ltr; white-space: nowrap;
+    }
+    .game__glyph i { font-size: 0.85em; }
+    .game h3 {
+      font-family: var(--f-display); font-weight: 400;
+      font-size: clamp(1.9rem, 1.2rem + 2vw, 2.6rem); line-height: 1.2;
+    }
+    .game p { font-size: 1.125rem; line-height: 1.65; max-width: 30ch; }
+    .game__cta {
+      margin-top: auto;
+      display: inline-flex; align-items: center; gap: var(--s-2);
+      min-height: 3.25rem; padding: 0 var(--s-6);
+      background: var(--ink); color: var(--paper);
+      border-radius: 999px; font-weight: 700; font-size: 1.125rem;
+      margin-top: var(--s-3);
+    }
+    .game__cta i { transition: transform 0.28s var(--ease-out); }
+    .game:hover .game__cta i { transform: translateX(-5px); }
+
+    .game__shot {
+      border: 3px solid var(--ink); border-radius: 0.875rem; overflow: hidden;
+      background: var(--white); rotate: 2deg; align-self: end;
+      aspect-ratio: 4 / 3;
+    }
+    .game__shot img { width: 100%; height: 100%; object-fit: cover; }
+    .game__emoji {
+      position: absolute; inset-block-start: -1.5rem; inset-inline-end: 1.25rem;
+      width: 3.75rem; height: 3.75rem; z-index: 2; rotate: 8deg;
+    }
+
+    @container (min-width: 30rem) {
+      .game__inner { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); grid-template-rows: none; align-items: stretch; }
+      .game__shot { align-self: center; }
+    }
+
+    /* ---------- how it works ---------- */
+    .how { padding-block: var(--s-8) var(--s-16); }
+    .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-12); list-style: none; }
+    .step { display: grid; gap: var(--s-2); align-content: start; }
+    .step__n {
+      font-family: var(--f-display); font-size: 5.5rem; line-height: 0.9; color: var(--tomato);
+      -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; direction: ltr; justify-self: start;
+    }
+    .step:nth-child(2) .step__n { color: var(--sky); }
+    .step:nth-child(3) .step__n { color: var(--teal); }
+    .step h3 { font-family: var(--f-display); font-weight: 400; font-size: 1.9rem; line-height: 1.2; }
+    .step p { color: var(--ink-soft); max-width: 32ch; font-size: 1.125rem; }
+    .note { margin-top: var(--s-8); font-weight: 500; color: var(--ink-soft); display: flex; align-items: center; gap: var(--s-2); }
+
+    /* ---------- footer ---------- */
+    footer { border-top: 3px solid var(--ink); background: var(--white); padding-block: var(--s-8) 5.5rem; }
+    footer .wrap { display: grid; gap: var(--s-2); text-align: center; }
+    .credit { font-weight: 600; }
+    .credit i { color: var(--tomato); vertical-align: -0.1em; }
+    .legal { font-size: 0.9rem; color: var(--ink-soft); }
+
+    /* ---------- motion ---------- */
+    @keyframes rise { from { opacity: 0; transform: translateY(1.5rem); } to { opacity: 1; transform: none; } }
+    @keyframes draw { from { transform: scaleX(0) rotate(-1.5deg); } to { transform: scaleX(1) rotate(-1.5deg); } }
+    @keyframes tile-in { from { opacity: 0; transform: translateY(1.25rem) scale(0.7); } to { opacity: 1; transform: none; } }
+    @keyframes stamp { from { opacity: 0; scale: 1.5; } to { opacity: 1; scale: 1; } }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .rise { animation: rise 0.8s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 90ms); }
+      .mark::after { animation: draw 0.7s 0.55s var(--ease-out) both; }
+      .eq > * { animation: tile-in 0.7s var(--ease-out) both; animation-delay: calc(0.5s + var(--i, 0) * 90ms); }
+      .teacher { animation: stamp 0.6s 0.9s var(--ease-out) both; }
+      .js .reveal {
+        opacity: 0; translate: 0 2rem;
+        transition: opacity 0.7s var(--ease-out) calc(var(--i, 0) * 80ms),
+                    translate 0.7s var(--ease-out) calc(var(--i, 0) * 80ms),
+                    transform 0.28s var(--ease-out);
+      }
+      .js .reveal.in { opacity: 1; translate: 0 0; }
+    }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 62rem) {
+      .hero { grid-template-columns: 1fr; gap: var(--s-16); }
+      .board { margin-top: var(--s-8); }
+      .game, .game--wide, .game--narrow { grid-column: span 12; }
+      .steps { grid-template-columns: 1fr; gap: var(--s-8); }
+    }
+    @media (max-width: 40rem) {
+      body { font-size: 1.125rem; }
+      .teacher { inset-inline-end: -0.25rem; inset-block-start: -4.25rem; }
+      .bubble { inset-inline-start: 0.5rem; }
+      .game__inner { padding-inline: var(--s-4); }
+    }
+
+    /* ---------- preview switcher (remove when a design is chosen) ---------- */
+    .variants {
+      position: fixed; inset-block-end: 12px; inset-inline-start: 12px; z-index: 100;
+      display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 999px;
+      background: oklch(0.2 0.02 270 / 0.94); color: #fff;
+      font: 600 13px/1 system-ui, sans-serif; box-shadow: 0 4px 16px oklch(0 0 0 / 0.3);
+    }
+    .variants span { padding-inline: 8px; opacity: 0.7; }
+    .variants a { color: inherit; text-decoration: none; padding: 10px 12px; border-radius: 999px; }
+    .variants a:hover { background: oklch(1 0 0 / 0.15); }
+    .variants a[aria-current="page"] { background: #fff; color: #111; }
+    @media print { .variants { display: none; } }
+  </style>
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand sticker"><i class="ph-fill ph-math-operations" aria-hidden="true"></i> منصة التعليم التفاعلي</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="wrap hero">
+      <div>
+        <p class="kicker sticker rise" style="--i:0"><i class="ph-bold ph-hand-waving" aria-hidden="true"></i> مرحباً بكم في منصة</p>
+        <h1 class="rise" style="--i:1">الأستاذ <span class="mark">إسماعيل</span> مصطفى</h1>
+        <p class="lead rise" style="--i:3">معلم رياضيات متخصص في تبسيط المفاهيم الرياضية وجعل التعلم أكثر متعة وتفاعلية للطلاب</p>
+      </div>
+
+      <div class="board sticker rise" style="--i:2">
+        <div class="teacher sticker">
+          <img src="imgs/profile.png" alt="الأستاذ إسماعيل مصطفى" width="300" height="300">
+        </div>
+        <p class="board__hint"><i class="ph-bold ph-hand-pointing" aria-hidden="true"></i> جرّب بنفسك: اضغط على أي خانة</p>
+        <div class="eq" dir="ltr" role="group" aria-label="مسألة تفاعلية">
+          <button type="button" class="tile tile--num sticker" id="tA" style="--i:0" aria-label="الرقم الأول، اضغط لتغييره">٨</button>
+          <button type="button" class="tile tile--op sticker" id="tOp" style="--i:1" aria-label="العملية، اضغط لتغييرها">×</button>
+          <button type="button" class="tile tile--num sticker" id="tB" style="--i:2" aria-label="الرقم الثاني، اضغط لتغييره">٤</button>
+          <span class="eq__sign" style="--i:3" aria-hidden="true">=</span>
+          <output class="tile tile--res sticker" id="tRes" style="--i:4" aria-live="polite">٣٢</output>
+        </div>
+        <div class="bubble sticker">
+          <span class="emoji" data-emoji="1f929" data-fallback="🤩" aria-hidden="true"></span>
+          أهلًا يا أبطال!
+        </div>
+      </div>
+    </section>
+
+    <!-- Games -->
+    <section class="games" id="games">
+      <div class="wrap">
+        <h2 class="section-title reveal">
+          اختر اللعبة التي تريد البدء بها
+          <svg class="squig" viewBox="0 0 88 24" fill="none" aria-hidden="true"><path d="M3 15c8-12 14-12 20 0s12 12 20 0 14-12 20 0 12 12 22 0" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>
+        </h2>
+
+        <div class="bento">
+          <a class="game game--wide sticker reveal" style="--c:var(--tomato); --rot:-0.8deg; --i:0" href="pages/math-operations.html">
+            <span class="emoji game__emoji" data-emoji="1f4af" data-fallback="💯" aria-hidden="true"></span>
+            <div class="game__inner">
+              <div class="game__text">
+                <span class="game__glyph" aria-hidden="true">+ −</span>
+                <h3>العمليات الحسابية</h3>
+                <p>تعلم الجمع والطرح بطرق ممتعة وتفاعلية مع مستويات مختلفة من الصعوبة</p>
+                <span class="game__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+              </div>
+              <figure class="game__shot"><img src="imgs/math.jpg" alt="" loading="lazy" decoding="async"></figure>
+            </div>
+          </a>
+
+          <a class="game game--narrow sticker reveal" style="--c:var(--sun); --rot:0.9deg; --i:1" href="pages/multi-tables.html">
+            <span class="emoji game__emoji" data-emoji="1f525" data-fallback="🔥" aria-hidden="true"></span>
+            <div class="game__inner">
+              <div class="game__text">
+                <span class="game__glyph" aria-hidden="true">×</span>
+                <h3>جداول الضرب</h3>
+                <p>اتقن جداول الضرب من خلال تمارين تفاعلية ومسابقات مشوقة</p>
+                <span class="game__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+              </div>
+              <figure class="game__shot"><img src="imgs/tables.png" alt="" loading="lazy" decoding="async"></figure>
+            </div>
+          </a>
+
+          <a class="game game--narrow sticker reveal" style="--c:var(--sky); --rot:0.7deg; --i:0" href="pages/equations.html">
+            <span class="emoji game__emoji" data-emoji="1f9e0" data-fallback="🧠" aria-hidden="true"></span>
+            <div class="game__inner">
+              <div class="game__text">
+                <span class="game__glyph" aria-hidden="true">س + ٣</span>
+                <h3>المعادلات والعبارات الجبرية</h3>
+                <p>حل المعادلات وتصنيف العبارات الجبرية بطريقة ممتعة وتفاعلية</p>
+                <span class="game__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+              </div>
+              <figure class="game__shot"><img src="imgs/eq-banner.png" alt="" loading="lazy" decoding="async"></figure>
+            </div>
+          </a>
+
+          <a class="game game--wide sticker reveal" style="--c:var(--teal); --rot:-0.9deg; --i:1" href="pages/counting-money.html">
+            <span class="emoji game__emoji" data-emoji="1f4b8" data-fallback="💸" aria-hidden="true"></span>
+            <div class="game__inner">
+              <div class="game__text">
+                <span class="game__glyph" aria-hidden="true"><i class="ph-fill ph-coins"></i></span>
+                <h3>لعبة عد النقود</h3>
+                <p>تعلم عد النقود بطريقة ممتعة وتفاعلية</p>
+                <span class="game__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+              </div>
+              <figure class="game__shot"><img src="imgs/money-banner.jpg" alt="" loading="lazy" decoding="async"></figure>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how">
+      <div class="wrap">
+        <h2 class="section-title reveal">كيف تعمل الألعاب؟</h2>
+        <ol class="steps">
+          <li class="step reveal" style="--i:0">
+            <span class="step__n" aria-hidden="true">١</span>
+            <h3>أضف أسماء الطلاب</h3>
+            <p>اكتب الأسماء مرة واحدة، ثم تتناوبون على الأسئلة دورًا بدور.</p>
+          </li>
+          <li class="step reveal" style="--i:1">
+            <span class="step__n" aria-hidden="true">٢</span>
+            <h3>سؤال ومؤقّت وصوت</h3>
+            <p>لكل سؤال مؤقّت، وصوت يقرأ الأسئلة ويشجّع الطالب.</p>
+          </li>
+          <li class="step reveal" style="--i:2">
+            <span class="step__n" aria-hidden="true">٣</span>
+            <h3>ترتيب وفائزون</h3>
+            <p>جدول ترتيب مباشر وإعلان للفائزين، مع تصدير النتائج إلى Excel.</p>
+          </li>
+        </ol>
+        <p class="note reveal"><i class="ph-bold ph-device-mobile" aria-hidden="true"></i> تُحفظ أسماء الطلاب ونتائجهم على هذا الجهاز.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p class="credit">صُنع بكل <i class="ph-fill ph-heart" aria-label="حب"></i> من قبل Dev: Mohamed Mostafa</p>
+      <p class="legal">© 2025 - جميع الحقوق محفوظة · الرموز المتحركة: Google Noto Emoji (CC BY 4.0) · الأيقونات: Phosphor (MIT)</p>
+    </div>
+  </footer>
+
+  <!-- preview-only: switch between the design variants -->
+  <nav class="variants" aria-label="معاينة التصاميم">
+    <span>التصميم</span>
+    <a href="index-a.html">أ · السبورة</a>
+    <a href="index-b.html" aria-current="page">ب · الكراسة</a>
+    <a href="index-c.html">ج · الجزر</a>
+    <a href="index.html">الأصلي</a>
+  </nav>
+
+  <script src="vendor/lottie_light.min.js"></script>
+  <script src="js/animated-emoji.js"></script>
+  <script>
+    (function () {
+      /* scroll reveal */
+      var items = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+        items.forEach(function (el) { io.observe(el); });
+      } else {
+        items.forEach(function (el) { el.classList.add('in'); });
+      }
+
+      /* interactive equation */
+      var fmt = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 1 });
+      var ops = ['×', '+', '−', '÷'];
+      var s = { a: 8, op: 0, b: 4 };
+      var tA = document.getElementById('tA'), tOp = document.getElementById('tOp'),
+          tB = document.getElementById('tB'), tRes = document.getElementById('tRes');
+
+      function calc() {
+        switch (ops[s.op]) {
+          case '+': return s.a + s.b;
+          case '−': return s.a - s.b;
+          case '×': return s.a * s.b;
+          default: return s.a / s.b;
+        }
+      }
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ease = 'cubic-bezier(0.16, 1, 0.3, 1)';
+      function pop(el) {
+        if (calm || !el.animate) return;
+        el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.86)', offset: 0.35 }, { transform: 'scale(1)' }], { duration: 420, easing: ease });
+      }
+      function flip(el) {
+        if (calm || !el.animate) return;
+        el.animate([{ transform: 'rotateX(0)' }, { transform: 'rotateX(90deg)', offset: 0.45 }, { transform: 'rotateX(-90deg)', offset: 0.55 }, { transform: 'rotateX(0)' }], { duration: 520, easing: ease });
+      }
+      function render(changed) {
+        tA.textContent = fmt.format(s.a);
+        tOp.textContent = ops[s.op];
+        tB.textContent = fmt.format(s.b);
+        tRes.textContent = fmt.format(calc());
+        pop(changed);
+        flip(tRes);
+      }
+      tA.addEventListener('click', function () { s.a = s.a >= 9 ? 2 : s.a + 1; render(tA); });
+      tB.addEventListener('click', function () { s.b = s.b >= 9 ? 2 : s.b + 1; render(tB); });
+      tOp.addEventListener('click', function () { s.op = (s.op + 1) % ops.length; render(tOp); });
+    })();
+  </script>
+</body>
+
+</html>
