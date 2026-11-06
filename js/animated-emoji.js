@@ -1,24 +1,21 @@
 /*
  * Animated emoji loader.
  * Animations: Google Noto Animated Emoji (CC BY 4.0), rendered with lottie-web (MIT).
- * Usage: <span class="emoji" data-emoji="1f680" data-fallback="🚀" aria-hidden="true"></span>
+ *
+ *   <span class="emoji" data-emoji="1f680" data-fallback="🚀" aria-hidden="true"></span>
+ *
+ *   AnimatedEmoji.scan(root)               animate every [data-emoji] under root (default: document); runs once on load
+ *   AnimatedEmoji.set(el, code, fallback)  put another animation into el (frees the previous one); code '' clears it
+ *
+ * - Needs vendor/lottie_light.min.js loaded first. Works from any page depth: files are found relative to this script.
  * - Plays only while visible; shows a still frame when the user prefers reduced motion.
  * - If the animation can't load (e.g. page opened via file://), the fallback character is shown.
  */
 (function () {
-  var nodes = document.querySelectorAll('[data-emoji]');
-  if (!nodes.length) return;
+  'use strict';
 
+  var ROOT = new URL('../', document.currentScript.src).href;   // this file lives in <root>/js/
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  function showFallback(el) {
-    el.textContent = el.getAttribute('data-fallback') || '';
-  }
-
-  if (!window.lottie) {
-    Array.prototype.forEach.call(nodes, showFallback);
-    return;
-  }
 
   var io = 'IntersectionObserver' in window
     ? new IntersectionObserver(function (entries) {
@@ -30,14 +27,31 @@
       })
     : null;
 
-  Array.prototype.forEach.call(nodes, function (el) {
+  function free(el) {
+    if (el._anim) {
+      if (io) io.unobserve(el);
+      try { el._anim.destroy(); } catch (e) { /* already gone */ }
+      el._anim = null;
+    }
+  }
+
+  function showFallback(el) {
+    free(el);
+    el.textContent = el.getAttribute('data-fallback') || '';
+  }
+
+  function start(el) {
+    free(el);
+    var code = el.getAttribute('data-emoji');
     el.textContent = '';
+    if (!code) return;
+    if (!window.lottie) { showFallback(el); return; }
     var anim = window.lottie.loadAnimation({
       container: el,
       renderer: 'svg',
       loop: true,
       autoplay: false,
-      path: 'imgs/emoji/' + el.getAttribute('data-emoji') + '.json'
+      path: ROOT + 'imgs/emoji/' + code + '.json'
     });
     el._anim = anim;
     anim.addEventListener('DOMLoaded', function () {
@@ -50,5 +64,29 @@
       }
     });
     anim.addEventListener('data_failed', function () { showFallback(el); });
-  });
+  }
+
+  function scan(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('[data-emoji]'), function (el) {
+      if (el._emojiStarted) return;
+      el._emojiStarted = true;
+      start(el);
+    });
+  }
+
+  function set(el, code, fallback) {
+    if (!el) return;
+    el._emojiStarted = true;
+    if (code) {
+      el.setAttribute('data-emoji', code);
+      el.setAttribute('data-fallback', fallback || '');
+    } else {
+      el.removeAttribute('data-emoji');
+      el.removeAttribute('data-fallback');
+    }
+    start(el);
+  }
+
+  window.AnimatedEmoji = { scan: scan, set: set };
+  scan();
 })();

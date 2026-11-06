@@ -27,11 +27,11 @@ directly.
 - `parseDisplayedNumber(text)` → integer parsed from text that may contain either numeral set.
 - `rnd(min, max)` → random integer, both ends inclusive.
 - `fingerprint(obj)` → base64 string of the JSON of `obj` (for the used-questions stores).
-- `getRandomColors(n)` → `n` shuffled colour strings.
+- `getRandomColors(n)` → `n` shuffled CSS colour values (design tokens `var(--c1)…var(--c6)` from `tokens.css`); use as `background:` with `--ink` text.
 
 ## Timer
 
-- `startTimer(callback)` → counts down from `#timerInput`'s value in 0.1 s steps, writes `#timerDisplay`, sets
+- `startTimer(callback)` → counts down from `#timerInput`'s value in 0.1 s steps, writes `#timerDisplay` (number only; the icon is in the shell's markup) and drives the `.timer-pill` around it (`--t` 1→0, `data-low` in the last 4 s), sets
   `questionStartTime`, and calls `callback()` when it reaches 0. **Always pass a callback** — without one, a
   timeout silently does nothing.
 - `stopTimer()`.
@@ -49,11 +49,11 @@ directly.
   entry if missing. **Returns nothing.**
 - `getSortedResultsArray()` → `[{name, ok, bad, time (string, 2 decimals), score}]` sorted by
   `score = ok − 0.5·bad`, then time, then name.
-- `updateResultsTable()` — re-renders `#resultsTable tbody` (gold/silver/bronze rows, medals, optional avatars).
+- `updateResultsTable()` — re-renders `#resultsTable tbody` (gold/silver/bronze rows, Phosphor medal icons, optional avatars via `.student-avatar`) and shows/hides the `#resultsEmpty` note.
 - `resetAllResults(saveCb)` — confirms, then zeroes every result.
 - `exportResultsToExcel(filename)` / `importResultsFromFile(eventOrFile, saveCb)` — need the XLSX library
   (the shell loads it). Import **replaces** all students and results.
-- `showWinnersBanner(top3)` / `hideBanner()` — the modal in `#resultsBanner` + `#bannerOverlay`.
+- `showWinnersBanner(top3)` / `hideBanner()` — the modal in `#resultsBanner` + `#bannerOverlay` (animated medal emoji when `AnimatedEmoji` is loaded).
 
 ## Speech
 

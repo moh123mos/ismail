@@ -7,25 +7,16 @@
   <title>لعبة المعادلات والعبارات الجبرية</title>
   <link rel="stylesheet" href="../style.css" />
   <style>
-    body {
-      background: var(--bg) url('../imgs/eq-banner.png') no-repeat center center fixed;
-      background-size: cover;
-    }
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.84 0.1 175); }
 
+    /* the unknown (س ص ع …) in two strong colours, readable on the sand board */
     .var-blue {
-      color: var(--blue);
-      font-weight: 700;
+      color: oklch(0.45 0.17 250);
     }
 
     .var-fuchsia {
-      color: var(--fuchsia);
-      font-weight: 700;
-    }
-
-    @media (max-width: 720px) {
-      #problem {
-        font-size: 1.6rem;
-      }
+      color: oklch(0.5 0.21 350);
     }
   </style>
 </head>
@@ -202,12 +193,12 @@
           if (!answers.includes(wrong)) answers.push(wrong);
         }
         answers.sort(() => Math.random() - 0.5);
-        return { html: `<div style="font-size:2.0rem">${display}</div>`, choices: answers, answer: eq.solution };
+        return { html: `<div>${display}</div>`, choices: answers, answer: eq.solution };
       }
 
       const ex = genExpressionForClassify(diff, digits);
       return {
-        html: `<div style="font-size:2.0rem">${ex.text}</div><div class="small">صنّف العبارة التالية:</div>`,
+        html: `<div>${ex.text}</div><div class="problem-hint">صنّف العبارة التالية:</div>`,
         choices: ['معادلة', 'عبارة جبرية'],
         answer: ex.type
       };
@@ -216,14 +207,15 @@
     GameShell.mount({
       id: 'equations',
       title: 'لعبة المعادلات والعبارات الجبرية',
-      heading: '🎯 لعبة المعادلات والعبارات الجبرية',
+      heading: 'لعبة المعادلات والعبارات الجبرية',
+      emoji: { code: '1f9e0', fallback: '🧠' },   // نفس إيموجي جزيرتها على الخريطة
       banner: { src: '../imgs/eq-banner.png', alt: 'ميزان المعادلات' },
       exportFilename: 'equations_game_results.xlsx',
       used,
       settingsHTML: `
-        <div class="toolbar" style="margin-top:6px">
-          <div class="group"><span class="label">عدد الأرقام:</span><input type="number" id="digits" value="1" min="1" max="3"></div>
-          <div class="group"><span class="label">مستوى:</span>
+        <div class="toolbar">
+          <div class="group"><label class="label" for="digits">عدد الأرقام:</label><input type="number" id="digits" value="1" min="1" max="3"></div>
+          <div class="group"><label class="label" for="difficulty">مستوى:</label>
             <select id="difficulty">
               <option value="easy" selected>سهل</option>
               <option value="medium">متوسط</option>
@@ -232,33 +224,33 @@
           </div>
         </div>
 
-        <div class="toolbar" style="margin-top:10px">
-          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <span class="label" style="font-size: 20px; font-weight: bold;">نوع المعادلات:</span>
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">نوع المعادلات:</span>
             <div class="checkbox-group">
               <label class="checkbox-option checked">
                 <input type="checkbox" name="equationKind" value="addsub" checked>
-                <span>➕➖ جمع/طرح</span>
+                <i class="ph-bold ph-plus-minus" aria-hidden="true"></i><span>جمع/طرح</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="equationKind" value="multiply">
-                <span>✖️ ضرب</span>
+                <i class="ph-bold ph-x" aria-hidden="true"></i><span>ضرب</span>
               </label>
             </div>
           </div>
         </div>
 
-        <div class="toolbar" style="margin-top:10px">
-          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <span class="label blue" style="font-size: 20px; font-weight: bold;">نوع السؤال:</span>
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">نوع السؤال:</span>
             <div class="checkbox-group">
               <label class="checkbox-option checked">
                 <input type="checkbox" name="questionType" value="solve_equation" checked>
-                <span>🔢 حل المعادلات</span>
+                <i class="ph-bold ph-function" aria-hidden="true"></i><span>حل المعادلات</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="questionType" value="classify">
-                <span>📋 تصنيف المعادلات والعبارات</span>
+                <i class="ph-bold ph-list-checks" aria-hidden="true"></i><span>تصنيف المعادلات والعبارات</span>
               </label>
             </div>
           </div>

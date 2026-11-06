@@ -7,74 +7,81 @@
   <title>لعبة الجمع والطرح</title>
   <link rel="stylesheet" href="../style.css" />
   <style>
-    body {
-      background: var(--bg) url('../imgs/math.jpg') no-repeat center center fixed;
-      background-size: cover;
-    }
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.85 0.15 135); }
 
+    /* vertical (column) addition/subtraction: always left-to-right */
     .vert-wrapper {
       display: flex;
       flex-direction: row;
       align-items: flex-end;
-      gap: 8px;
+      gap: var(--s-3);
       justify-content: center;
       direction: ltr;
     }
 
     .op-sign {
-      font-size: 3.5rem;
-      font-weight: 900;
-      color: var(--brand);
-      padding: 6px 10px;
-      background: #111;
-      border-radius: 8px;
-      border: 2px solid #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
+      min-width: 4.25rem;
+      aspect-ratio: 1;
+      border-radius: 1.25rem;
+      background: var(--ink);
+      color: var(--white);
+      font: 800 3rem/1 var(--f-display);
+      padding-bottom: 0.35rem;
     }
 
     .big-rect table {
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0.4rem;
       background: transparent;
     }
 
     .big-rect td {
-      width: 64px;
-      height: 64px;
-      border: 2px solid #fff;
-      border-radius: 6px;
-      font-size: 2.2rem;
-      padding: 6px;
+      width: 4.25rem;
+      height: 4.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 0 3px var(--ink);
+      color: var(--ink);
+      font: 800 2.6rem/1 var(--f-display);
       text-align: center;
       vertical-align: middle;
     }
 
     .big-rect .sep td {
-      border-top: 4px solid #fff;
+      height: 0.6rem;
       padding: 0;
-      height: 10px;
-      background: transparent;
+      border-radius: 999px;
+      background: var(--ink);
+      box-shadow: none;
     }
 
-    .units-row td {
-      font-size: 0.95rem;
-      padding-bottom: 8px;
-      height: 36px;
+    .big-rect .units-row td {
+      width: auto;
+      height: auto;
+      box-shadow: none;
       background: transparent;
-      color: #ffd;
-      font-weight: 700;
+      color: var(--ink-soft);
+      font: 700 1rem/1.4 var(--f-body);
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 40rem) {
       .big-rect td {
-        width: 42px;
-        height: 48px;
-        font-size: 1.6rem;
+        width: 2.9rem;
+        height: 3.4rem;
+        font-size: 1.9rem;
+      }
+
+      .big-rect .units-row td {
+        width: auto;
+        height: auto;
+        font-size: 0.95rem;
       }
 
       .op-sign {
-        font-size: 2.6rem;
+        min-width: 3rem;
+        font-size: 2.2rem;
       }
     }
   </style>
@@ -197,7 +204,7 @@
 
       let html;
       if (layout === 'horizontal') {
-        html = `<div style="font-size:2.0rem">${toArabicNumber(num1)} ${op} ${toArabicNumber(num2)} = ?</div>`;
+        html = `<div>${toArabicNumber(num1)} ${op} ${toArabicNumber(num2)} = ?</div>`;
       } else {
         const maxLen = d;
         const n1 = num1.toString().padStart(maxLen, '0').split('');
@@ -235,13 +242,14 @@
       id: 'math-operations',
       storagePrefix: 'add_minus',       // مفتاح التخزين القديم: نحافظ عليه كي لا تضيع بيانات الطلاب المحفوظة
       title: 'لعبة الجمع والطرح',
-      heading: '🎮 لعبة الجمع والطرح',
+      heading: 'لعبة الجمع والطرح',
+      emoji: { code: '1f31f', fallback: '🌟' },   // نفس إيموجي جزيرتها على الخريطة
       banner: { src: '../imgs/math.jpg', alt: 'لعبة الجمع والطرح' },
       exportFilename: 'add_minus_game_results.xlsx',
       settingsHTML: `
-        <div class="toolbar" style="margin-top:6px">
-          <div class="group"><span class="label">عدد الأرقام:</span><input type="number" id="digits" value="2" min="1" max="6"></div>
-          <div class="group"><span class="label">عدد الخيارات:</span>
+        <div class="toolbar">
+          <div class="group"><label class="label" for="digits">عدد الأرقام:</label><input type="number" id="digits" value="2" min="1" max="6"></div>
+          <div class="group"><label class="label" for="numChoices">عدد الخيارات:</label>
             <select id="numChoices">
               <option value="3" selected>3</option>
               <option value="4">4</option>
@@ -251,41 +259,41 @@
           </div>
         </div>
 
-        <div class="toolbar" style="margin-top:10px">
-          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <span class="label" style="font-size: 20px; font-weight: bold;">نوع العملية:</span>
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">نوع العملية:</span>
             <div class="checkbox-group">
               <label class="checkbox-option checked">
                 <input type="checkbox" name="operationType" value="add_no_carry" checked>
-                <span>➕ جمع بدون إعادة تجميع</span>
+                <i class="ph-bold ph-plus" aria-hidden="true"></i><span>جمع بدون إعادة تجميع</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="operationType" value="add_carry">
-                <span>➕ جمع بإعادة تجميع</span>
+                <i class="ph-bold ph-plus" aria-hidden="true"></i><span>جمع بإعادة تجميع</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="operationType" value="sub_no_borrow">
-                <span>➖ طرح بدون استلاف</span>
+                <i class="ph-bold ph-minus" aria-hidden="true"></i><span>طرح بدون استلاف</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="operationType" value="sub_borrow">
-                <span>➖ طرح بالاستلاف</span>
+                <i class="ph-bold ph-minus" aria-hidden="true"></i><span>طرح بالاستلاف</span>
               </label>
             </div>
           </div>
         </div>
 
-        <div class="toolbar" style="margin-top:10px">
-          <div class="group" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <span class="label" style="font-size: 20px; font-weight: bold;">طريقة العرض:</span>
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">طريقة العرض:</span>
             <div class="checkbox-group">
               <label class="checkbox-option checked">
                 <input type="checkbox" name="layout" value="vertical" checked>
-                <span>عمودية</span>
+                <i class="ph-bold ph-rows" aria-hidden="true"></i><span>عمودية</span>
               </label>
               <label class="checkbox-option">
                 <input type="checkbox" name="layout" value="horizontal">
-                <span>أفقية</span>
+                <i class="ph-bold ph-equals" aria-hidden="true"></i><span>أفقية</span>
               </label>
             </div>
           </div>

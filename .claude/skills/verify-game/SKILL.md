@@ -8,6 +8,11 @@ description: Run a game page of this math-games platform in a real browser and c
 Verifies a game in a real browser through the chrome-devtools MCP tools. Background: [docs/testing.md](../../../docs/testing.md).
 Do not claim a UI change works without running this.
 
+**Fast path for everything:** `node tools/check-games.js [baseUrl] [outDir] [--only=<id>]` runs steps 2–6 below for every game
+(auto-discovered) at seven viewports and saves screenshots of the real states — run it first, look at the screenshots, and use
+the manual steps below when you need to dig into one game (or when the chrome-devtools MCP is available and you want to
+interact). It starts its own headless Chrome, so it also works when the MCP browser profile is locked.
+
 ## Steps
 
 1. **Serve the site** (skip if already running on 8123): run `python tools/serve.py` in the background.
@@ -18,18 +23,21 @@ Do not claim a UI change works without running this.
    Confirm the page really is the new version (e.g. `typeof GameShell` is `"object"`).
 3. **Pick the scenario:**
    - Multiple-choice game (`buildQuestion`): `scenario-choice.js` in this folder.
-   - Custom-interaction game (`newRound`/`finishRound`): copy `scenario-money.js`, replace the widget-driving
-     parts for the game at hand, and keep the same checks. Save the adapted copy in the scratchpad, not in the repo,
-     unless the user asks otherwise.
+   - Custom-interaction game (`newRound`/`finishRound`): copy `scenario-counting-money.js`, replace the widget-driving
+     parts for the game at hand, and keep the same checks. Save it as `scenario-<game-id>.js` in this folder so
+     `tools/check-games.js` runs it (a generic start → timeout smoke test is used until then).
 4. **Run it:** `evaluate_script` with `sourcePath` = the absolute path of the scenario file (and `dialogAction: "accept"`).
    It returns `{ passed, failed[], details }`. Any entry in `failed` is a real problem to fix or explain.
 5. **Console and network:** `list_console_messages` with types `error`/`warn` must be empty, and no request may fail
    — check with `evaluate_script`: `performance.getEntriesByType('resource').filter(r => r.responseStatus >= 400)`.
-   Also check the Cairo font loaded (`[...document.fonts].some(f => f.family.includes('Cairo') && f.status === 'loaded')`).
+   Also check the fonts and icons loaded (`[...document.fonts].filter(f => f.status === 'loaded').map(f => f.family)` includes
+   `Baloo Bhaijaan 2`, `Alexandria`, `Phosphor-Bold`).
    Anything else is a finding (see [docs/known-issues.md](../../../docs/known-issues.md) for open issues).
    If a `confirm`/`alert` dialog is left open, `handle_dialog` before continuing.
 6. **Look at it:** `resize_page` to 1280×900 and take a full-page screenshot; then 390×800 and check for overflow
-   (the scenario already checks horizontal scrolling) and that widgets are usable. Read the screenshot.
+   (the scenario already checks horizontal scrolling) and that widgets are usable. Read the screenshot. The page must look
+   like the rest of the site (sea-map design: sky header with the island emoji, sand board, sticker answer buttons) —
+   no dark background, no hard-coded colours, text readable on every surface.
 7. **Game-specific checks** the scenario cannot know about: its own settings (each option changes the generated
    questions), edge cases (nothing selected, extreme values), and the numerals toggle on the question text.
 8. **Report** what was run and the result: passed/failed checks, console errors, screenshots reviewed. If something

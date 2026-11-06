@@ -7,62 +7,18 @@
   <title>لعبة جداول الضرب</title>
   <link rel="stylesheet" href="../style.css" />
   <style>
-    body {
-      background: var(--bg) url('../imgs/tables.png') no-repeat center center fixed;
-      background-size: cover;
-    }
-
-    /* كبير على الشاشات الواسعة فقط؛ على الموبايل يبقى حجم style.css */
-    @media (min-width: 721px) {
-      #problem {
-        font-size: 4rem;
-      }
-    }
-
-    .choice {
-      font-size: 2rem;
-    }
-
-    .h1-row {
-      font-size: 40px !important;
-    }
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.88 0.13 105); }
 
     .table-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      max-width: 1200px;
-      width: 92%;
-    }
-
-    .table-btn {
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #444;
-      background: #222;
-      color: #fff;
-      cursor: pointer;
-      min-width: 64px;
-    }
-
-    .table-btn.active,
-    .special-btn.active {
-      background: var(--brand);
-      color: #000;
-      border: 2px solid #ff9c1a;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255, 152, 0, 0.12);
+      gap: var(--s-2);
+      margin-bottom: var(--s-3);
     }
 
     .special-btn {
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #444;
-      background: #222;
-      color: #fff;
-      cursor: pointer;
-      min-width: 120px;
+      min-width: 8rem;
     }
   </style>
 </head>
@@ -89,20 +45,25 @@
       tableOptions.forEach(opt => {
         const btn = document.createElement('button');
         btn.dataset.type = opt.type;
+        btn.type = 'button';
         if (opt.type === 'table') {
-          btn.className = 'table-btn';
+          btn.className = 'toggle-chip';
           btn.dataset.val = opt.val;
           btn.textContent = '× ' + toArabicNumber(opt.val);
           btn.title = 'اضغط للاختيار: جدول ' + opt.val;
         } else {
-          btn.className = 'special-btn';
+          btn.className = 'toggle-chip special-btn';
           btn.textContent = opt.label;
           btn.title = 'اضغط للاختيار: ' + opt.label;
         }
-        btn.addEventListener('click', () => btn.classList.toggle('active'));
+        btn.setAttribute('aria-pressed', 'false');
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+          btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
+        });
         // إعادة تفعيل الأزرار التي كانت فعّالة قبلاً
         const key = btn.dataset.type + (btn.dataset.val ? ':' + btn.dataset.val : '');
-        if (prevActive.includes(key)) btn.classList.add('active');
+        if (prevActive.includes(key)) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
         container.appendChild(btn);
       });
     }
@@ -155,16 +116,19 @@
       id: 'multi-tables',
       storagePrefix: 'mul_game',        // مفتاح التخزين القديم: نحافظ عليه كي لا تضيع بيانات الطلاب المحفوظة
       title: 'لعبة جداول الضرب',
-      heading: '🎯 لعبة جداول الضرب',
+      heading: 'لعبة جداول الضرب',
+      emoji: { code: '1f525', fallback: '🔥' },   // نفس إيموجي جزيرتها على الخريطة
       banner: { src: '../imgs/tables.png', alt: 'لعبة جداول الضرب' },
       exportFilename: 'multiplication_game_results.xlsx',
       settingsHTML: `
-        <div class="toolbar" style="margin-top:6px">
-          <div class="group"><span class="label">اختر جداول الضرب (اضغط للتفعيل):</span></div>
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">اختر جداول الضرب (اضغط للتفعيل):</span>
+            <div class="table-buttons" id="tableButtonsContainer" role="group" aria-label="أزرار جداول الضرب"></div>
+          </div>
         </div>
-        <div class="table-buttons" id="tableButtonsContainer" aria-label="أزرار جداول الضرب"></div>
-        <div class="toolbar" style="margin-top:6px">
-          <div class="group"><span class="label">عدد الخيارات:</span>
+        <div class="toolbar">
+          <div class="group"><label class="label" for="numChoices">عدد الخيارات:</label>
             <select id="numChoices">
               <option value="3">3 خيارات</option>
               <option value="4">4 خيارات</option>

@@ -1,5 +1,5 @@
 async () => {
-  // Reference scenario for a CUSTOM-INTERACTION game (newRound/finishRound style): counting-money.
+  // Scenario for the CUSTOM-INTERACTION game counting-money (newRound/finishRound style). Named scenario-<game-id>.js so tools/check-games.js picks it up.
   // Copy and adapt it for other custom games: replace the widget-driving parts, keep the structure and checks.
   // Run on a freshly loaded page with an EMPTY localStorage. Returns { passed, failed[], details }.
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -25,7 +25,7 @@ async () => {
   await sleep(300);
   check('correct: ✅ message', $('status').textContent.includes('✅'), $('status').textContent);
   check('correct: ok=1', JSON.stringify(resultsOf('أحمد')) === '[1,0]', resultsOf('أحمد'));
-  check('correct: widgets disabled', [...document.querySelectorAll('.currency-item')].every(i => i.classList.contains('disabled')));
+  check('correct: widgets disabled', [...document.querySelectorAll('.currency-item')].every(i => i.disabled));
   check('correct: waits before next round', !vis('startBtn'));
   await sleep(2300);
   check('correct: start returns after the delay', vis('startBtn') && $('studentSelect').value === 'سارة', $('studentSelect').value);

@@ -7,107 +7,91 @@
   <title>لعبة عدّ النقود السعودية</title>
   <link rel="stylesheet" href="../style.css" />
   <style>
-    body {
-      background: linear-gradient(135deg, #1a5e20 0%, #2e7d32 50%, #1a5e20 100%);
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.87 0.12 85); }
+
+    .money-target {
+      font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3.5rem);
     }
 
-    /* صور العملات السعودية */
+    .money-amount {
+      color: oklch(0.5 0.17 33);
+    }
+
+    /* the riyal notes and coins: big tappable buttons showing the real pictures */
     .money-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+      gap: var(--s-4);
       justify-items: center;
-      align-items: center;
-      margin: 30px auto;
-      max-width: 90%;
+      align-items: start;
+      margin-block: var(--s-4);
     }
 
     .currency-item {
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+      gap: var(--s-2);
+      min-height: 0;
+      padding: var(--s-2);
+      border-radius: 1.5rem;
+      background: transparent;
+      box-shadow: none;
     }
 
-    .currency-item:hover {
-      transform: scale(1.1) rotate(2deg);
-      filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.4));
+    @media (hover: hover) {
+      .currency-item:not(:disabled):hover {
+        transform: translateY(-4px) rotate(1.5deg);
+      }
     }
 
-    .currency-item:active {
+    .currency-item:not(:disabled):active {
       transform: scale(0.95);
+      box-shadow: none;
     }
 
-    .currency-item.disabled {
-      pointer-events: none;
-      opacity: 0.5;
-      filter: grayscale(100%) opacity(0.5);
+    .currency-item:disabled {
+      opacity: 0.45;
+      filter: grayscale(1);
     }
 
     .currency-img {
-      width: 160px;
+      width: min(100%, 10.5rem);
       height: auto;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      border: 3px solid rgba(255, 255, 255, 0.8);
+      border-radius: 0.75rem;
+      box-shadow: 0 0 0 3px var(--ink), 0 0.35rem 0 3px oklch(0.27 0.06 250 / 0.25);
       object-fit: cover;
+      background: var(--white);
     }
 
     .currency-item .coin-img {
-      width: 100px;
-      height: 100px;
+      width: 6.5rem;
+      height: 6.5rem;
       border-radius: 50%;
     }
 
     .currency-label {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #fff;
-      font-size: 16px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-      background: rgba(0, 0, 0, 0.5);
-      padding: 5px 15px;
-      border-radius: 20px;
-    }
-
-    #problem {
-      font-size: 2.5em;
-      text-align: center;
-      margin: 30px auto;
-      color: #fff;
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
-      min-height: 80px;
-      display: flex;
-      flex-direction: column;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: var(--s-2);
+      padding: 0 var(--s-4);
+      min-height: 2.5rem;
+      border-radius: 999px;
+      background: var(--white);
+      font-weight: 700;
+      font-size: 1.05rem;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 40rem) {
       .money-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-      }
-
-      .currency-img {
-        width: 120px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--s-3);
       }
 
       .currency-item .coin-img {
-        width: 80px;
-        height: 80px;
-      }
-
-      .currency-label {
-        font-size: 14px;
-        padding: 4px 10px;
-      }
-
-      #problem {
-        font-size: 1.8em;
+        width: 5.25rem;
+        height: 5.25rem;
       }
     }
   </style>
@@ -134,17 +118,17 @@
     // ورقة المئة ريال تظهر في المستويين الصعب والخبير فقط
     function updateLevelDisplay() {
       const level = document.getElementById('level').value;
-      document.getElementById('item-100').style.display = (level === 'hard' || level === 'pro') ? 'flex' : 'none';
+      document.getElementById('item-100').hidden = !(level === 'hard' || level === 'pro');
     }
 
     function renderProblem() {
       document.getElementById('problem').innerHTML = `
-        اجمع <span style="color:#ffd700;font-size:1.2em">${toArabicNumber(targetAmount)}</span> ريال سعودي
-        <div style="font-size:0.6em;margin-top:10px">المبلغ الحالي: <span id="currentDisplay">${toArabicNumber(currentAmount)}</span> ريال</div>`;
+        <div class="money-target">اجمع <span class="money-amount">${toArabicNumber(targetAmount)}</span> ريال سعودي</div>
+        <div class="problem-hint">المبلغ الحالي: <span id="currentDisplay">${toArabicNumber(currentAmount)}</span> ريال</div>`;
     }
 
     function setBillsDisabled(disabled) {
-      document.querySelectorAll('.currency-item').forEach(item => item.classList.toggle('disabled', disabled));
+      document.querySelectorAll('.currency-item').forEach(item => { item.disabled = disabled; });
     }
 
     /* ===== جولة جديدة (تستدعيها المنصة) ===== */
@@ -164,8 +148,9 @@
       game.finishRound(correct, { counted: roundCounted, message, delay: 2000 });
     }
 
-    function addMoney(amount) {
+    function addMoney(amount, tapIndex) {
       if (!gameStarted || answered) return;
+      game.sfx('pop', tapIndex);   // a small blip for every note or coin
       currentAmount += amount;
       document.getElementById('currentDisplay').textContent = toArabicNumber(currentAmount);
       if (currentAmount === targetAmount) finish(true);
@@ -176,16 +161,17 @@
       id: 'counting-money',
       storagePrefix: 'counting_money',   // مفتاح التخزين القديم: نحافظ عليه كي لا تضيع بيانات الطلاب المحفوظة
       title: 'لعبة عدّ النقود السعودية',
-      heading: '🇸🇦 لعبة عدّ النقود السعودية 💰',
+      heading: 'لعبة عدّ النقود السعودية',
+      emoji: { code: '1f4b8', fallback: '💸' },   // نفس إيموجي جزيرتها على الخريطة
       banner: { src: '../imgs/money-banner.jpg', alt: 'عد النقود السعودية' },
       exportFilename: 'نتائج_عد_النقود.xlsx',
       timer: { value: 30, min: 10, max: 90 },
-      intro: 'اختر طالباً واضغط "ابدأ اللعب" 🚀',
-      footerHTML: '💡 "النقود وسيلة، وليست غاية. استخدمها بحكمة لتحقيق أهدافك." 💡',
+      intro: 'اختر طالباً واضغط "ابدأ اللعب"',
+      footerHTML: '"النقود وسيلة، وليست غاية. استخدمها بحكمة لتحقيق أهدافك."',
       settingsHTML: `
-        <div class="toolbar" style="margin-top: 6px">
+        <div class="toolbar">
           <div class="group">
-            <span class="label">مستوى الصعوبة:</span>
+            <label class="label" for="level">مستوى الصعوبة:</label>
             <select id="level">
               <option value="easy">مبتدئ (5-25 ريال)</option>
               <option value="medium">متوسط (26-80 ريال)</option>
@@ -196,30 +182,30 @@
         </div>`,
       gameAreaHTML: `
         <div class="money-grid">
-          <div class="currency-item" id="item-100" style="display: none" data-val="100">
+          <button type="button" class="currency-item" id="item-100" hidden data-val="100">
             <img src="../imgs/currency/100-riyal.png" alt="مائة ريال" class="currency-img">
-            <span class="currency-label">💵 مائة ريال</span>
-          </div>
-          <div class="currency-item" data-val="50">
+            <span class="currency-label"><i class="ph-bold ph-money" aria-hidden="true"></i>مائة ريال</span>
+          </button>
+          <button type="button" class="currency-item" data-val="50">
             <img src="../imgs/currency/50-riyal.png" alt="خمسون ريالاً" class="currency-img">
-            <span class="currency-label">💵 خمسون ريالاً</span>
-          </div>
-          <div class="currency-item" data-val="10">
+            <span class="currency-label"><i class="ph-bold ph-money" aria-hidden="true"></i>خمسون ريالاً</span>
+          </button>
+          <button type="button" class="currency-item" data-val="10">
             <img src="../imgs/currency/10-riyal.png" alt="عشرة ريالات" class="currency-img">
-            <span class="currency-label">💵 عشرة ريالات</span>
-          </div>
-          <div class="currency-item" data-val="5">
+            <span class="currency-label"><i class="ph-bold ph-money" aria-hidden="true"></i>عشرة ريالات</span>
+          </button>
+          <button type="button" class="currency-item" data-val="5">
             <img src="../imgs/currency/5-riyal.png" alt="خمسة ريالات" class="currency-img">
-            <span class="currency-label">💵 خمسة ريالات</span>
-          </div>
-          <div class="currency-item" data-val="2">
+            <span class="currency-label"><i class="ph-bold ph-money" aria-hidden="true"></i>خمسة ريالات</span>
+          </button>
+          <button type="button" class="currency-item" data-val="2">
             <img src="../imgs/currency/2-riyal.png" alt="ريالان" class="currency-img coin-img">
-            <span class="currency-label">🪙 ريالان</span>
-          </div>
-          <div class="currency-item" data-val="1">
+            <span class="currency-label"><i class="ph-bold ph-coins" aria-hidden="true"></i>ريالان</span>
+          </button>
+          <button type="button" class="currency-item" data-val="1">
             <img src="../imgs/currency/1-riyal.png" alt="ريال واحد" class="currency-img coin-img">
-            <span class="currency-label">🪙 ريال واحد</span>
-          </div>
+            <span class="currency-label"><i class="ph-bold ph-coins" aria-hidden="true"></i>ريال واحد</span>
+          </button>
         </div>`,
       newRound,
       onNumbersToggle() {
@@ -229,8 +215,8 @@
       },
       onReady() {
         document.getElementById('level').addEventListener('change', updateLevelDisplay);
-        document.querySelectorAll('.currency-item').forEach(item => {
-          item.addEventListener('click', () => addMoney(parseInt(item.dataset.val, 10)));
+        document.querySelectorAll('.currency-item').forEach((item, i) => {
+          item.addEventListener('click', () => addMoney(parseInt(item.dataset.val, 10), i));
         });
         updateLevelDisplay();
       }

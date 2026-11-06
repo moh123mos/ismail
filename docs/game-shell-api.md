@@ -29,16 +29,20 @@ Source of truth: [game-shell.js](../game-shell.js). If this document and the cod
 </html>
 ```
 
-Do not add `<script>` tags for confetti / XLSX, a font link or a favicon: the shell loads them.
+Do not add `<script>` tags for confetti / XLSX / sounds / animated emoji, a font link or a favicon: the shell loads them.
+The page's `<style>` follows the rules in [design-system.md](design-system.md) (tokens, no hard-coded colours, `--game` accent).
 
 ## The shell owns (never duplicate in a game)
 
-Cairo web font and favicon, header + banner + title, timer input, numerals toggle, sound toggle, student add/delete/select, start and
-regenerate buttons, the `#problem` / choices / timer / status / face area, export / import / reset / finalize
-buttons, results table, winners banner, footer, `<audio id="player">`, localStorage persistence, scoring
-(`ok` / `bad` / `time`), praise and consolation messages (with the student's name), confetti, speech, rotation
-to the next student, highlighting + locking of the choices, the "practice question (not counted)" flow,
-timeout handling.
+Fonts (Baloo Bhaijaan 2 + Alexandria) and favicon, the whole page look (sky header with home link, island emoji, H1 and
+banner; board; settings and students panels; leaderboard; footer with the credits link), timer input and the draining
+timer pill, numerals toggle, sound toggle (voice + sound effects, remembered in `localStorage["home_sfx"]`), student
+add/delete/select, start and regenerate buttons, the `#problem` / choices / status / reaction-emoji area, export / import /
+reset / finalize buttons, results table (with an empty-state note), winners dialog, `<audio id="player">`, localStorage
+persistence, scoring (`ok` / `bad` / `time`), praise and consolation messages (with the student's name), confetti, speech,
+sound effects (`go` on start, `win(streak)` / `lose()` on every answer), the animated reaction emoji (🎉 right, 💪 wrong),
+number keys 1–9 picking an answer, rotation to the next student, highlighting + locking of the choices, the
+"practice question (not counted)" flow, timeout handling.
 
 ## `GameShell.mount(config)`
 
@@ -46,13 +50,14 @@ timeout handling.
 |---|---|---|
 | `id` | string, required | Unique game id. |
 | `title` | string, required | `<title>` and fallback H1. |
-| `heading` | string | H1 text, usually emoji + name. Defaults to `title`. |
+| `heading` | string | H1 text — plain Arabic name, **no emoji** (the mascot goes in `emoji`). Defaults to `title`. |
+| `emoji` | `{code, fallback}` | The game's animated mascot beside the H1: Noto code point (`imgs/emoji/<code>.json` must exist) and a plain-character fallback. Use the same emoji as the game's island on the map (`index.html`). |
 | `storagePrefix` | string | localStorage prefix → keys `<prefix>_students`, `<prefix>_results`. Defaults to `id`. **Never change it for an existing game** — it would orphan the teacher's saved students and results. |
-| `banner` | `{src, alt}` | Banner image (fixed `50vh` height). Hides itself if the image fails. |
-| `settingsHTML` | string | The game's own controls (inputs, selects, `.checkbox-option` groups) inside `.toolbar` blocks. Rendered above the shell's timer/toggle row. |
+| `banner` | `{src, alt}` | The teacher's banner artwork, shown as a framed poster in the header (max height ≈ 26vh, never cropped). Hides itself if the image fails. |
+| `settingsHTML` | string | The game's own controls (inputs, selects, `.checkbox-option` groups) inside `.toolbar` blocks. Rendered in the "إعدادات اللعبة" panel, above the shell's question-time input. |
 | `gameAreaHTML` | string | Replaces the default `<div class="choices" id="choices">`. Only for custom-interaction games. |
-| `intro` | string (HTML) | Shown in `#problem` before the first round. |
-| `footerHTML` | string | Replaces the default footer note. |
+| `intro` | string (HTML) | Shown in `#problem` before the first round (small grey text; the shell removes that style when a round starts). Default: a hint to pick a student. |
+| `footerHTML` | string | Replaces the default footer note. The "الشكر والتراخيص" link is always added by the shell and must stay (CC BY 4.0). |
 | `timer` | `{value,min,max}` | Defaults `20 / 5 / 90`. |
 | `exportFilename` | string | Excel file name. Defaults to `<id>_results.xlsx`. |
 | `used` | store | A **persistent** `GameShell.createUsedStore(key)`; adds the "clear used questions" button. |
@@ -68,7 +73,10 @@ Element ids the shell creates (game code may read them; a game's own ids must no
 `timerInput`, `toggleNums`, `toggleSound`, `newStudent`, `addStudent`, `studentSelect`, `deleteStudent`,
 `deleteAll`, `startBtn`, `regenerateBtn`, `problem`, `choices` (unless `gameAreaHTML` replaces it), `timerDisplay`,
 `status`, `face`, `exportBtn`, `importFile`, `resetResults`, `finalizeResultsBtn`, `clearUsed` (only with `used`),
-`resultsTable`, `bannerOverlay`, `resultsBanner`, `bannerContent`, `player`, and the root `app`.
+`resultsTable`, `resultsEmpty`, `bannerOverlay`, `resultsBanner`, `bannerContent`, `player`, and the root `app`.
+Show/hide of `#startBtn` / `#regenerateBtn` uses the `hidden` attribute (not `style.display`): test visibility with `getComputedStyle(el).display`.
+
+After `mount`, `GameShell.current` is the same `ctx` (used by `tools/check-games.js`).
 
 ## Style A — multiple-choice game (`buildQuestion`)
 
@@ -88,6 +96,8 @@ function buildQuestion(ctx) {
 - `ctx.counted` is `false` when the teacher pressed "regenerate" (practice question, not scored). Games that
   avoid repeats should only record the question as used when `ctx.counted` is true.
 - Build numbers with `toArabicNumber(n)` so they follow the numerals toggle.
+- Return only the question content in `html` — the shell sizes `#problem` (no inline `font-size`). Use `.problem-hint` for a small helper line.
+- Choice buttons get `data-key` (the number key that picks them) and cycle through the sticker colours automatically.
 - The shell starts the timer, checks the answer, colours the right/wrong choice, disables the buttons, scores,
   speaks, shows confetti and moves to the next student. A timeout counts as a wrong answer.
 - Examples: [pages/equations.html](../pages/equations.html), [pages/math-operations.html](../pages/math-operations.html), [pages/multi-tables.html](../pages/multi-tables.html).
@@ -117,11 +127,14 @@ function finish(correct, message) {
 | `counted` | `true` | `false` = practice, not scored. Remember `counted` from `newRound`. |
 | `message` | icon + random praise with the student's name | Full status text. Use it to say *why* it was wrong. |
 | `speak` | the praise phrase | Text to speak. |
-| `face` | 🎉 / 😢 | Face emoji. |
+| `face` | 🎉 / 💪 | Reaction emoji (a character; its animation `imgs/emoji/<code>.json` is used when it exists, else the character is shown). |
 | `delay` | `0` | ms to wait before the "start" button returns and the next student is selected. |
 
 While a round is running `gameStarted === true && answered === false`; guard widget clicks with that.
 Example: [pages/counting-money.html](../pages/counting-money.html).
+
+Custom widgets should be real `<button>`s (keyboard + touch) styled with the design tokens. `ctx.sfx(name, arg)` plays a
+sound effect safely (`'pop'`, `'hover'`, `'go'`, `'win'`, `'lose'` — see `js/sfx.js`); the counting game uses `'pop'` per tap.
 
 ## Avoiding repeated questions
 

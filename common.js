@@ -178,7 +178,8 @@ function fingerprint(obj) {
  * الحصول على ألوان عشوائية
  */
 function getRandomColors(n) {
-  const colors = ["#f44336", "#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#00bcd4"];
+  // CSS colour values (design tokens from tokens.css): use them as `background:${color}` with dark ink text.
+  const colors = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)", "var(--c6)"];
   let arr = [];
   for (let i = 0; i < n; i++) {
     arr.push(colors[i % colors.length]);
@@ -199,16 +200,21 @@ function startTimer(callback) {
   questionStartTime = Date.now(); // حفظ وقت بداية السؤال بالميلي ثانية
 
   const timerDisplay = document.getElementById('timerDisplay');
-  if (timerDisplay) {
-    timerDisplay.textContent = '⏱ ' + toArabicNumber(((currentTimeLeft * 1000) / 1000).toFixed(2));
-  }
+  // The pill around the number shows the remaining time as a draining bar (--t: 1 → 0) and turns red in the last 4 s.
+  const pill = timerDisplay && timerDisplay.closest('.timer-pill');
+  const paint = () => {
+    const left = Math.max(0, currentTimeLeft);   // never show a negative time on the last tick
+    if (timerDisplay) timerDisplay.textContent = toArabicNumber(left.toFixed(2));
+    if (pill) {
+      pill.style.setProperty('--t', timerDuration > 0 ? Math.min(1, left / timerDuration).toFixed(3) : 0);
+      pill.toggleAttribute('data-low', left <= 4);
+    }
+  };
+  paint();
 
   timer = setInterval(() => {
     currentTimeLeft -= 0.1;
-    if (timerDisplay) {
-      // never show a negative time on the last tick
-      timerDisplay.textContent = '⏱ ' + toArabicNumber(Math.max(0, currentTimeLeft).toFixed(2));
-    }
+    paint();
 
     if (currentTimeLeft <= 0) {
       clearInterval(timer);
@@ -394,21 +400,22 @@ function updateResultsTable() {
 
     if (podium.indexOf(idx) !== -1) {
       const pos = podium.indexOf(idx);
-      if (pos === 0) { medal = '🥇'; rowClass = 'gold'; }
-      else if (pos === 1) { medal = '🥈'; rowClass = 'silver'; }
-      else if (pos === 2) { medal = '🥉'; rowClass = 'bronze'; }
+      const places = ['الأول', 'الثاني', 'الثالث'];
+      if (pos < 3) {
+        rowClass = ['gold', 'silver', 'bronze'][pos];
+        medal = `<span class="medal medal--${rowClass}" role="img" aria-label="المركز ${places[pos]}"><i class="ph-fill ph-medal" aria-hidden="true"></i></span>`;
+      }
     }
 
     if (rowClass) tr.className = rowClass;
 
     // بناء خلية الاسم مع الصورة
-    let nameCell = '';
-    if (medal) nameCell += '<span class="medal">' + medal + '</span>';
+    let nameCell = medal;
 
-    // إضافة الصورة إذا كانت موجودة
+    // إضافة الصورة إذا كانت موجودة (شكلها في style.css: .student-avatar)
     const studentData = results[r.name];
     if (studentData && studentData.avatar) {
-      nameCell += `<img src="${studentData.avatar}" alt="${r.name}" class="student-avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; object-fit: cover; vertical-align: middle; border: 3px solid #4CAF50; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease;">`;
+      nameCell += `<img src="${studentData.avatar}" alt="${r.name}" class="student-avatar">`;
     }
     nameCell += r.name;
 
@@ -420,6 +427,10 @@ function updateResultsTable() {
     `;
     tbody.appendChild(tr);
   });
+
+  // "no results yet" note under the table (the shell's #resultsEmpty)
+  const emptyNote = document.getElementById('resultsEmpty');
+  if (emptyNote) emptyNote.hidden = sorted.length > 0;
 }
 
 /**
@@ -547,15 +558,16 @@ function showWinnersBanner(top3) {
 
   if (!banner || !content) return;
 
-  const medals = ['🥇', '🥈', '🥉'];
+  // medals: animated emoji (js/animated-emoji.js) with the plain character as fallback
+  const medals = [['1f947', '🥇'], ['1f948', '🥈'], ['1f949', '🥉']];
   const colors = ['gold', 'silver', 'bronze'];
-  let html = '<div class="banner-title">🎉 نتائج المسابقة 🎉</div>';
+  let html = '<div class="banner-title"><i class="ph-fill ph-trophy" aria-hidden="true"></i> نتائج المسابقة <i class="ph-fill ph-trophy" aria-hidden="true"></i></div>';
 
   top3.forEach((p, i) => {
     const cls = colors[i] || '';
     html += `
       <div class="winner-row ${cls === 'gold' ? 'first' : cls === 'silver' ? 'second' : cls === 'bronze' ? 'third' : ''}">
-        <div class="winner-medal">${medals[i]}</div>
+        <div class="winner-medal"><span class="emoji" data-emoji="${medals[i][0]}" data-fallback="${medals[i][1]}" aria-hidden="true">${medals[i][1]}</span></div>
         <div class="winner-info">
           <div class="winner-name">${p.name}</div>
           <div class="winner-stats">${p.ok} صحيح — ${p.bad} خاطئ</div>
@@ -565,6 +577,7 @@ function showWinnersBanner(top3) {
   });
 
   content.innerHTML = html;
+  if (window.AnimatedEmoji) window.AnimatedEmoji.scan(content);
 
   if (overlay) overlay.style.display = 'block';
   banner.style.display = 'block';

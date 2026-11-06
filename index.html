@@ -4,952 +4,661 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ألعاب رياضيات تفاعلية لتلاميذ المرحلة الابتدائية مع الأستاذ إسماعيل مصطفى">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <title>الأستاذ إسماعيل مصطفى - معلم الرياضيات</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Alexandria:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/phosphor/bold/style.css">
+  <link rel="stylesheet" href="vendor/phosphor/fill/style.css">
+  <link rel="stylesheet" href="tokens.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    /* ============ الصفحة الرئيسية: خريطة الجزر ============ */
+    *,
+    *::before,
+    *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --primary: #ff9800;
-      --primary-dark: #f57c00;
-      --primary-light: #ffb74d;
-      --secondary: #4FC3F7;
-      --dark: #0b1020;
-      --panel: #111217;
-      --accent: #ffb366;
-      --text-light: #ffffff;
-      --text-dark: #000000;
-    }
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Cairo', sans-serif;
-      background: linear-gradient(135deg, #0b1020 0%, #1a1f35 100%);
-      color: var(--text-light);
+      font-family: var(--f-body);
+      font-size: 1.25rem;
+      line-height: 1.75;
+      color: var(--ink);
+      background: var(--sea);
       overflow-x: hidden;
       min-height: 100vh;
     }
 
-    /* Animated Background */
-    .animated-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      overflow: hidden;
-    }
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    :focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; border-radius: 10px; }
 
-    .floating-shape {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.1;
-      animation: float 20s infinite ease-in-out;
-    }
+    .wrap { width: min(100% - 2rem, 80rem); margin-inline: auto; }
+    .emoji { display: inline-block; width: 2.5rem; height: 2.5rem; flex: none; }
+    .emoji svg { display: block; }
 
-    .shape1 {
-      width: 300px;
-      height: 300px;
-      background: var(--primary);
-      top: 10%;
-      right: 10%;
-      animation-delay: 0s;
+    /* ---------- sky + hero ---------- */
+    .sky {
+      position: relative; background: var(--sky); padding-block: var(--s-6) 0;
     }
-
-    .shape2 {
-      width: 200px;
-      height: 200px;
-      background: var(--secondary);
-      bottom: 20%;
-      left: 15%;
-      animation-delay: 5s;
+    .sun {
+      position: absolute; inset-block-start: 1.5rem; inset-inline-end: 9%;
+      width: 6.5rem; aspect-ratio: 1; border-radius: 50%; background: var(--sun);
+      box-shadow: 0 0 0 1.1rem oklch(0.88 0.16 95 / 0.35), 0 0 0 2.2rem oklch(0.88 0.16 95 / 0.18);
     }
+    .cloud { position: absolute; color: var(--white); opacity: 0.95; }
+    .cloud svg { display: block; width: 100%; height: auto; }
+    .cloud--1 { inset-block-start: 5.5rem; inset-inline-end: 24%; width: 10rem; }
+    .cloud--2 { inset-block-start: 9rem; inset-inline-start: 34%; width: 8rem; opacity: 0.8; }
+    .cloud--3 { inset-block-start: 1.5rem; inset-inline-start: 56%; width: 6rem; opacity: 0.7; }
 
-    .shape3 {
-      width: 150px;
-      height: 150px;
-      background: var(--primary-light);
-      top: 60%;
-      right: 30%;
-      animation-delay: 10s;
+    .top { position: relative; z-index: 2; display: flex; align-items: center; gap: var(--s-6); flex-wrap: wrap; }
+    .brand {
+      display: inline-flex; align-items: center; gap: var(--s-2);
+      font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; line-height: 1.2;
     }
-
-    @keyframes float {
-      0%, 100% {
-        transform: translate(0, 0) scale(1);
-      }
-      33% {
-        transform: translate(30px, -30px) scale(1.1);
-      }
-      66% {
-        transform: translate(-20px, 20px) scale(0.9);
-      }
+    .brand i { color: var(--coral); font-size: 1.8rem; }
+    .sfx-toggle {
+      display: inline-flex; align-items: center; gap: var(--s-2); min-height: 2.75rem; padding: 0 var(--s-4);
+      border: 0; border-radius: 999px; background: var(--white); color: var(--ink); cursor: pointer;
+      font: 600 1rem/1 var(--f-body); box-shadow: 0 0.25rem 0 oklch(0.8 0.05 205);
+      transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
     }
+    .sfx-toggle i { font-size: 1.35rem; }
+    .sfx-toggle[aria-pressed="false"] { background: oklch(0.88 0.03 210); color: var(--ink-soft); }
+    .sfx-toggle:active { transform: translateY(0.2rem); box-shadow: 0 0.05rem 0 oklch(0.8 0.05 205); }
+    @media (hover: hover) { .sfx-toggle:hover { transform: translateY(-2px); } }
 
-    /* Header */
-    header {
-      position: relative;
-      z-index: 10;
-      padding: 20px 0;
-      text-align: center;
-    }
-
-    .logo {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: var(--primary);
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      display: inline-block;
-      animation: glow 2s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-      0%, 100% {
-        text-shadow: 2px 2px 4px rgba(255, 152, 0, 0.5);
-      }
-      50% {
-        text-shadow: 0 0 20px rgba(255, 152, 0, 0.8), 0 0 30px rgba(255, 152, 0, 0.6);
-      }
-    }
-
-    /* Hero Section */
     .hero {
-      position: relative;
-      z-index: 10;
-      min-height: 85vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
+      position: relative; z-index: 2;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-12); align-items: end;
+      padding-block: var(--s-4) 0;
+    }
+    .kicker {
+      display: inline-flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2);
+      font-family: var(--f-display); font-weight: 700; font-size: 1.4rem; color: var(--ink-soft);
+    }
+    h1 {
+      font-family: var(--f-display); font-weight: 800;
+      font-size: clamp(2.9rem, 1.6rem + 4.4vw, 5.25rem); line-height: 1.15; text-wrap: balance;
+      margin-bottom: var(--s-3);
+    }
+    h1 .name { text-decoration: underline wavy var(--sun); text-decoration-thickness: 0.09em; text-underline-offset: 0.14em; text-decoration-skip-ink: none; }
+    .lead { max-width: 40ch; font-size: 1.3rem; color: var(--ink-soft); margin-bottom: var(--s-6); }
+
+    .porthole {
+      position: relative; z-index: 3;
+      width: clamp(8.5rem, 14vw, 12rem); aspect-ratio: 1; border-radius: 50%;
+      background: var(--white); border: 0.75rem solid var(--brass);
+      box-shadow: 0 0 0 4px var(--ink), inset 0 0 0 4px var(--ink);
+      margin-bottom: -4rem; overflow: hidden;
+    }
+    .porthole img { width: 100%; height: 100%; object-fit: cover; }
+    .porthole-wrap { position: relative; justify-self: center; }
+
+    .horizon { display: block; width: 100%; height: clamp(2.5rem, 5vw, 4.5rem); color: var(--sea); position: relative; z-index: 1; margin-top: -1px; }
+
+    /* ---------- the map ---------- */
+    .sea { position: relative; padding-block: var(--s-4) var(--s-16); overflow: hidden; }
+    .sea::before {
+      content: ""; position: absolute; inset: 0 -10% 0 -10%; opacity: 0.5; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='36' viewBox='0 0 120 36'%3E%3Cpath d='M0 18c10-10 20-10 30 0s20 10 30 0 20-10 30 0 20 10 30 0' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' opacity='0.55'/%3E%3C/svg%3E");
+      background-size: 120px 72px;
+    }
+    .sea > .wrap { position: relative; }
+
+    .ribbon {
+      display: inline-block; position: relative; z-index: 2;
+      font-family: var(--f-display); font-weight: 800; font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem); line-height: 1.2;
+      background: var(--sun); color: var(--ink);
+      padding: var(--s-3) calc(var(--s-8) + 1.25rem);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 1.25rem) 50%, 100% 100%, 0 100%, 1.25rem 50%);
+      margin-bottom: var(--s-6);
     }
 
-    .hero-container {
-      max-width: 1200px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
+    .map { --map-h: 760; position: relative; container-type: inline-size; aspect-ratio: 1200 / var(--map-h); }
+    .route { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .route path { fill: none; stroke: var(--white); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 2 16; opacity: 0.9; }
+
+    .island {
+      --g: oklch(0.84 0.14 135);
+      position: absolute; left: var(--x); top: var(--y); width: 36%; aspect-ratio: 372 / 306;
+      translate: -50% -50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+      gap: clamp(0.2rem, 0.5cqw, 0.5rem); padding: 4.2cqw 5.8cqw 5.9cqw;
+      text-decoration: none; color: var(--ink);
+      transition: transform 0.4s var(--ease-out);
+    }
+    .island:focus-visible { transform: translateY(-8px); }
+    @media (hover: hover) { .island:hover { transform: translateY(-8px); } }
+    .island:active { transform: translateY(-2px) scale(0.99); transition-duration: 0.1s; }
+
+    .island__shape { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; }
+    .island__shape .foam { fill: var(--white); opacity: 0.38; }
+    .island__shape .sandbed { fill: var(--sand); }
+    .island__shape .grass { fill: var(--g); }
+    .island > :not(svg) { position: relative; z-index: 1; }
+    .island__emoji { position: absolute !important; z-index: 2 !important; inset-block-start: -2%; inset-inline-end: 8%; width: clamp(3rem, 7cqw, 6.5rem); height: clamp(3rem, 7cqw, 6.5rem); }
+    .island__sign { font-family: var(--f-display); font-weight: 800; font-size: clamp(1.3rem, 2.5cqw, 2.5rem); line-height: 1.2; text-wrap: balance; }
+    .island__desc { font-size: clamp(0.95rem, 1.4cqw, 1.4rem); line-height: 1.5; color: var(--ink-soft); font-weight: 500; }
+    .island__cta {
+      display: inline-flex; align-items: center; gap: var(--s-2); margin-top: clamp(0.1rem, 0.4cqw, 0.4rem);
+      min-height: 2.75rem; padding: 0 var(--s-4); border-radius: 999px;
+      background: var(--ink); color: var(--white); font-weight: 700; font-size: clamp(1rem, 1.5cqw, 1.5rem);
+    }
+    .island__cta i { transition: transform 0.3s var(--ease-out); }
+    @media (hover: hover) { .island:hover .island__cta i { transform: translateX(-5px); } }
+
+    .boat { position: absolute; left: 0; top: 0; z-index: 4; width: clamp(3rem, 6cqw, 5.5rem); height: clamp(3rem, 6cqw, 5.5rem); pointer-events: none; transition: transform 1.2s var(--ease-out); }
+    .boat .emoji { width: 100%; height: 100%; }
+    .critter { position: absolute; z-index: 1; width: clamp(2.5rem, 7cqw, 6rem); height: clamp(2.5rem, 7cqw, 6rem); }
+
+    /* ---------- how: the beach ---------- */
+    .beach { background: var(--sand); padding-block: var(--s-16) var(--s-12); position: relative; }
+    .beach::before { content: ""; position: absolute; inset-block-start: -1px; inset-inline: 0; height: 2.5rem; background: var(--sea); clip-path: ellipse(60% 100% at 50% 0%); }
+    h2 {
+      font-family: var(--f-display); font-weight: 800; font-size: clamp(2.25rem, 1.4rem + 3vw, 3.5rem);
+      line-height: 1.2; margin-bottom: var(--s-8);
+    }
+    .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-12); list-style: none; }
+    .step { display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-items: start; }
+    .buoy {
+      position: relative; width: 4.75rem; aspect-ratio: 1; border-radius: 50%;
+      background: conic-gradient(var(--coral) 0 25%, var(--white) 0 50%, var(--coral) 0 75%, var(--white) 0);
+      display: grid; place-items: center; box-shadow: 0 0 0 3px var(--ink);
+    }
+    .buoy span {
+      width: 58%; aspect-ratio: 1; border-radius: 50%; background: var(--sand); box-shadow: 0 0 0 3px var(--ink);
+      display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; line-height: 1; padding-bottom: 0.25rem;
+    }
+    .step h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; line-height: 1.25; margin-bottom: var(--s-1); }
+    .step p { color: var(--ink-soft); font-size: 1.1rem; max-width: 28ch; }
+    .note { margin-top: var(--s-8); color: var(--ink-soft); display: flex; align-items: center; gap: var(--s-2); font-weight: 500; }
+
+    /* ---------- harbor: try it yourself ---------- */
+    .harbor { padding-block: var(--s-8) var(--s-24); }
+    .harbor__grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-12); align-items: center; }
+    .harbor h2 { margin-bottom: var(--s-4); }
+    .harbor__lead { font-size: 1.4rem; max-width: 28ch; font-weight: 500; margin-bottom: var(--s-6); }
+    .harbor__hint {
+      display: inline-flex; align-items: center; gap: var(--s-2);
+      background: var(--white); padding: var(--s-2) var(--s-4); border-radius: 999px; font-weight: 600; font-size: 1.05rem;
     }
 
-    /* Teacher Image Section */
-    .teacher-image-wrapper {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .scroll {
+      position: relative; background: var(--sand); border-radius: 2rem;
+      padding: var(--s-6) var(--s-8) var(--s-6); box-shadow: 0 0.6rem 0 oklch(0.74 0.09 78);
+    }
+    .scroll__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+    .timer {
+      --t: 1; width: 4.75rem; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+      background: conic-gradient(var(--coral) calc(var(--t) * 1turn), oklch(0.86 0.04 85) 0);
+      box-shadow: 0 0 0 3px var(--ink);
+    }
+    .timer[data-low="1"] { background: conic-gradient(oklch(0.58 0.22 27) calc(var(--t) * 1turn), oklch(0.86 0.04 85) 0); }
+    .timer span {
+      width: 62%; aspect-ratio: 1; border-radius: 50%; background: var(--sand); box-shadow: 0 0 0 3px var(--ink);
+      display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.6rem; line-height: 1; padding-bottom: 0.25rem;
+    }
+    .chips { display: flex; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; }
+    .chip { display: inline-flex; align-items: center; gap: var(--s-2); background: var(--white); border-radius: 999px; padding: 0.15rem 1rem; font-weight: 600; font-size: 1rem; }
+    .chip b { font-family: var(--f-display); font-weight: 800; font-size: 1.35rem; min-width: 1.4ch; text-align: center; }
+
+    .q {
+      direction: ltr; text-align: center; font-family: var(--f-display); font-weight: 800;
+      font-size: clamp(3.25rem, 1.5rem + 4.6vw, 6rem); line-height: 1.25; padding-block: var(--s-4) var(--s-6);
+    }
+    .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); padding-bottom: var(--s-2); }
+    .choice {
+      --c: var(--coral); --cd: oklch(0.55 0.17 33);
+      position: relative; min-height: 5.5rem; border: 0; border-radius: 1.5rem; background: var(--c); color: var(--ink);
+      font-family: var(--f-display); font-weight: 800; font-size: 2.6rem; line-height: 1; padding-bottom: 0.2rem; cursor: pointer;
+      box-shadow: 0 0.4rem 0 var(--cd);
+      transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), opacity 0.3s;
+    }
+    .choice[data-i="1"] { --c: var(--sun); --cd: oklch(0.64 0.14 85); }
+    .choice[data-i="2"] { --c: oklch(0.8 0.11 185); --cd: oklch(0.54 0.1 190); }
+    .choice[data-i="3"] { --c: oklch(0.8 0.1 235); --cd: oklch(0.54 0.12 240); }
+    .choice::before {
+      content: attr(data-key); position: absolute; inset-block-start: 0.6rem; inset-inline-start: 0.8rem;
+      width: 1.9rem; aspect-ratio: 1; border-radius: 50%; background: var(--white);
+      display: grid; place-items: center; font: 700 1.05rem/1 var(--f-body);
+    }
+    @media (hover: hover) { .choice:hover:not([aria-disabled]) { transform: translateY(-3px); box-shadow: 0 0.55rem 0 var(--cd); } }
+    .choice:active:not([aria-disabled]) { transform: translateY(0.3rem); box-shadow: 0 0.1rem 0 var(--cd); transition-duration: 0.08s; }
+    .is-locked .choice { cursor: default; }
+    .is-locked .choice:not(.is-correct) { opacity: 0.5; }
+    .choice.is-correct { --c: oklch(0.8 0.17 145); --cd: oklch(0.54 0.14 150); opacity: 1 !important; }
+    .choice.is-correct::after { content: "✓"; position: absolute; inset-block-start: 0.45rem; inset-inline-end: 0.9rem; font: 800 1.6rem/1 var(--f-body); }
+    .choice.is-wrong { box-shadow: 0 0.1rem 0 var(--cd); }
+    .msg { text-align: center; min-height: 2.4rem; margin-top: var(--s-3); font-weight: 700; font-size: 1.3rem; }
+    .react {
+      position: absolute; inset-block-start: -3rem; inset-inline-end: 1.25rem; width: 6.5rem; height: 6.5rem; z-index: 3;
+      pointer-events: none; opacity: 0; scale: 0.6; transition: opacity 0.25s, scale 0.4s var(--ease-out);
+    }
+    .react[data-on] { opacity: 1; scale: 1; }
+    .react svg { display: block; }
+
+    /* ---------- night: the podium ---------- */
+    .night { position: relative; background: var(--sea-deeper); color: var(--white); padding-block: var(--s-24) var(--s-16); overflow: hidden; text-align: center; }
+    .night::before { content: ""; position: absolute; inset-block-start: -1px; inset-inline: 0; height: 2.5rem; background: var(--sand); clip-path: ellipse(60% 100% at 50% 0%); }
+    .night__stars {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(circle, oklch(1 0 0) 0 1.5px, transparent 2px), radial-gradient(circle, oklch(0.9 0.12 95) 0 2px, transparent 2.5px);
+      background-size: 170px 130px, 260px 210px; background-position: 20px 30px, 90px 100px;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0, transparent 85%); mask-image: linear-gradient(to bottom, #000 0, transparent 85%);
+    }
+    .night .wrap { position: relative; }
+    .night h2 { margin-bottom: var(--s-2); }
+    .night__lead { color: oklch(0.88 0.04 220); font-size: 1.3rem; max-width: 36ch; margin: 0 auto var(--s-12); }
+    .tag {
+      display: inline-flex; align-items: center; background: var(--sun); color: var(--ink); font-family: var(--f-body); font-weight: 700; font-size: 0.95rem; line-height: 1.6;
+      padding: 0 var(--s-3); border-radius: 999px; margin-inline-start: var(--s-3); vertical-align: middle;
+    }
+    .podium { display: flex; justify-content: center; align-items: flex-end; gap: var(--s-4); max-width: 54rem; margin-inline: auto; }
+    .pod { flex: 1 1 0; max-width: 17rem; display: flex; flex-direction: column; align-items: center; }
+    .pod__who { display: grid; justify-items: center; gap: 0.1rem; margin-bottom: var(--s-3); }
+    .pod__medal { width: 5rem; height: 5rem; }
+    .pod--1 .pod__medal { width: 6.5rem; height: 6.5rem; }
+    .pod__name { font-family: var(--f-display); font-weight: 800; font-size: 1.9rem; line-height: 1.2; }
+    .pod__score { color: oklch(0.88 0.04 220); font-size: 1.05rem; }
+    .pod__score b { font-family: var(--f-display); font-weight: 800; font-size: 1.6rem; color: var(--sun); }
+    .pod__block {
+      width: 100%; height: var(--h); border-radius: 1.25rem 1.25rem 0 0; background: var(--bg); color: var(--ink);
+      display: grid; place-items: start center; padding-top: var(--s-4);
+      font-family: var(--f-display); font-weight: 800; font-size: 5rem; line-height: 1;
+    }
+    .pod--1 { --h: 15rem; --bg: var(--sun); }
+    .pod--2 { --h: 11rem; --bg: oklch(0.9 0.025 225); }
+    .pod--3 { --h: 8rem; --bg: oklch(0.76 0.1 55); }
+    .podium__floor { max-width: 58rem; height: 0.9rem; margin: 0 auto; background: var(--sand); border-radius: 0.45rem; }
+    .night__deco { position: absolute; width: 5rem; height: 5rem; }
+    .night__deco--1 { inset-block-start: 0; inset-inline-start: 4%; }
+    .night__deco--2 { inset-block-start: 4rem; inset-inline-end: 6%; width: 3.5rem; height: 3.5rem; }
+    .night__deco--3 { inset-block-start: 11rem; inset-inline-start: 14%; width: 3rem; height: 3rem; }
+    .night__deco--4 { inset-block-start: 6rem; inset-inline-end: 22%; width: 5.5rem; height: 5.5rem; }
+
+    /* ---------- footer: deep sea ---------- */
+    footer { background: var(--sea-deeper); border-top: 2px solid oklch(1 0 0 / 0.1); color: var(--white); text-align: center; padding-block: var(--s-8) 5.5rem; }
+    footer p { font-weight: 500; }
+    footer i { color: var(--coral); vertical-align: -0.1em; }
+    footer small { display: block; margin-top: var(--s-1); font-size: 0.95rem; opacity: 0.9; }
+    footer a { color: inherit; text-underline-offset: 0.2em; }
+
+    /* ---------- motion ---------- */
+    @keyframes rise { from { opacity: 0; translate: 0 1.5rem; } to { opacity: 1; translate: 0 0; } }
+    @keyframes drift { from { translate: -4rem 0; } to { translate: 4rem 0; } }
+    @keyframes porthole-in { from { opacity: 0; scale: 0.6; } to { opacity: 1; scale: 1; } }
+    @keyframes swell { from { translate: -2.5rem 0; } to { translate: 2.5rem 0; } }
+    @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -0.4rem; } }
+    @keyframes route-in { from { stroke-dashoffset: 400; opacity: 0; } to { stroke-dashoffset: 0; opacity: 0.9; } }
+    @keyframes shake { 0%, 100% { translate: 0 0; } 20% { translate: -0.5rem 0; } 40% { translate: 0.5rem 0; } 60% { translate: -0.35rem 0; } 80% { translate: 0.25rem 0; } }
+    @keyframes pod-up { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes island-in { from { opacity: 0; translate: -50% calc(-50% + 2rem); scale: 0.85; } to { opacity: 1; translate: -50% -50%; scale: 1; } }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .rise { animation: rise 0.8s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 110ms); }
+      .porthole { animation: porthole-in 0.9s 0.4s var(--ease-out) both; }
+      .cloud--1 { animation: drift 28s ease-in-out infinite alternate; }
+      .cloud--2 { animation: drift 36s ease-in-out infinite alternate-reverse; }
+      .cloud--3 { animation: drift 32s ease-in-out infinite alternate; }
+      .sea::before { animation: swell 9s ease-in-out infinite alternate; }
+      .js .island { opacity: 0; }
+      .js .map.in .island { animation: island-in 0.9s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 160ms + 200ms); }
+      .js .map.in .route path { animation: route-in 1.6s 0.2s var(--ease-out) both; }
+      .js .map:not(.in) .route path { opacity: 0; }
+      .choice.is-wrong { animation: shake 0.45s ease-out; }
+      .js .podium:not(.in) .pod__block { clip-path: inset(100% 0 0 0); }
+      .js .podium.in .pod__block { animation: pod-up 1s var(--ease-out) both; animation-delay: calc(var(--d, 0) * 1ms); }
+      .js .podium:not(.in) .pod__who { opacity: 0; translate: 0 1.5rem; }
+      .js .podium.in .pod__who { opacity: 1; translate: 0 0; transition: opacity 0.6s var(--ease-out) calc(var(--d, 0) * 1ms + 500ms), translate 0.6s var(--ease-out) calc(var(--d, 0) * 1ms + 500ms); }
+      .js .reveal { opacity: 0; translate: 0 2rem; transition: opacity 0.7s var(--ease-out), translate 0.7s var(--ease-out); transition-delay: calc(var(--i, 0) * 90ms); }
+      .js .reveal.in { opacity: 1; translate: 0 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .boat { transition: none; }
     }
 
-    .image-decoration {
-      position: relative;
-      width: 350px;
-      height: 350px;
-    }
-
-    .image-decoration::before {
-      content: '';
-      position: absolute;
-      inset: -15px;
-      border-radius: 50%;
-      background: linear-gradient(45deg, var(--primary), var(--secondary), var(--primary-light));
-      animation: rotate 10s linear infinite;
-      z-index: -1;
-    }
-
-    @keyframes rotate {
-      0% {
-        transform: rotate(0deg);
+    /* ---------- vertical map on narrow screens ---------- */
+    @media (max-width: 62rem) {
+      .hero { grid-template-columns: 1fr; gap: var(--s-8); }
+      .porthole-wrap { justify-self: start; }
+      .sea { padding-block-start: 5.5rem; }
+      .steps { grid-template-columns: 1fr; gap: var(--s-8); }
+      .harbor__grid { grid-template-columns: 1fr; gap: var(--s-8); }
+      .pod--1 { --h: 11rem; } .pod--2 { --h: 8rem; } .pod--3 { --h: 6rem; }
+      .pod__block { font-size: 3.5rem; }
+      .pod__name { font-size: 1.4rem; }
+      .pod__medal, .pod--1 .pod__medal { width: 4rem; height: 4rem; }
+      .night__deco { display: none; }
+      .map { aspect-ratio: auto; display: flex; flex-direction: column; gap: var(--s-8); padding-block: var(--s-4); }
+      .route, .boat, .critter { display: none; }
+      .island {
+        position: relative; left: auto; top: auto; translate: none; width: min(100%, 26rem); aspect-ratio: auto;
+        padding: 3.25rem 2.25rem 3.5rem;
       }
-      100% {
-        transform: rotate(360deg);
-      }
+      .island:nth-of-type(even) { align-self: flex-end; }
+      .island:nth-of-type(odd) { align-self: flex-start; }
+      .island__sign { font-size: 1.6rem; }
+      .island__desc { font-size: 1.05rem; }
+      .island__cta { font-size: 1.1rem; }
+      .island__emoji { width: 4.25rem; height: 4.25rem; inset-block-start: -1rem; }
+      .js .map.in .island { animation-name: island-in-m; }
+    }
+    @media (min-width: 40rem) and (max-width: 62rem) {
+      .map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-12) var(--s-6); align-items: start; }
+      .island, .island:nth-of-type(odd), .island:nth-of-type(even) { width: 100%; align-self: auto; }
+      .island:nth-of-type(even) { margin-top: var(--s-12); }
+    }
+    @media (min-width: 106rem) { html { font-size: 112.5%; } .wrap { width: min(100% - 4rem, 88rem); } }
+    @media (min-width: 137.5rem) { html { font-size: 125%; } }
+    @keyframes island-in-m { from { opacity: 0; translate: 0 2rem; scale: 0.9; } to { opacity: 1; translate: 0 0; scale: 1; } }
+    @media (max-width: 40rem) {
+      body { font-size: 1.125rem; }
+      .sun { width: 4.5rem; }
+      .step { grid-template-columns: auto 1fr; }
+      .scroll { padding: var(--s-6) var(--s-4) var(--s-6); }
+      .choice { font-size: 2.1rem; min-height: 4.75rem; }
+      .podium { gap: var(--s-2); }
+      .pod__score { font-size: 0.9rem; }
     }
 
-    .teacher-image {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 8px solid var(--panel);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 120px;
-      animation: pulse 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-    }
-
-    /* Hero Content */
-    .hero-content {
-      text-align: right;
-    }
-
-    .hero-subtitle {
-      color: var(--primary);
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 10px;
-      animation: slideInRight 0.8s ease-out;
-    }
-
-    .hero-title {
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: slideInRight 0.8s ease-out 0.2s both;
-    }
-
-    .hero-description {
-      font-size: 1.3rem;
-      line-height: 1.8;
-      margin-bottom: 40px;
-      color: rgba(255, 255, 255, 0.85);
-      animation: slideInRight 0.8s ease-out 0.4s both;
-    }
-
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(-50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    /* Buttons */
-    .cta-buttons {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      animation: slideInRight 0.8s ease-out 0.6s both;
-    }
-
-    .btn {
-      position: relative;
-      padding: 18px 40px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      transition: all 0.3s ease;
-      overflow: hidden;
-      z-index: 1;
-    }
-
-    .btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 0;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.2);
-      transition: width 0.4s ease;
-      z-index: -1;
-    }
-
-    .btn:hover::before {
-      width: 100%;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: var(--text-dark);
-      box-shadow: 0 10px 30px rgba(255, 152, 0, 0.4);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(255, 152, 0, 0.6);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, var(--secondary) 0%, #29b6f6 100%);
-      color: var(--text-dark);
-      box-shadow: 0 10px 30px rgba(79, 195, 247, 0.4);
-    }
-
-    .btn-secondary:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(79, 195, 247, 0.6);
-    }
-
-    .btn-icon {
-      font-size: 1.5rem;
-      animation: bounce 2s infinite;
-    }
-
-    .btn-start-now {
-      font-size: 1.5rem;
-      padding: 22px 50px;
-      animation: pulse-glow 2s infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% {
-        box-shadow: 0 10px 30px rgba(255, 152, 0, 0.4);
-      }
-      50% {
-        box-shadow: 0 10px 50px rgba(255, 152, 0, 0.8), 0 0 30px rgba(255, 152, 0, 0.6);
-      }
-    }
-
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0);
-      }
-      40% {
-        transform: translateY(-10px);
-      }
-      60% {
-        transform: translateY(-5px);
-      }
-    }
-
-    /* Pages Section */
-    .pages-section {
-      position: relative;
-      z-index: 10;
-      padding: 80px 20px;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .pages-container {
-      max-width: 1200px;
-      width: 100%;
-    }
-
-    .pages-title {
-      text-align: center;
-      font-size: 2.8rem;
-      font-weight: 800;
-      margin-bottom: 60px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: slideInDown 0.8s ease-out;
-    }
-
-    @keyframes slideInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .pages-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 40px;
-      padding: 0 20px;
-    }
-
-    .page-card {
-      background: rgba(17, 18, 23, 0.9);
-      backdrop-filter: blur(10px);
-      border-radius: 25px;
-      overflow: hidden;
-      border: 2px solid rgba(255, 152, 0, 0.3);
-      transition: all 0.4s ease;
-      position: relative;
-      animation: fadeInUp 0.8s ease-out;
-    }
-
-    .page-card:hover {
-      transform: translateY(-15px) scale(1.02);
-      border-color: var(--primary);
-      box-shadow: 0 20px 60px rgba(255, 152, 0, 0.5);
-    }
-
-    .card-image-wrapper {
-      position: relative;
-      width: 100%;
-      height: 250px;
-      overflow: hidden;
-    }
-
-    .card-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.4s ease;
-    }
-
-    .page-card:hover .card-image {
-      transform: scale(1.1);
-    }
-
-    .card-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent 0%, rgba(17, 18, 23, 0.8) 100%);
-    }
-
-    .card-content {
-      padding: 30px;
-      text-align: center;
-    }
-
-    .card-icon {
-      font-size: 4rem;
-      margin-bottom: 15px;
-      animation: bounce 2s infinite;
-    }
-
-    .card-title {
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: 15px;
-      color: var(--primary-light);
-    }
-
-    .card-description {
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.8;
-      margin-bottom: 25px;
-      font-size: 1.1rem;
-    }
-
-    .card-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 15px 35px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: var(--text-dark);
-      border-radius: 50px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 1.2rem;
-      transition: all 0.3s ease;
-      box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
-    }
-
-    .card-btn:hover {
-      transform: translateX(-5px);
-      box-shadow: 0 8px 30px rgba(255, 152, 0, 0.5);
-    }
-
-    .card-btn .arrow {
-      transition: transform 0.3s ease;
-    }
-
-    .card-btn:hover .arrow {
-      transform: translateX(5px);
-    }
-
-    /* Features Section */
-    .features {
-      position: relative;
-      z-index: 10;
-      padding: 60px 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .features-title {
-      text-align: center;
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin-bottom: 50px;
-      color: var(--primary);
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 30px;
-    }
-
-    .feature-card {
-      background: rgba(17, 18, 23, 0.8);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 40px 30px;
-      text-align: center;
-      border: 2px solid rgba(255, 152, 0, 0.2);
-      transition: all 0.3s ease;
-      user-select: none;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-10px);
-      border-color: var(--primary);
-      box-shadow: 0 15px 40px rgba(255, 152, 0, 0.3);
-    }
-
-    .feature-icon {
-      font-size: 4rem;
-      margin-bottom: 20px;
-    }
-
-    .feature-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 15px;
-      color: var(--primary-light);
-    }
-
-    .feature-description {
-      color: rgba(255, 255, 255, 0.7);
-      line-height: 1.6;
-    }
-
-    /* Footer */
-    footer {
-      position: relative;
-      z-index: 10;
-      text-align: center;
-      padding: 30px 20px;
-      background: rgba(17, 18, 23, 0.6);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255, 152, 0, 0.2);
-    }
-
-    .footer-text {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 1rem;
-    }
-
-    .footer-heart {
-      color: #ff6b6b;
-      animation: heartbeat 1.5s ease-in-out infinite;
-    }
-
-    @keyframes heartbeat {
-      0%, 100% {
-        transform: scale(1);
-      }
-      10%, 30% {
-        transform: scale(1.2);
-      }
-      20%, 40% {
-        transform: scale(1);
-      }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 992px) {
-      .hero-container {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .hero-content {
-        text-align: center;
-      }
-
-      .teacher-image-wrapper {
-        order: -1;
-      }
-
-      .image-decoration {
-        width: 280px;
-        height: 280px;
-      }
-
-      .hero-title {
-        font-size: 2.5rem;
-      }
-
-      .cta-buttons {
-        justify-content: center;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .pages-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .pages-title {
-        font-size: 2rem;
-      }
-
-      .card-image-wrapper {
-        height: 200px;
-      }
-    }
-
-    @media (max-width: 576px) {
-      .hero-title {
-        font-size: 2rem;
-      }
-
-      .hero-description {
-        font-size: 1.1rem;
-      }
-
-      .btn {
-        padding: 15px 30px;
-        font-size: 1rem;
-      }
-
-      .btn-start-now {
-        font-size: 1.2rem;
-        padding: 18px 40px;
-      }
-
-      .image-decoration {
-        width: 220px;
-        height: 220px;
-      }
-
-      .teacher-image {
-        font-size: 80px;
-      }
-
-      .features-title {
-        font-size: 2rem;
-      }
-
-      .pages-title {
-        font-size: 1.8rem;
-      }
-
-      .card-title {
-        font-size: 1.6rem;
-      }
-
-      .card-description {
-        font-size: 1rem;
-      }
-
-      .card-btn {
-        padding: 12px 28px;
-        font-size: 1rem;
-      }
-    }
-
-    /* Scroll Animation */
-    .fade-in {
-      opacity: 0;
-      transform: translateY(30px);
-      animation: fadeInUp 0.8s ease-out forwards;
-    }
-
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
   </style>
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 
 <body>
-  <!-- Animated Background -->
-  <div class="animated-bg">
-    <div class="floating-shape shape1"></div>
-    <div class="floating-shape shape2"></div>
-    <div class="floating-shape shape3"></div>
-  </div>
+  <!-- shared island shape -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="cloud" viewBox="0 0 160 70"><path fill="currentColor" d="M36 66c-18 0-30-9-30-22 0-12 10-21 24-22 3-12 15-20 30-20 14 0 25 7 29 17 4-3 9-5 15-5 15 0 26 11 26 25 0 17-14 27-32 27z"/></symbol>
+    </defs>
+  </svg>
 
-  <!-- Header -->
-  <header>
-    <div class="logo">🎓 منصة التعليم التفاعلي</div>
+  <header class="sky">
+    <div class="sun" aria-hidden="true"></div>
+    <span class="cloud cloud--1" aria-hidden="true"><svg viewBox="0 0 160 70"><use href="#cloud"/></svg></span>
+    <span class="cloud cloud--2" aria-hidden="true"><svg viewBox="0 0 160 70"><use href="#cloud"/></svg></span>
+    <span class="cloud cloud--3" aria-hidden="true"><svg viewBox="0 0 160 70"><use href="#cloud"/></svg></span>
+
+    <div class="wrap top">
+      <div class="brand"><i class="ph-fill ph-compass" aria-hidden="true"></i> منصة التعليم التفاعلي</div>
+      <button type="button" class="sfx-toggle" id="sfxToggle" aria-pressed="true"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i><span data-sfx-label>الصوت: تشغيل</span></button>
+    </div>
+
+    <div class="wrap hero">
+      <div>
+        <p class="kicker rise" style="--i:0">
+          <span class="emoji" data-emoji="1f44b" data-fallback="👋" aria-hidden="true"></span>
+          مرحباً بكم في منصة
+        </p>
+        <h1 class="rise" style="--i:1">الأستاذ <span class="name">إسماعيل</span> مصطفى</h1>
+        <p class="lead rise" style="--i:2">معلم رياضيات متخصص في تبسيط المفاهيم الرياضية وجعل التعلم أكثر متعة وتفاعلية للطلاب</p>
+      </div>
+      <div class="porthole-wrap">
+        <div class="porthole"><img src="imgs/profile.png" alt="الأستاذ إسماعيل مصطفى" width="300" height="300"></div>
+      </div>
+    </div>
+
+    <svg class="horizon" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 44C140 8 280 8 420 40s280 36 420 6 280-40 420-4c70 18 130 20 180 8V80H0z"/></svg>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-container">
-      <!-- Teacher Image -->
-      <div class="teacher-image-wrapper">
-        <div class="image-decoration">
-          <div class="teacher-image">
-            <img src="imgs/profile.png" alt="الأستاذ إسماعيل مصطفى" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-          </div>
+  <main>
+    <section class="sea" id="map">
+      <div class="wrap">
+        <h2 class="ribbon rise" style="--i:3">اختر اللعبة التي تريد البدء بها</h2>
+
+        <div class="map" id="mapEl">
+          <svg class="route" viewBox="0 0 1200 760" aria-hidden="true">
+            <path d="M960 190 C 860 300, 850 440, 720 540 C 600 620, 560 330, 456 215 C 360 120, 250 300, 216 540"/>
+          </svg>
+
+          <span class="critter emoji" data-emoji="1f433" data-fallback="🐳" style="left:37%; top:90%" aria-hidden="true"></span>
+
+          <a class="island" style="--x:80%; --y:24%; --g:oklch(0.85 0.15 135); --i:0" href="pages/math-operations.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M24 160C14 90 90 36 186 40c92-4 168 48 160 120-6 66-78 106-160 104C102 266 34 226 24 160z"/>
+              <path class="sandbed" d="M40 160C32 100 104 56 186 60c82-2 148 42 142 102-6 56-70 90-142 88C112 248 48 214 40 160z"/>
+              <path class="grass" d="M66 156C60 108 118 76 186 78c68-2 122 32 118 80-4 46-58 72-118 70C126 226 72 200 66 156z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f31f" data-fallback="🌟" aria-hidden="true"></span>
+            <span class="island__sign">العمليات الحسابية</span>
+            <span class="island__desc">تعلم الجمع والطرح بطرق ممتعة وتفاعلية</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:60%; --y:73%; --g:oklch(0.88 0.13 105); --i:1" href="pages/multi-tables.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M20 150C16 84 96 38 190 42c88-2 164 40 160 112-4 70-80 112-164 110C100 262 24 218 20 150z"/>
+              <path class="sandbed" d="M36 152C34 96 108 58 190 62c78-2 142 36 138 98-4 58-70 92-142 90C112 248 40 208 36 152z"/>
+              <path class="grass" d="M62 152C62 110 120 80 190 80c64-2 116 28 112 74-4 44-56 70-116 68C128 220 62 196 62 152z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f525" data-fallback="🔥" aria-hidden="true"></span>
+            <span class="island__sign">جداول الضرب</span>
+            <span class="island__desc">اتقن جداول الضرب بتمارين ومسابقات مشوقة</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:38%; --y:27%; --g:oklch(0.84 0.1 175); --i:2" href="pages/equations.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M28 156C20 88 94 34 188 38c90-2 160 46 156 116-4 68-76 112-160 110C104 262 36 222 28 156z"/>
+              <path class="sandbed" d="M44 156C38 98 106 56 188 60c80-2 142 40 138 100-4 56-68 90-140 88C114 246 50 212 44 156z"/>
+              <path class="grass" d="M68 154C64 108 120 78 188 78c64-2 118 30 114 78-4 44-56 70-116 68C128 224 72 198 68 154z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f9e0" data-fallback="🧠" aria-hidden="true"></span>
+            <span class="island__sign">المعادلات والعبارات الجبرية</span>
+            <span class="island__desc">حل المعادلات وتصنيف العبارات الجبرية</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:18%; --y:73%; --g:oklch(0.87 0.12 85); --i:3" href="pages/counting-money.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M22 158C14 92 92 40 186 42c90-2 162 44 158 114-4 68-78 110-160 108C102 262 30 224 22 158z"/>
+              <path class="sandbed" d="M38 158C32 102 104 60 186 62c80-2 144 38 140 98-4 56-70 90-142 88C112 246 44 214 38 158z"/>
+              <path class="grass" d="M64 156C60 110 118 80 186 80c66-2 120 30 116 78-4 44-56 70-116 68C126 224 68 200 64 156z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f4b8" data-fallback="💸" aria-hidden="true"></span>
+            <span class="island__sign">لعبة عد النقود</span>
+            <span class="island__desc">تعلم عد النقود بطريقة ممتعة وتفاعلية</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <span class="boat emoji" id="boat" data-emoji="26f5" data-fallback="⛵" aria-hidden="true"></span>
         </div>
       </div>
+    </section>
 
-      <!-- Hero Content -->
-      <div class="hero-content">
-        <div class="hero-subtitle">مرحباً بكم في منصة</div>
-        <h1 class="hero-title">الأستاذ إسماعيل مصطفى</h1>
-        <p class="hero-description">
-          معلم رياضيات متخصص في تبسيط المفاهيم الرياضية<br>
-          وجعل التعلم أكثر متعة وتفاعلية للطلاب 🎯
-        </p>
-        <div class="cta-buttons">
-          <button onclick="scrollToPages()" class="btn btn-primary btn-start-now">
-            <span class="btn-icon">🚀</span>
-            ابدأ الآن
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Pages Section -->
-  <section class="pages-section" id="pagesSection">
-    <div class="pages-container">
-      <h2 class="pages-title">📚 اختر اللعبة التي تريد البدء بها</h2>
-      <div class="pages-grid">
-        <!-- Card 1: العمليات الحسابية -->
-        <div class="page-card">
-          <div class="card-image-wrapper">
-            <img src="imgs/math.jpg" alt="العمليات الحسابية" class="card-image">
-            <div class="card-overlay"></div>
-          </div>
-          <div class="card-content">
-            <div class="card-icon">➕➖</div>
-            <h3 class="card-title">العمليات الحسابية</h3>
-            <p class="card-description">تعلم الجمع والطرح بطرق ممتعة وتفاعلية مع مستويات مختلفة من الصعوبة</p>
-            <a href="pages/math-operations.html" class="card-btn">
-              <span>ابدأ اللعب</span>
-              <span class="arrow">⬅️</span>
-            </a>
-          </div>
+    <section class="sea harbor" id="try">
+      <div class="wrap harbor__grid">
+        <div>
+          <h2 class="reveal">جرّب بنفسك</h2>
+          <p class="harbor__lead reveal" style="--i:1">سؤال سريع من ألعاب المنصة: اختر الإجابة الصحيحة قبل أن ينتهي الوقت.</p>
+          <p class="harbor__hint reveal" style="--i:2"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> يمكنك أيضًا الضغط على الأرقام ١ – ٤ من لوحة المفاتيح</p>
         </div>
 
-        <!-- Card 2: جداول الضرب -->
-        <div class="page-card">
-          <div class="card-image-wrapper">
-            <img src="imgs/tables.png" alt="جداول الضرب" class="card-image">
-            <div class="card-overlay"></div>
+        <div class="scroll reveal" style="--i:1" data-quiz role="group" aria-label="سؤال تجريبي">
+          <span class="react" data-reaction aria-hidden="true"></span>
+          <div class="scroll__top">
+            <div class="timer" data-timer role="timer" aria-label="الوقت المتبقي"><span data-time>١٢</span></div>
+            <div class="chips">
+              <span class="chip">الإجابات المتتالية <b data-streak>٠</b></span>
+              <span class="chip">النتيجة <b data-score>٠ / ٠</b></span>
+            </div>
           </div>
-          <div class="card-content">
-            <div class="card-icon">✖️</div>
-            <h3 class="card-title">جداول الضرب</h3>
-            <p class="card-description">اتقن جداول الضرب من خلال تمارين تفاعلية ومسابقات مشوقة</p>
-            <a href="pages/multi-tables.html" class="card-btn">
-              <span>ابدأ اللعب</span>
-              <span class="arrow">⬅️</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- Card 3: المعادلات والعبارات الجبرية -->
-        <div class="page-card">
-          <div class="card-image-wrapper">
-            <img src="imgs/eq-banner.png" alt="المعادلات والعبارات الجبرية" class="card-image">
-            <div class="card-overlay"></div>
-          </div>
-          <div class="card-content">
-            <div class="card-icon">🎯</div>
-            <h3 class="card-title">المعادلات والعبارات الجبرية</h3>
-            <p class="card-description">حل المعادلات وتصنيف العبارات الجبرية بطريقة ممتعة وتفاعلية</p>
-            <a href="pages/equations.html" class="card-btn">
-              <span>ابدأ اللعب</span>
-              <span class="arrow">⬅️</span>
-            </a>
-          </div>
-        </div>
-        <div class="page-card">
-          <div class="card-image-wrapper">
-            <img src="imgs/money-banner.jpg" alt="لعبة عد النقود" class="card-image">
-            <div class="card-overlay"></div>
-          </div>
-          <div class="card-content">
-            <div class="card-icon">💰</div>
-            <h3 class="card-title">لعبة عد النقود</h3>
-            <p class="card-description">تعلم عد النقود بطريقة ممتعة وتفاعلية</p>
-            <a href="pages/counting-money.html" class="card-btn">
-              <span>ابدأ اللعب</span>
-              <span class="arrow">⬅️</span>
-            </a>
-          </div>
+          <p class="q" data-q></p>
+          <div class="choices" data-choices role="group" aria-label="الإجابات"></div>
+          <p class="msg" data-msg aria-live="polite"></p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features Section -->
-  <section class="features fade-in">
-    <h2 class="features-title">✨ مميزات المنصة التعليمية</h2>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎮</div>
-        <h3 class="feature-title">تعلم تفاعلي</h3>
-        <p class="feature-description">
-          ألعاب تعليمية ممتعة تجعل الرياضيات أسهل وأكثر إثارة للاهتمام
-        </p>
+    <section class="beach">
+      <div class="wrap">
+        <h2 class="reveal">كيف تعمل الألعاب؟</h2>
+        <ol class="steps">
+          <li class="step reveal" style="--i:0">
+            <span class="buoy" aria-hidden="true"><span>١</span></span>
+            <div>
+              <h3>أضف أسماء الطلاب</h3>
+              <p>اكتب الأسماء مرة واحدة، ثم تتناوبون على الأسئلة دورًا بدور.</p>
+            </div>
+          </li>
+          <li class="step reveal" style="--i:1">
+            <span class="buoy" aria-hidden="true"><span>٢</span></span>
+            <div>
+              <h3>سؤال ومؤقّت وصوت</h3>
+              <p>لكل سؤال مؤقّت، وصوت يقرأ الأسئلة ويشجّع الطالب.</p>
+            </div>
+          </li>
+          <li class="step reveal" style="--i:2">
+            <span class="buoy" aria-hidden="true"><span>٣</span></span>
+            <div>
+              <h3>ترتيب وفائزون</h3>
+              <p>جدول ترتيب مباشر وإعلان للفائزين، مع تصدير النتائج إلى Excel.</p>
+            </div>
+          </li>
+        </ol>
+        <p class="note reveal"><i class="ph-bold ph-device-mobile" aria-hidden="true"></i> تُحفظ أسماء الطلاب ونتائجهم على هذا الجهاز.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3 class="feature-title">متابعة الأداء</h3>
-        <p class="feature-description">
-          نظام متقدم لتتبع تقدم الطلاب وتحديد نقاط القوة والضعف
-        </p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🏆</div>
-        <h3 class="feature-title">مسابقات وجوائز</h3>
-        <p class="feature-description">
-          نظام مكافآت محفز يشجع الطلاب على التفوق والمنافسة الشريفة
-        </p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🎯</div>
-        <h3 class="feature-title">تدريبات متنوعة</h3>
-        <p class="feature-description">
-          مجموعة واسعة من التمارين تغطي مختلف مستويات الصعوبة
-        </p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⏱️</div>
-        <h3 class="feature-title">تحدي الوقت</h3>
-        <p class="feature-description">
-          ميزة المؤقت تساعد على تحسين سرعة الحساب والتفكير السريع
-        </p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌟</div>
-        <h3 class="feature-title">واجهة جذابة</h3>
-        <p class="feature-description">
-          تصميم عصري وملون يجذب انتباه الطلاب ويسهل الاستخدام
-        </p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Download Section -->
-  <section class="features fade-in" style="padding: 40px 20px;">
-    <div style="max-width: 800px; margin: 0 auto; text-align: center;">
-      <h2 class="features-title">📥 تحميل الألعاب</h2>
-      <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 30px; font-size: 1.2rem;">
-        يمكنك تحميل ملفات الألعاب لاستخدامها بدون اتصال بالإنترنت
-      </p>
-      <button id="downloadMultiTablesBtn" class="btn btn-primary" style="font-size: 1.3rem; padding: 20px 45px;">
-        <span class="btn-icon">📥</span>
-        تحميل لعبة جداول الضرب
-      </button>
-    </div>
-  </section>
+    <section class="night" id="podium">
+      <div class="night__stars" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="emoji night__deco night__deco--1" data-emoji="1f389" data-fallback="🎉" aria-hidden="true"></span>
+        <span class="emoji night__deco night__deco--2" data-emoji="2b50" data-fallback="⭐" aria-hidden="true"></span>
+        <span class="emoji night__deco night__deco--3" data-emoji="2b50" data-fallback="⭐" aria-hidden="true"></span>
+        <span class="emoji night__deco night__deco--4" data-emoji="1f389" data-fallback="🎉" aria-hidden="true"></span>
 
-  <!-- Footer -->
+        <h2 class="reveal">منصة التتويج <span class="tag">مثال توضيحي</span></h2>
+        <p class="night__lead reveal" style="--i:1">في نهاية المسابقة يُعلَن الفائزون وترتيب الطلاب أمام الفصل كله.</p>
+
+        <div class="podium" data-podium>
+          <div class="pod pod--2" style="--d:200">
+            <div class="pod__who">
+              <span class="emoji pod__medal" data-emoji="1f948" data-fallback="🥈" aria-hidden="true"></span>
+              <span class="pod__name">نور</span>
+              <span class="pod__score"><b data-count="16">١٦</b> إجابة صحيحة</span>
+            </div>
+            <div class="pod__block" aria-hidden="true">٢</div>
+          </div>
+          <div class="pod pod--1" style="--d:0">
+            <div class="pod__who">
+              <span class="emoji pod__medal" data-emoji="1f947" data-fallback="🥇" aria-hidden="true"></span>
+              <span class="pod__name">يوسف</span>
+              <span class="pod__score"><b data-count="18">١٨</b> إجابة صحيحة</span>
+            </div>
+            <div class="pod__block" aria-hidden="true">١</div>
+          </div>
+          <div class="pod pod--3" style="--d:400">
+            <div class="pod__who">
+              <span class="emoji pod__medal" data-emoji="1f949" data-fallback="🥉" aria-hidden="true"></span>
+              <span class="pod__name">مريم</span>
+              <span class="pod__score"><b data-count="14">١٤</b> إجابة صحيحة</span>
+            </div>
+            <div class="pod__block" aria-hidden="true">٣</div>
+          </div>
+        </div>
+        <div class="podium__floor" aria-hidden="true"></div>
+      </div>
+    </section>
+  </main>
+
   <footer>
-    <p class="footer-text">
-      صُنع بكل <span class="footer-heart">❤️</span> من قبل Dev: Mohamed Mostafa <br>
-      <small>© 2025 - جميع الحقوق محفوظة</small>
-    </p>
+    <div class="wrap">
+      <p>صُنع بكل <i class="ph-fill ph-heart" aria-label="حب"></i> من قبل Dev: Mohamed Mostafa</p>
+      <small>تعلّم باللعب، وتفوّق بالتدريب · © 2026 - جميع الحقوق محفوظة · <a href="credits.html">الشكر والتراخيص</a></small>
+    </div>
   </footer>
 
+
+  <script src="vendor/lottie_light.min.js"></script>
+  <script src="js/sfx.js"></script>
+  <script src="js/animated-emoji.js"></script>
+  <script src="js/home-demo.js"></script>
   <script>
-    // Smooth scroll to pages section
-    function scrollToPages() {
-      const pagesSection = document.getElementById('pagesSection');
-      pagesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    (function () {
+      var map = document.getElementById('mapEl');
+      var boat = document.getElementById('boat');
+      var islands = Array.prototype.slice.call(document.querySelectorAll('[data-island]'));
+      var wide = window.matchMedia('(min-width: 992px)');
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var sfx = window.Sfx;
 
-    // Download multi-tables-temp.html file
-    document.getElementById('downloadMultiTablesBtn').addEventListener('click', async function() {
-      try {
-        // Fetch the multi-tables-temp.html file
-        const response = await fetch('multi-tables-temp.html');
-        if (!response.ok) throw new Error('فشل تحميل الملف');
-        
-        const htmlContent = await response.text();
-        
-        // Create blob and download
-        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'multi-tables-temp.html';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        // Show success message
-        const btn = this;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="btn-icon">✅</span> تم التحميل بنجاح!';
-        btn.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
-        
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.style.background = '';
-        }, 3000);
-      } catch (error) {
-        console.error('خطأ في التحميل:', error);
-        alert('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.');
-      }
-    });
+      /* sound on/off switch */
+      var toggle = document.getElementById('sfxToggle');
+      if (sfx) sfx.bindToggle(toggle); else if (toggle) toggle.hidden = true;
 
-    // Intersection Observer for fade-in animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -100px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.animationPlayState = 'running';
+      /* the route is drawn from the islands' --x / --y, so adding a game needs no hand-written path */
+      function drawRoute() {
+        var svg = map.querySelector('.route'), path = svg && svg.querySelector('path');
+        if (!path || islands.length < 2) return;
+        var W = 1200, H = parseFloat(getComputedStyle(map).getPropertyValue('--map-h')) || 760;
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        var pts = islands.map(function (el) {
+          return [parseFloat(el.style.getPropertyValue('--x')) * W / 100, parseFloat(el.style.getPropertyValue('--y')) * H / 100];
+        });
+        var d = 'M' + pts[0][0].toFixed(0) + ' ' + pts[0][1].toFixed(0);
+        for (var i = 1; i < pts.length; i++) {
+          var a = pts[i - 1], b = pts[i], my = a[1] + (b[1] - a[1]) * 0.6, my2 = b[1] - (b[1] - a[1]) * 0.6;
+          d += ' C' + a[0].toFixed(0) + ' ' + my.toFixed(0) + ',' + b[0].toFixed(0) + ' ' + my2.toFixed(0) + ',' + b[0].toFixed(0) + ' ' + b[1].toFixed(0);
         }
-      });
-    }, observerOptions);
+        path.setAttribute('d', d);
+      }
+      drawRoute();
 
-    document.querySelectorAll('.fade-in').forEach(el => {
-      el.style.animationPlayState = 'paused';
-      observer.observe(el);
-    });
+      /* reveal on scroll (map + sections); the islands pop in one after another, with a bubble each */
+      function mapAppeared() {
+        if (calm || !sfx) return;
+        islands.forEach(function (_, i) { setTimeout(function () { sfx.pop(i); }, 320 + i * 160); });
+      }
+      var items = document.querySelectorAll('.reveal, .map, .podium');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            e.target.classList.add('in');
+            if (e.target === map) mapAppeared();
+            io.unobserve(e.target);
+          });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+        items.forEach(function (el) { io.observe(el); });
+      } else {
+        items.forEach(function (el) { el.classList.add('in'); });
+      }
 
-    // Add interactive hover effects to feature cards
-    const featureCards = document.querySelectorAll('.feature-card');
-    featureCards.forEach(card => {
-      card.addEventListener('mouseenter', () => {
-        card.style.transform = 'translateY(-10px) scale(1.02)';
+      /* the boat sails to the island you point at (wide screens only) */
+      function sailTo(island) {
+        if (!wide.matches) return;
+        var w = island.offsetWidth, h = island.offsetHeight;
+        var x = island.offsetLeft - w * 0.42 - boat.offsetWidth / 2;
+        var y = island.offsetTop + h * 0.34 - boat.offsetHeight / 2; /* island is centered on left/top via translate(-50%,-50%) */
+        boat.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      }
+      islands.forEach(function (isl, i) {
+        function enter() {
+          sailTo(isl);
+          if (!sfx) return;
+          sfx.hover(i);
+          if (wide.matches && !calm) sfx.sail();
+        }
+        isl.addEventListener('pointerenter', enter);
+        isl.addEventListener('focus', function () { if (isl.matches(':focus-visible')) enter(); });
+        /* let the "go" blip finish before the page changes (only for a plain click, and only when sound can play) */
+        isl.addEventListener('click', function (e) {
+          if (!sfx || !sfx.willPlay() || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          sfx.go();
+          setTimeout(function () { window.location.href = isl.href; }, 220);
+        });
       });
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'translateY(0) scale(1)';
-      });
-    });
-
-    // Parallax effect for floating shapes
-    document.addEventListener('mousemove', (e) => {
-      const shapes = document.querySelectorAll('.floating-shape');
-      const mouseX = e.clientX / window.innerWidth;
-      const mouseY = e.clientY / window.innerHeight;
-
-      shapes.forEach((shape, index) => {
-        const speed = (index + 1) * 20;
-        const x = (mouseX - 0.5) * speed;
-        const y = (mouseY - 0.5) * speed;
-        shape.style.transform = `translate(${x}px, ${y}px)`;
-      });
-    });
+      function home() { if (islands[0]) sailTo(islands[0]); }
+      window.addEventListener('resize', home);
+      window.addEventListener('load', home);
+      home();
+    })();
   </script>
 </body>
 

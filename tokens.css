@@ -1,0 +1,59 @@
+/*
+ * Design tokens — the single source of truth for the look of the whole site ("sea map" design).
+ * Loaded by index.html (<link>) and by style.css (@import), so the landing page and every game page share them.
+ * Change a colour here and every page follows. Do not copy these values into a page.
+ * Documentation: docs/design-system.md
+ */
+:root {
+  /* ---- colour (OKLCH, neutrals tinted toward the sea hue) ---- */
+  --sky: oklch(0.94 0.045 205);
+  --sea: oklch(0.8 0.1 210);
+  --sea-deep: oklch(0.36 0.09 245);
+  --sea-deeper: oklch(0.27 0.08 250);
+  --ink: oklch(0.27 0.06 250);
+  --ink-soft: oklch(0.4 0.06 250);
+  --sand: oklch(0.93 0.06 88);
+  --sand-deep: oklch(0.74 0.09 78);   /* hard shadow under sand cards */
+  --sun: oklch(0.88 0.16 95);
+  --coral: oklch(0.72 0.17 35);
+  --brass: oklch(0.78 0.12 85);
+  --white: oklch(0.99 0.008 210);
+
+  /* ---- feedback ---- */
+  --ok: oklch(0.8 0.17 145);
+  --ok-deep: oklch(0.54 0.14 150);
+  --bad: oklch(0.72 0.17 35);
+  --bad-deep: oklch(0.55 0.17 33);
+  --alert: oklch(0.58 0.22 27);       /* last seconds of the timer */
+
+  /* ---- answer-sticker colours: choice 1..4 (+ shadow colour); a game cycles through them ---- */
+  --c1: var(--coral);            --c1d: oklch(0.55 0.17 33);
+  --c2: var(--sun);              --c2d: oklch(0.64 0.14 85);
+  --c3: oklch(0.8 0.11 185);     --c3d: oklch(0.54 0.1 190);
+  --c4: oklch(0.8 0.1 235);      --c4d: oklch(0.54 0.12 240);
+  --c5: oklch(0.82 0.1 300);     --c5d: oklch(0.56 0.12 300);
+  --c6: oklch(0.86 0.12 135);    --c6d: oklch(0.58 0.13 140);
+
+  /* ---- per-game accent (the colour of that game's island); a game page sets it on :root ---- */
+  --game: var(--coral);
+
+  /* ---- type ---- */
+  --f-display: 'Baloo Bhaijaan 2', 'Alexandria', sans-serif;
+  --f-body: 'Alexandria', sans-serif;
+
+  /* ---- space (4 px based) ---- */
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.25rem;
+  --s-6: 1.5rem; --s-8: 2rem; --s-12: 3rem; --s-16: 4rem; --s-24: 6rem;
+
+  /* ---- motion ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- legacy names from the old dark/orange design (kept so old game CSS does not turn invisible; do not use in new code) ---- */
+  --bg: var(--sea);
+  --brand: var(--coral);
+  --brand-dark: var(--bad-deep);
+  --panel: var(--sand);
+  --accent: var(--sun);
+  --blue: oklch(0.5 0.14 245);
+  --fuchsia: oklch(0.5 0.2 350);
+}
