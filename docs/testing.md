@@ -46,7 +46,7 @@ Speech requests to ElevenLabs are blocked during the run. Use the `verify-game` 
 
 ## Custom-interaction games
 
-Same checks, but drive the game's own widgets (see `.claude/skills/verify-game/scenario-counting-money.js`; name a new one
+Same checks, but drive the game's own widgets (see `.claude/skills/verify-game/scenario-counting-money.js`, `scenario-doubles-bingo.js` (card board, teacher-judged cards, bingo line, random pick) and `scenario-robot-rescue.js` (dice, challenge / surprise / mission cards, rescue); name a new one
 `scenario-<game-id>.js` and `check-games.js` runs it).
 
 ## Landing page (`index.html`)

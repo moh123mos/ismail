@@ -15,7 +15,8 @@ Things an engineer or an AI should know before changing the project. Remove an e
   scroll are silent until the user has interacted once. The mute switch state lives in `localStorage["home_sfx"]`.
 - **Equations are laid out right-to-left inside `#problem`** (e.g. `٣ + ٤ = ؟` reads from the right). The landing quiz forces
   left-to-right (U+202D…U+202C); the games were left as they were during the redesign. Decide with the teacher which is
-  expected, then fix it for all games at once (shell or `dir="ltr"` in the question content).
+  expected, then fix it for all games at once (shell or `dir="ltr"` in the question content). The five games added from the teacher's files (rounding-cube, order-cube, order-festival, doubles-bingo, robot-rescue) already
+  force equations left-to-right (`.expr` / `toArabicText`), so those are consistent with the landing quiz and differ from the older four.
 - **`imgs/money.png` is not referenced anywhere** (kept, not deleted); `imgs/profile.png` is the teacher's photo on the landing page.
 
 ## Decisions

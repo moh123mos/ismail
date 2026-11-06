@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>بينجو جمع العدد ونفسه</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.84 0.11 300); }
+
+    /* ---- the bingo board: a grid of cards, each a real button ---- */
+    .bingo-board { --n: 5; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--s-1); margin-top: var(--s-6); }
+    .tile {
+      --t: var(--c6); --td: var(--c6d);
+      flex-direction: column; gap: 0; min-height: 3rem; aspect-ratio: 1 / 0.85; padding: var(--s-1); min-width: 0;
+      border-radius: 1rem; background: var(--t); box-shadow: 0 0.3rem 0 var(--td);
+      font: 800 1rem/1.1 var(--f-display);
+    }
+    .tile[data-cat="APP"] { --t: var(--c4); --td: var(--c4d); }
+    .tile[data-cat="CHALL"] { --t: var(--c2); --td: var(--c2d); }
+    .tile.is-active { outline: 4px solid var(--ink); outline-offset: 2px; }
+    .tile.is-spinning { transform: translateY(-0.3rem) scale(1.06); box-shadow: 0 0.6rem 0 var(--td); }
+    .tile.is-claimed { background: var(--sea-deep); color: var(--white); box-shadow: 0 0.3rem 0 var(--sea-deeper); }
+    .tile.is-bingo { background: var(--sun); color: var(--ink); box-shadow: 0 0.3rem 0 var(--c2d); }
+    .tile[aria-disabled="true"] { cursor: default; }
+    .tile__name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 0.9rem/1.2 var(--f-body); }
+    .tile i { font-size: 1.3em; }
+
+    .bingo-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
+    .bingo-legend .kind-chip { min-height: 2rem; padding-inline: var(--s-3); font-size: 1rem; }
+
+    /* ---- extras under a question: hint + the teacher's suggested answer ---- */
+    .bingo-extra { display: grid; justify-items: center; gap: var(--s-3); margin-top: var(--s-4); }
+    .bingo-note { max-width: 42ch; padding: var(--s-3) var(--s-4); border-radius: 1.25rem; background: var(--white); font-weight: 600; text-align: center; }
+    .bingo-answer summary { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 2.75rem; padding: 0 var(--s-4); border-radius: 999px; background: var(--white); cursor: pointer; font-weight: 600; }
+    .bingo-answer[open] summary { margin-bottom: var(--s-2); }
+
+    @media (max-width: 40rem) {
+      .tile { font-size: 0.95rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../common.js"></script>
+  <script src="../game-shell.js"></script>
+  <script>
+    /* ===== أنواع البطاقات ===== */
+    const CATS = {
+      CORE: { label: 'مهارة أساسية', icon: 'puzzle-piece', tone: 'var(--c6)' },
+      APP: { label: 'تطبيق', icon: 'book-open', tone: 'var(--c4)' },
+      CHALL: { label: 'تحدي', icon: 'fire', tone: 'var(--c2)' }
+    };
+
+    /* ===== بنك الأسئلة (من ملف المعلم): obj = اختيار من متعدد (ans = رقم الخيار)، sub = تشرحه الطالب ويحكم المعلم ===== */
+    const BANK = [
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 4 + 4 = 8 ، فما هو ناتج 4 + 5 ؟', opts: ['7', '8', '9', '10'], ans: 2, hint: 'العدد 5 يزيد عن 4 بواحد، أضف 1 للناتج.' },
+      { cat: 'CORE', type: 'obj', task: 'اربط', q: 'لإيجاد ناتج 7 + 8 ، ما هي حقيقة جمع العدد ونفسه التي تساعدك؟', opts: ['6 + 6', '7 + 7', '8 + 8', '9 + 9'], ans: 1, hint: 'ابحث عن العدد الأصغر في الجملة.' },
+      { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'اشرح لفريقك: ماذا نعني بـ "جمع العدد ونفسه مضافاً إليه 1"؟', ansText: 'يعني أن نجمع عدداً مع نفسه، ثم نضيف 1 للناتج لأن أحد العددين يزيد عن الآخر بواحد.', hint: 'تذكر المكعبات عندما نضيف مكعباً واحداً إضافياً.' },
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 6 + 6 = 12 ، فكم يكون 6 + 7 ؟', opts: ['11', '12', '13', '14'], ans: 2, hint: 'الناتج سيكون أكبر بـ 1 من 12.' },
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'حقيقة (العدد ونفسه مطروحاً منه 1) تعني أن الناتج سيكون...', opts: ['أكبر بـ 1', 'أصغر بـ 1', 'نفس الناتج', 'الضعف'], ans: 1, hint: 'ركز في كلمة "مطروحاً منه".' },
+      { cat: 'CORE', type: 'obj', task: 'اربط', q: 'ما الحقيقة المناسبة لإيجاد ناتج 5 + 6 ؟', opts: ['4 + 4', '5 + 5', '6 + 6', '3 + 3'], ans: 1, hint: 'استخدم العدد الأول (الأصغر).' },
+      { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'كيف تستفيد من حقيقة 9 + 9 لمعرفة 8 + 9 ؟', ansText: 'بما أن 8 أقل من 9 بواحد، فإن الناتج سيكون ناتج (9+9) ناقص 1.', hint: '8 أقل من 9 بواحد.' },
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'أي من الجمل التالية تمثل جمع العدد ونفسه؟', opts: ['4 + 5 = 9', '6 + 6 = 12', '7 + 8 = 15', '9 + 1 = 10'], ans: 1, hint: 'العدد يتكرر مرتين.' },
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 8 + 8 = 16 ، فإن 8 + 7 = ...', opts: ['15', '16', '17', '18'], ans: 0, hint: 'العدد 7 أصغر من 8، لذا نطرح 1.' },
+      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'ناتج 2 + 3 هو نفس ناتج (2 + 2) مضافاً إليه...', opts: ['0', '1', '2', '3'], ans: 1, hint: '3 تزيد عن 2 بمقدار كم؟' },
+
+      { cat: 'APP', type: 'obj', task: 'ابحث عن الخطأ', q: 'يقول زميلك: لحساب 6 + 5 نستخدم حقيقة 7 + 7. هل هذا صحيح؟', opts: ['صحيح', 'خطأ، نستخدم 6+6 أو 5+5', 'خطأ، نستخدم 4+4'], ans: 1, hint: 'يجب استخدام أحد الأرقام الموجودة في المسألة.' },
+      { cat: 'APP', type: 'sub', task: 'طبّق', q: 'لديك 7 كرات حمراء و 8 كرات زرقاء. كيف تستخدم درس اليوم لمعرفة المجموع سريعاً؟', ansText: 'أستخدم حقيقة 7+7=14 ثم أضيف 1 ليصبح المجموع 15.', hint: 'العددان هما 7 و 8. فكر في 7+7.' },
+      { cat: 'APP', type: 'obj', task: 'اختر', q: 'أي الجمل تصف قاعدة (جمع العدد ونفسه مضافاً إليه 1)؟', opts: ['3 + 3 = 6', '4 + 5 = 9', '6 + 5 = 11', '1 + 8 = 9'], ans: 1, hint: 'يجب أن يكون العدد الثاني أكبر من الأول بواحد.' },
+      { cat: 'APP', type: 'sub', task: 'طبّق', q: 'ارسم أو تخيل 4 مكعبات و 5 مكعبات. كيف تحسبها كـ (عدد ونفسه)؟', ansText: 'أضع 4 مكعبات بجانب 4 مكعبات (يساوي 8) ثم يتبقى مكعب واحد أضيفه ليصبح 9.', hint: 'قسّم العدد 5 إلى 4 و 1.' },
+      { cat: 'APP', type: 'sub', task: 'اكتشف', q: 'اكتب مسألة جمع يكون حلها باستخدام الحقيقة (8 + 8 + 1).', ansText: 'مسألة 8 + 9.', hint: 'الرقم الأساسي هو 8، والثاني يزيد عنه بواحد.' },
+      { cat: 'APP', type: 'obj', task: 'اختر', q: 'أنا أعرف أن 3 + 3 = 6 ، إذن 3 + 2 = ...', opts: ['7', '5', '4', '8'], ans: 1, hint: 'العدد 2 أقل من 3، فماذا نفعل بالناتج؟' },
+      { cat: 'APP', type: 'obj', task: 'اختر', q: 'الناتج يقل واحداً فقط عند استخدام قاعدة:', opts: ['العدد ونفسه زائد 1', 'العدد ونفسه ناقص 1', 'العدد ونفسه'], ans: 1, hint: 'يقل تعني طرح.' },
+      { cat: 'APP', type: 'sub', task: 'علّل', q: 'لماذا لا تساعدنا حقيقة 4+4 في حل 7+8 ؟', ansText: 'لأن الأرقام بعيدة جداً، قاعدة درس اليوم تشترط استخدام نفس الرقم الموجود في المسألة (7 أو 8).', hint: 'انظر للأرقام الموجودة في مسألة 7+8.' },
+
+      { cat: 'CHALL', type: 'sub', task: 'حلّل', q: 'هل يمكننا استخدام حقيقة 5 + 5 لحل مسألة 5 + 7 ؟ ولماذا؟', ansText: 'لا، لأن درس اليوم يطبق فقط إذا كان الفرق بين العددين هو 1. هنا الفرق 2.', hint: 'الفرق بين 5 و 7 هو 2، وليس 1.' },
+      { cat: 'CHALL', type: 'obj', task: 'توقّع', q: 'إذا كان جمع عدد ونفسه = 14 ، فما هو ناتج جمعه مع العدد السابق له؟', opts: ['13', '15', '14', '16'], ans: 0, hint: 'ما هو العدد الذي إذا جمعته مع نفسه كان 14؟ ثم ما هو العدد السابق له؟' },
+      { cat: 'CHALL', type: 'sub', task: 'إبداع', q: 'ابتكر قصة قصيرة عن طيور على شجرة تتطلب استخدام "جمع العدد ونفسه مضافاً إليه 1".', ansText: 'أمثلة: 6 عصافير على غصن، وانضم إليهم 7 عصافير على غصن آخر. 6+6+1=13.', hint: 'استخدم رقمين متتاليين مثل 6 و 7.' },
+      { cat: 'CHALL', type: 'sub', task: 'تحدٍّ ذهني', q: 'إذا كان 50 + 50 = 100، كيف تستخدم درس اليوم لمعرفة 50 + 51 سريعاً؟', ansText: 'بما أن 51 تزيد عن 50 بواحد، إذن 100 + 1 = 101.', hint: 'القاعدة تعمل مع كل الأرقام حتى الكبيرة!' },
+      { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'ما هو النمط في النواتج عند تطبيق (العدد ونفسه + 1) بالترتيب: 1+2، 2+3، 3+4 ؟', opts: ['تزيد بمقدار 1', 'تزيد بمقدار 2', 'جميعها أعداد زوجية'], ans: 1, hint: 'النواتج هي: 3، 5، 7... ما هو النمط؟' },
+      { cat: 'CHALL', type: 'sub', task: 'قارن', q: 'أيهما أسهل لك في حل 8 + 9 : استخدام (8+8+1) أم (9+9-1)؟ برر إجابتك.', ansText: 'يقبل أي تبرير منطقي للطالب.', hint: 'لا توجد إجابة خاطئة، المهم أن تشرح السبب.' },
+      { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'إذا كان ضعف العدد يساوي 20، فما هو هذا العدد مضافاً إليه العدد الذي يليه؟', opts: ['19', '21', '20', '22'], ans: 1, hint: 'الضعف 20 يعني أن العدد هو 10. العدد الذي يليه هو 11.' }
+    ];
+
+    /* ===== حالة اللعبة ===== */
+    const $ = id => document.getElementById(id);
+    const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    let board = [];            // [{cat, q, by}]  by = اسم الطالب الذي كسب البطاقة
+    let boardSize = 5;
+    let active = null;         // رقم البطاقة المفتوحة الآن
+    let roundCounted = true;   // false بعد "أعد توليد السؤال": لا تُحسب في النتائج ولا تُكسب بها بطاقة
+    let announcedLines = new Set();
+    let spinTimer = null;
+
+    /* لوحة جديدة: ٣٦٪ أساسية و٣٢٪ تطبيق والباقي تحدٍّ، موزعة عشوائياً، وكل بطاقة بسؤال مختلف ما أمكن */
+    function newBoard(size) {
+      boardSize = size;
+      const total = size * size, core = Math.ceil(total * 0.36), app = Math.ceil(total * 0.32);
+      const layout = shuffle([...Array(core).fill('CORE'), ...Array(app).fill('APP'), ...Array(total - core - app).fill('CHALL')]);
+      const pools = {};
+      const draw = cat => {
+        if (!pools[cat] || !pools[cat].length) pools[cat] = shuffle(BANK.filter(q => q.cat === cat));
+        return pools[cat].pop();
+      };
+      board = layout.map(cat => ({ cat, q: draw(cat), by: null }));
+      announcedLines = new Set();
+      active = null;
+    }
+
+    function ensureBoard() {
+      const size = parseInt($('boardSize').value, 10);
+      if (board.length !== size * size || board.every(t => t.by)) newBoard(size);
+    }
+
+    /* ===== الرسم ===== */
+    const canPick = () => gameStarted && !answered && active === null;
+
+    function bingoLines() {
+      const n = boardSize, lines = [];
+      for (let r = 0; r < n; r++) lines.push([...Array(n).keys()].map(c => r * n + c));
+      for (let c = 0; c < n; c++) lines.push([...Array(n).keys()].map(r => r * n + c));
+      lines.push([...Array(n).keys()].map(i => i * n + i));
+      lines.push([...Array(n).keys()].map(i => i * n + (n - 1 - i)));
+      return lines;
+    }
+    /* خط كامل تم كسبه (من أي طالب) ويجمع نوعين مختلفين على الأقل: نفس شرط ملف المعلم */
+    const completeLines = () => bingoLines().filter(l => l.every(i => board[i].by) && new Set(l.map(i => board[i].cat)).size >= 2);
+
+    function renderBoard() {
+      const grid = $('bingoBoard');
+      grid.style.setProperty('--n', boardSize);
+      const inBingo = new Set(completeLines().flat());
+      grid.innerHTML = '';
+      board.forEach((t, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tile' + (t.by ? ' is-claimed' : '') + (inBingo.has(i) ? ' is-bingo' : '') + (i === active ? ' is-active' : '');
+        b.dataset.cat = t.cat; b.dataset.index = i;
+        b.setAttribute('aria-disabled', (t.by || !canPick()) ? 'true' : 'false');
+        b.setAttribute('aria-label', `بطاقة ${toArabicNumber(i + 1)}: ${CATS[t.cat].label}` + (t.by ? ` — كسبها ${t.by}` : ''));
+        b.innerHTML = t.by
+          ? `<i class="ph-fill ph-check-circle" aria-hidden="true"></i><span class="tile__name">${esc(t.by)}</span>`
+          : `<i class="ph-bold ph-${CATS[t.cat].icon}" aria-hidden="true"></i><span>${toArabicNumber(i + 1)}</span>`;
+        grid.appendChild(b);
+      });
+    }
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function clearQuestion() {
+      $('choices').innerHTML = '';
+      $('bingoExtra').hidden = true;
+      $('judge').hidden = true;
+      document.querySelectorAll('#judge button').forEach(b => { b.disabled = false; });
+      $('hintBtn').hidden = true;
+      $('hintText').hidden = true;
+      $('answerBox').hidden = true;
+    }
+
+    /* السؤال المفتوح: يُرسم من جديد عند تبديل نوع الأرقام أيضاً */
+    function renderQuestion() {
+      const tile = board[active], q = tile.q, cat = CATS[tile.cat];
+      $('problem').innerHTML =
+        `<span class="kind-chip" style="--fc:${cat.tone}"><i class="ph-bold ph-${cat.icon}" aria-hidden="true"></i>&nbsp;${esc(q.task)} · ${cat.label}</span>` +
+        `<div class="problem-text">${esc(toArabicText(q.q))}</div>`;
+      clearQuestion();
+      $('bingoExtra').hidden = false;
+      $('hintBtn').hidden = false;
+      $('hintText').textContent = '';
+      $('hintText').innerHTML = esc(toArabicText(q.hint));
+      if (q.type === 'obj') {
+        correctAnsGlobal = q.ans;
+        q.opts.forEach((opt, i) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'choice'; b.dataset.key = toArabicNumber(i + 1);
+          b.innerHTML = esc(toArabicText(opt)); b._value = i;
+          b.onclick = () => answerChoice(i);
+          $('choices').appendChild(b);
+        });
+      } else {
+        correctAnsGlobal = null;
+        $('answerBox').hidden = false;
+        $('answerText').innerHTML = esc(toArabicText(q.ansText));
+        $('judge').hidden = false;
+      }
+    }
+
+    /* ===== دورة الجولة ===== */
+    function newRound(ctx, { counted }) {
+      roundCounted = counted;
+      clearTimeout(spinTimer);
+      active = null;
+      clearQuestion();
+      ensureBoard();
+      $('problem').innerHTML = $('pickMode').value === 'random'
+        ? '<span class="problem-text">تدور البطاقات… وتتوقف عند بطاقتك</span>'
+        : '<span class="problem-text">اختر بطاقة من اللوحة</span>';
+      renderBoard();
+      startTimer(() => finish(false, '❌ الوقت انتهى!'));
+      if ($('pickMode').value === 'random') spin();
+    }
+
+    /* الاختيار العشوائي: تضيء البطاقات الحرة واحدة بعد أخرى ثم تتوقف عند إحداها */
+    function spin() {
+      const free = board.map((t, i) => i).filter(i => !board[i].by);
+      let step = 0;
+      const tick = () => {
+        if (!gameStarted || answered) return;
+        const i = free[rnd(0, free.length - 1)];
+        document.querySelectorAll('.tile.is-spinning').forEach(el => el.classList.remove('is-spinning'));
+        const el = document.querySelector(`.tile[data-index="${i}"]`);
+        if (el) el.classList.add('is-spinning');
+        game.sfx('pop', step % 6);
+        if (++step > 12) { openTile(i); return; }
+        spinTimer = setTimeout(tick, 90);
+      };
+      tick();
+    }
+
+    function openTile(i) {
+      if (!canPick() || board[i].by) return;
+      active = i;
+      game.sfx('pop', i % 6);
+      renderBoard();
+      renderQuestion();
+    }
+
+    function lockQuestion(picked) {
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        if (b._value === correctAnsGlobal) b.classList.add('correct');
+        else if (b._value === picked) b.classList.add('wrong');
+        b.disabled = true;
+      });
+      document.querySelectorAll('#judge button').forEach(b => { b.disabled = true; });
+    }
+
+    function answerChoice(i) {
+      if (!gameStarted || answered) return;
+      lockQuestion(i);
+      finish(i === board[active].q.ans);
+    }
+
+    /* نهاية الجولة: الإجابة الصحيحة (في جولة محسوبة) تكسب البطاقة للطالب، وخط كامل يعني "بينجو!" */
+    function finish(correct, message) {
+      if (!gameStarted || answered) return;
+      clearTimeout(spinTimer);
+      lockQuestion(null);
+      let face, speak;
+      if (correct && roundCounted && active !== null) {
+        board[active].by = currentStudent;
+        const lines = completeLines().filter(l => !announcedLines.has(l.join()));
+        lines.forEach(l => announcedLines.add(l.join()));
+        if (lines.length) { message = `🎉 بينجو يا ${currentStudent}! اكتمل خط كامل`; speak = 'بينجو!'; face = '🎉'; }
+        if (board.every(t => t.by)) message = (message || `✅ أحسنت يا ${currentStudent}`) + ' — اكتملت اللوحة، تبدأ لوحة جديدة';
+      }
+      game.finishRound(correct, { counted: roundCounted, message, speak, face });
+      renderBoard();
+    }
+
+    const game = GameShell.mount({
+      id: 'doubles-bingo',
+      storagePrefix: 'doubles_bingo',
+      title: 'بينجو جمع العدد ونفسه',
+      heading: 'بينجو جمع العدد ونفسه',
+      emoji: { code: '1f3b1', fallback: '🎱' },   // نفس إيموجي جزيرتها على الخريطة
+      exportFilename: 'نتائج_بينجو_جمع_العدد_ونفسه.xlsx',
+      timer: { value: 40, min: 10, max: 120 },
+      intro: 'اختر طالباً واضغط «ابدأ اللعب» ثم اختر بطاقة من اللوحة. من يجيب صح يكسب البطاقة، وخط كامل يعني «بينجو!»',
+      settingsHTML: `
+        <div class="toolbar">
+          <div class="group">
+            <label class="label" for="boardSize">حجم اللوحة:</label>
+            <select id="boardSize">
+              <option value="3">٣ × ٣ (٩ بطاقات)</option>
+              <option value="4">٤ × ٤ (١٦ بطاقة)</option>
+              <option value="5" selected>٥ × ٥ (٢٥ بطاقة)</option>
+            </select>
+          </div>
+          <div class="group">
+            <label class="label" for="pickMode">اختيار البطاقة:</label>
+            <select id="pickMode">
+              <option value="manual">يختارها الطالب</option>
+              <option value="random">عشوائي</option>
+            </select>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="newBoardBtn"><i class="ph-bold ph-arrows-clockwise" aria-hidden="true"></i> لوحة جديدة</button>
+        </div>`,
+      gameAreaHTML: `
+        <div class="choices" id="choices"></div>
+        <div class="bingo-extra" id="bingoExtra" hidden>
+          <button type="button" id="hintBtn"><i class="ph-bold ph-lightbulb" aria-hidden="true"></i> تلميح</button>
+          <p class="bingo-note" id="hintText" hidden></p>
+          <details class="bingo-answer" id="answerBox" hidden>
+            <summary><i class="ph-bold ph-chalkboard-teacher" aria-hidden="true"></i> الإجابة المقترحة للمعلم</summary>
+            <p class="bingo-note" id="answerText"></p>
+          </details>
+          <div class="judge-row" id="judge" hidden>
+            <button type="button" class="is-ok" id="judgeOk"><i class="ph-bold ph-check" aria-hidden="true"></i> إجابة صحيحة</button>
+            <button type="button" class="is-bad" id="judgeBad"><i class="ph-bold ph-x" aria-hidden="true"></i> إجابة خاطئة</button>
+          </div>
+        </div>
+        <div class="bingo-board" id="bingoBoard" aria-label="لوحة البينجو"></div>
+        <div class="bingo-legend" aria-hidden="true">
+          <span class="kind-chip" style="--fc:var(--c6)"><i class="ph-bold ph-puzzle-piece"></i>&nbsp;مهارة أساسية</span>
+          <span class="kind-chip" style="--fc:var(--c4)"><i class="ph-bold ph-book-open"></i>&nbsp;تطبيق</span>
+          <span class="kind-chip" style="--fc:var(--c2)"><i class="ph-bold ph-fire"></i>&nbsp;تحدي</span>
+        </div>`,
+      newRound,
+      onNumbersToggle() {
+        // أرقام اللوحة والسؤال المفتوح تتبع نوع الأرقام، دون تغيير السؤال
+        if (board.length) renderBoard();
+        if (gameStarted && !answered && active !== null) renderQuestion();
+        return false;
+      },
+      onReady() {
+        ensureBoard();
+        renderBoard();
+        $('bingoBoard').addEventListener('click', e => {
+          const t = e.target.closest('.tile');
+          if (t) openTile(parseInt(t.dataset.index, 10));
+        });
+        $('hintBtn').addEventListener('click', () => { $('hintText').hidden = false; game.sfx('pop', 3); });
+        $('judgeOk').addEventListener('click', () => finish(true));
+        $('judgeBad').addEventListener('click', () => finish(false));
+        const resetBoard = () => {
+          if (gameStarted && !answered) return;
+          board = []; ensureBoard(); renderBoard();
+        };
+        $('boardSize').addEventListener('change', resetBoard);
+        $('newBoardBtn').addEventListener('click', () => {
+          if (gameStarted && !answered) { alert('أنهِ الجولة الحالية أولاً'); return; }
+          if (!board.some(t => t.by) || confirm('سيُمسح ما كُسب على اللوحة الحالية. هل تريد لوحة جديدة؟')) resetBoard();
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

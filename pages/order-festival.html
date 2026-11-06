@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>مهرجان ترتيب الأعداد</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.86 0.1 350); }
+
+    /* the numbers around the missing one: three or four numbers on one line */
+    .number-row { font-size: clamp(2rem, 1rem + 3.6vw, 4rem); line-height: 1.5; }
+    .missing { color: var(--bad-deep); }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../common.js"></script>
+  <script src="../game-shell.js"></script>
+  <script>
+    /* ===== أدوات صغيرة خاصة بهذه اللعبة ===== */
+    const pickOne = arr => arr[rnd(0, arr.length - 1)];
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+    const num = n => toArabicNumber(n);
+    const expr = text => `<span class="expr">${text}</span>`;
+    const row = items => `<div class="number-row">${items.join(' ، ')}</div>`;
+
+    /* الخيارات: الإجابة + الخطأ الشائع لهذا النوع، ثم أعداد مجاورة؛ كلها مختلفة وغير سالبة */
+    function makeChoices(correct, mistake, count) {
+      const out = [correct];
+      const add = v => { if (out.length < count && v >= 0 && !out.includes(v)) out.push(v); };
+      add(mistake);
+      for (let k = 1; out.length < count && k < 30; k++) { add(correct + k); add(correct - k); }
+      return shuffle(out);
+    }
+
+    /* ===== أنواع الأسئلة: السابق، التالي، بين عددين، تكملة النمط ===== */
+    const BUILDERS = {
+      prev: n => ({
+        body: `<div class="problem-hint">ما العدد الذي يَسْبِق العدد التالي؟ (قبله)</div><div>${num(n)}</div>`,
+        answer: n - 1, mistake: n + 1
+      }),
+      next: n => ({
+        body: `<div class="problem-hint">ما العدد الذي يَلِي العدد التالي؟ (بعده)</div><div>${num(n)}</div>`,
+        answer: n + 1, mistake: n - 1
+      }),
+      between: n => ({
+        body: `<div class="problem-hint">ما العدد الذي يَقَع بَيْنَ العددين؟</div>${row([expr(num(n)), '<span class="missing">؟</span>', expr(num(n + 2))])}`,
+        answer: n + 1, mistake: n
+      }),
+      pattern: n => ({
+        body: `<div class="problem-hint">أكمل نمط الأعداد المتتالية</div>${row([expr(num(n)), expr(num(n + 1)), '<span class="missing">؟</span>', expr(num(n + 3))])}`,
+        answer: n + 2, mistake: n + 3
+      })
+    };
+
+    /* ===== بناء السؤال (تستدعيه المنصة عند بدء كل جولة) ===== */
+    function buildQuestion() {
+      const hundred = document.getElementById('levelSelect').value === '100';
+      const count = parseInt(document.getElementById('optionsCountSelect').value, 10);
+      const n = hundred ? rnd(1, 97) : rnd(100, 996);   // فوق ٠ وتحت نهاية المستوى كي يبقى "التالي" و"بين" داخله
+      const q = BUILDERS[pickOne(Object.keys(BUILDERS))](n);
+      return { html: q.body, choices: makeChoices(q.answer, q.mistake, count), answer: q.answer };
+    }
+
+    GameShell.mount({
+      id: 'order-festival',
+      storagePrefix: 'order_festival',
+      title: 'مهرجان ترتيب الأعداد',
+      heading: 'مهرجان ترتيب الأعداد',
+      emoji: { code: '1f388', fallback: '🎈' },   // نفس إيموجي جزيرتها على الخريطة
+      exportFilename: 'نتائج_مهرجان_ترتيب_الأعداد.xlsx',
+      timer: { value: 20, min: 5, max: 90 },
+      settingsHTML: `
+        <div class="toolbar">
+          <div class="group">
+            <label class="label" for="levelSelect">الأعداد:</label>
+            <select id="levelSelect">
+              <option value="100">إلى ١٠٠</option>
+              <option value="1000">إلى ١٠٠٠</option>
+            </select>
+          </div>
+          <div class="group">
+            <label class="label" for="optionsCountSelect">عدد الخيارات:</label>
+            <select id="optionsCountSelect">
+              <option value="4">٤ خيارات (صعب)</option>
+              <option value="3">٣ خيارات (متوسط)</option>
+              <option value="2">خياران (سهل)</option>
+            </select>
+          </div>
+        </div>`,
+      buildQuestion
+    });
+  </script>
+</body>
+
+</html>

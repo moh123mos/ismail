@@ -24,6 +24,7 @@ directly.
 ## Numbers
 
 - `toArabicNumber(n)` → string; converts digits to ٠١٢٣ when `useArabicIndic` is true, otherwise returns `String(n)`.
+- `toArabicText(text)` → a *sentence* containing digits (word problem, card text): digits follow the numerals toggle and every number / equation run (`7 + 8 = ؟`) is forced left-to-right (U+202D…U+202C, with non-breaking spaces) so it is not re-ordered inside the Arabic sentence. Write the digits in the source as 0-9. Escape the result with your own `esc()` *after* calling it, not before.
 - `parseDisplayedNumber(text)` → integer parsed from text that may contain either numeral set.
 - `rnd(min, max)` → random integer, both ends inclusive.
 - `fingerprint(obj)` → base64 string of the JSON of `obj` (for the used-questions stores).

@@ -205,6 +205,46 @@ h1::after { content: ""; display: block; width: 4.5rem; height: 0.4rem; margin-t
 .choice.wrong { opacity: 0.7; box-shadow: 0 0.1rem 0 var(--cd); }
 .choice.wrong::after { content: "✗"; position: absolute; inset-block-start: 0.4rem; inset-inline-end: 0.8rem; font: 800 1.6rem/1 var(--f-body); }
 
+/* a question that is a sentence (word problem, card text) is smaller than the big number in #problem; .expr forces an equation to read left-to-right */
+.problem-text { font: 700 clamp(1.4rem, 1rem + 1.8vw, 2.4rem)/1.7 var(--f-display); max-width: 42ch; text-wrap: balance; }
+.expr { display: inline-block; direction: ltr; unicode-bidi: bidi-override; }   /* override, not isolate: Arabic-Indic digits next to "+" / "=" would otherwise be re-ordered */
+
+/* the question-type cube (GameShell.cubeHTML): a decorative die that rolls onto one face, next to a label chip in the same colour */
+.cube-box { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--s-5); }
+.cube-scene { --size: 5.5rem; flex: none; width: var(--size); height: var(--size); margin-block: var(--s-3); perspective: 36rem; }
+.cube {
+  --fx: 0deg; --fy: 0deg;
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  transform: rotateX(-18deg) rotateY(-26deg) rotateX(var(--fx)) rotateY(var(--fy));
+}
+.cube[data-face="1"] { --fy: -90deg; }
+.cube[data-face="2"] { --fy: 180deg; }
+.cube[data-face="3"] { --fy: 90deg; }
+.cube[data-face="4"] { --fx: -90deg; }
+.cube[data-face="5"] { --fx: 90deg; }
+.cube__face {
+  --z: calc(var(--size) / 2);
+  position: absolute; inset: 0; display: grid; place-items: center; border-radius: 1rem;
+  background: var(--fc, var(--c1)); color: var(--ink); font-size: 2.4rem; backface-visibility: hidden;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+.cube__face:nth-child(1) { transform: translateZ(var(--z)); }
+.cube__face:nth-child(2) { transform: rotateY(90deg) translateZ(var(--z)); }
+.cube__face:nth-child(3) { transform: rotateY(180deg) translateZ(var(--z)); }
+.cube__face:nth-child(4) { transform: rotateY(-90deg) translateZ(var(--z)); }
+.cube__face:nth-child(5) { transform: rotateX(90deg) translateZ(var(--z)); }
+.cube__face:nth-child(6) { transform: rotateX(-90deg) translateZ(var(--z)); }
+.kind-chip {
+  display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 var(--s-4); border-radius: 999px;
+  background: var(--fc, var(--sun)); color: var(--ink); font: 800 1.25rem/1.2 var(--f-display); box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+/* teacher-judged answer: two big buttons (right / wrong) */
+.judge-row { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-3); margin-top: var(--s-4); }
+.judge-row button { min-height: 3.5rem; padding-inline: var(--s-6); font: 800 1.25rem/1.2 var(--f-display); }
+.judge-row .is-ok { background: var(--ok); box-shadow: 0 0.3rem 0 var(--ok-deep); }
+.judge-row .is-bad { background: var(--bad); box-shadow: 0 0.3rem 0 var(--bad-deep); }
+
 .status { min-height: 2.6rem; margin-top: var(--s-4); text-align: center; font-weight: 700; font-size: clamp(1.2rem, 1rem + 0.8vw, 1.6rem); }
 
 /* the reaction emoji (🎉 / 💪) pops out of the board's corner */
@@ -273,12 +313,14 @@ h1::after { content: ""; display: block; width: 4.5rem; height: 0.4rem; margin-t
 @keyframes pop-in { from { opacity: 0; scale: 0.85; } to { opacity: 1; scale: 1; } }
 @keyframes swell { from { translate: -2.5rem 0; } to { translate: 2.5rem 0; } }
 @keyframes tick { 50% { scale: 1.06; } }
+@keyframes cube-roll { from { transform: rotateX(-18deg) rotateY(-26deg) rotateX(calc(var(--fx) + 540deg)) rotateY(calc(var(--fy) + 720deg)); } }
 
 @media (prefers-reduced-motion: no-preference) {
   .g-hero > * { animation: rise 0.7s var(--ease-out) both; }
   .g-hero > :nth-child(2) { animation-delay: 0.15s; }
   .board, .panel { animation: rise 0.7s 0.1s var(--ease-out) both; }
   .choice.wrong, .face.sad { animation: shake 0.45s ease-out; }
+  .cube { animation: cube-roll 1.3s var(--ease-out) both; }
   #resultsBanner.show { animation: pop-in 0.35s var(--ease-out) both; }
   .timer-pill[data-low] { animation: tick 1s ease-in-out infinite; }
   body::before { animation: swell 9s ease-in-out infinite alternate; }
@@ -306,6 +348,8 @@ h1::after { content: ""; display: block; width: 4.5rem; height: 0.4rem; margin-t
   .btn--primary { padding: 0 var(--s-5); }
   .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
   .choice { min-height: 4.75rem; }
+  .cube-scene { --size: 4.5rem; }
+  .judge-row > * { flex: 1 1 100%; }
   .face { inset-block-start: -2.5rem; margin-left: -2.25rem; width: 4.5rem; height: 4.5rem; }
   .students__add { grid-template-columns: 1fr; }
   .winner-row { gap: var(--s-3); padding: var(--s-2) var(--s-3); }

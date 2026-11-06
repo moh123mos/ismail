@@ -118,7 +118,7 @@
       margin-bottom: var(--s-6);
     }
 
-    .map { --map-h: 760; position: relative; container-type: inline-size; aspect-ratio: 1200 / var(--map-h); }
+    .map { --map-h: 1350; position: relative; container-type: inline-size; aspect-ratio: 1200 / var(--map-h); }
     .route { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
     .route path { fill: none; stroke: var(--white); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 2 16; opacity: 0.9; }
 
@@ -411,13 +411,13 @@
         <h2 class="ribbon rise" style="--i:3">اختر اللعبة التي تريد البدء بها</h2>
 
         <div class="map" id="mapEl">
-          <svg class="route" viewBox="0 0 1200 760" aria-hidden="true">
-            <path d="M960 190 C 860 300, 850 440, 720 540 C 600 620, 560 330, 456 215 C 360 120, 250 300, 216 540"/>
+          <svg class="route" viewBox="0 0 1200 1350" aria-hidden="true">
+            <path d=""/>
           </svg>
 
-          <span class="critter emoji" data-emoji="1f433" data-fallback="🐳" style="left:37%; top:90%" aria-hidden="true"></span>
+          <span class="critter emoji" data-emoji="1f433" data-fallback="🐳" style="left:4%; top:64.5%" aria-hidden="true"></span>
 
-          <a class="island" style="--x:80%; --y:24%; --g:oklch(0.85 0.15 135); --i:0" href="pages/math-operations.html" data-island>
+          <a class="island" style="--x:82%; --y:15%; --g:oklch(0.85 0.15 135); --i:0" href="pages/math-operations.html" data-island>
             <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
               <path class="foam" d="M24 160C14 90 90 36 186 40c92-4 168 48 160 120-6 66-78 106-160 104C102 266 34 226 24 160z"/>
               <path class="sandbed" d="M40 160C32 100 104 56 186 60c82-2 148 42 142 102-6 56-70 90-142 88C112 248 48 214 40 160z"/>
@@ -429,7 +429,7 @@
             <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
           </a>
 
-          <a class="island" style="--x:60%; --y:73%; --g:oklch(0.88 0.13 105); --i:1" href="pages/multi-tables.html" data-island>
+          <a class="island" style="--x:50%; --y:19%; --g:oklch(0.88 0.13 105); --i:1" href="pages/multi-tables.html" data-island>
             <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
               <path class="foam" d="M20 150C16 84 96 38 190 42c88-2 164 40 160 112-4 70-80 112-164 110C100 262 24 218 20 150z"/>
               <path class="sandbed" d="M36 152C34 96 108 58 190 62c78-2 142 36 138 98-4 58-70 92-142 90C112 248 40 208 36 152z"/>
@@ -441,7 +441,7 @@
             <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
           </a>
 
-          <a class="island" style="--x:38%; --y:27%; --g:oklch(0.84 0.1 175); --i:2" href="pages/equations.html" data-island>
+          <a class="island" style="--x:18%; --y:14%; --g:oklch(0.84 0.1 175); --i:2" href="pages/equations.html" data-island>
             <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
               <path class="foam" d="M28 156C20 88 94 34 188 38c90-2 160 46 156 116-4 68-76 112-160 110C104 262 36 222 28 156z"/>
               <path class="sandbed" d="M44 156C38 98 106 56 188 60c80-2 142 40 138 100-4 56-68 90-140 88C114 246 50 212 44 156z"/>
@@ -453,7 +453,7 @@
             <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
           </a>
 
-          <a class="island" style="--x:18%; --y:73%; --g:oklch(0.87 0.12 85); --i:3" href="pages/counting-money.html" data-island>
+          <a class="island" style="--x:18%; --y:50%; --g:oklch(0.87 0.12 85); --i:3" href="pages/counting-money.html" data-island>
             <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
               <path class="foam" d="M22 158C14 92 92 40 186 42c90-2 162 44 158 114-4 68-78 110-160 108C102 262 30 224 22 158z"/>
               <path class="sandbed" d="M38 158C32 102 104 60 186 62c80-2 144 38 140 98-4 56-70 90-142 88C112 246 44 214 38 158z"/>
@@ -462,6 +462,66 @@
             <span class="emoji island__emoji" data-emoji="1f4b8" data-fallback="💸" aria-hidden="true"></span>
             <span class="island__sign">لعبة عد النقود</span>
             <span class="island__desc">تعلم عد النقود بطريقة ممتعة وتفاعلية</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:50%; --y:47%; --g:oklch(0.86 0.11 50); --i:4" href="pages/rounding-cube.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M24 160C14 90 90 36 186 40c92-4 168 48 160 120-6 66-78 106-160 104C102 266 34 226 24 160z"/>
+              <path class="sandbed" d="M40 160C32 100 104 56 186 60c82-2 148 42 142 102-6 56-70 90-142 88C112 248 48 214 40 160z"/>
+              <path class="grass" d="M66 156C60 108 118 76 186 78c68-2 122 32 118 80-4 46-58 72-118 70C126 226 72 200 66 156z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f3af" data-fallback="🎯" aria-hidden="true"></span>
+            <span class="island__sign">بطولة مكعب التقريب</span>
+            <span class="island__desc">ارمِ المكعب وقرّب الأعداد لأقرب عشرة أو مئة أو ألف</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:82%; --y:51%; --g:oklch(0.84 0.1 235); --i:5" href="pages/order-cube.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M20 150C16 84 96 38 190 42c88-2 164 40 160 112-4 70-80 112-164 110C100 262 24 218 20 150z"/>
+              <path class="sandbed" d="M36 152C34 96 108 58 190 62c78-2 142 36 138 98-4 58-70 92-142 90C112 248 40 208 36 152z"/>
+              <path class="grass" d="M62 152C62 110 120 80 190 80c64-2 116 28 112 74-4 44-56 70-116 68C128 220 62 196 62 152z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f3b2" data-fallback="🎲" aria-hidden="true"></span>
+            <span class="island__sign">بطولة مكعب ترتيب الأعداد</span>
+            <span class="island__desc">مكعب يحدد التحدي: السابق والتالي وترتيب الأعداد</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:82%; --y:86%; --g:oklch(0.86 0.1 350); --i:6" href="pages/order-festival.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M28 156C20 88 94 34 188 38c90-2 160 46 156 116-4 68-76 112-160 110C104 262 36 222 28 156z"/>
+              <path class="sandbed" d="M44 156C38 98 106 56 188 60c80-2 142 40 138 100-4 56-68 90-140 88C114 246 50 212 44 156z"/>
+              <path class="grass" d="M68 154C64 108 120 78 188 78c64-2 118 30 114 78-4 44-56 70-116 68C128 224 72 198 68 154z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f388" data-fallback="🎈" aria-hidden="true"></span>
+            <span class="island__sign">مهرجان ترتيب الأعداد</span>
+            <span class="island__desc">أسئلة ممتعة عن العدد السابق والتالي وما بينهما</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:50%; --y:81%; --g:oklch(0.84 0.11 300); --i:7" href="pages/doubles-bingo.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M22 158C14 92 92 40 186 42c90-2 162 44 158 114-4 68-78 110-160 108C102 262 30 224 22 158z"/>
+              <path class="sandbed" d="M38 158C32 102 104 60 186 62c80-2 144 38 140 98-4 56-70 90-142 88C112 246 44 214 38 158z"/>
+              <path class="grass" d="M64 156C60 110 118 80 186 80c66-2 120 30 116 78-4 44-56 70-116 68C126 224 68 200 64 156z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f3b1" data-fallback="🎱" aria-hidden="true"></span>
+            <span class="island__sign">بينجو جمع العدد ونفسه</span>
+            <span class="island__desc">اكسب بطاقات اللوحة وأكمل خط بينجو</span>
+            <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="island" style="--x:18%; --y:87%; --g:oklch(0.84 0.09 215); --i:8" href="pages/robot-rescue.html" data-island>
+            <svg class="island__shape" viewBox="0 0 372 306" preserveAspectRatio="none" aria-hidden="true">
+              <path class="foam" d="M24 160C14 90 90 36 186 40c92-4 168 48 160 120-6 66-78 106-160 104C102 266 34 226 24 160z"/>
+              <path class="sandbed" d="M40 160C32 100 104 56 186 60c82-2 148 42 142 102-6 56-70 90-142 88C112 248 48 214 40 160z"/>
+              <path class="grass" d="M66 156C60 108 118 76 186 78c68-2 122 32 118 80-4 46-58 72-118 70C126 226 72 200 66 156z"/>
+            </svg>
+            <span class="emoji island__emoji" data-emoji="1f916" data-fallback="🤖" aria-hidden="true"></span>
+            <span class="island__sign">إنقاذ الروبوت حاسوب</span>
+            <span class="island__desc">ارمِ النرد وأجب لتصل مركبة الصف إلى الروبوت</span>
             <span class="island__cta">ابدأ اللعب <i class="ph-bold ph-arrow-left" aria-hidden="true"></i></span>
           </a>
 

@@ -133,8 +133,22 @@ function finish(correct, message) {
 While a round is running `gameStarted === true && answered === false`; guard widget clicks with that.
 Example: [pages/counting-money.html](../pages/counting-money.html).
 
+A custom game may still render its own answer buttons: put `<div class="choices" id="choices"></div>` inside `gameAreaHTML`,
+fill it with `<button class="choice" data-key="١">` elements and set `btn._value` — the shared sticker styling, the `.correct` / `.wrong`
+classes and the number-key shortcut then work as in a multiple-choice game (see [pages/doubles-bingo.html](../pages/doubles-bingo.html),
+[pages/robot-rescue.html](../pages/robot-rescue.html)). Start the timer (`startTimer(cb)`) in `newRound`; a round that ends without a
+question must still have a timer running or have set `questionStartTime`, otherwise its elapsed time is wrong.
+
 Custom widgets should be real `<button>`s (keyboard + touch) styled with the design tokens. `ctx.sfx(name, arg)` plays a
 sound effect safely (`'pop'`, `'hover'`, `'go'`, `'win'`, `'lose'` — see `js/sfx.js`); the counting game uses `'pop'` per tap.
+
+## The question-type cube
+
+`GameShell.cubeHTML(faces, active)` returns the markup of a decorative 3D cube (six faces, one Phosphor icon each) that rolls
+onto face `active`, plus a label chip with that face's title. `faces` is `[{title, icon}]` with exactly six entries (`icon` = Phosphor name
+without `ph-`). Put it first in the `html` of a multiple-choice question and pick the question type from `active` — see
+[pages/rounding-cube.html](../pages/rounding-cube.html) and [pages/order-cube.html](../pages/order-cube.html). Styles (`.cube-*`,
+`.kind-chip`) are in `style.css`; the roll is skipped under `prefers-reduced-motion`.
 
 ## Avoiding repeated questions
 

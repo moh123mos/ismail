@@ -30,7 +30,7 @@ External: Google Fonts only (Baloo Bhaijaan 2 for headings, Alexandria for body)
 1. **Sky header** — sun, drifting clouds, brand + sound switch (`#sfxToggle`), greeting with a waving-hand emoji,
    `h1` with the teacher's name, one-line description, the photo in a porthole that overlaps the horizon.
 2. **Map** (`.sea#map`) — ribbon title "اختر اللعبة التي تريد البدء بها", then `.map#mapEl` with the dotted route,
-   four islands (`a.island[data-island]`), the boat (`#boat`) and a whale.
+   nine islands (`a.island[data-island]`) in a 3 × 3 snake, the boat (`#boat`) and a whale.
 3. **Try it yourself** (`.sea.harbor#try`) — a live question (see below).
 4. **How it works** (`.beach`) — three honest steps and a note that data is saved on this device.
 5. **Podium** (`.night#podium`) — example winners (labelled "مثال توضيحي"; names and scores are made up).
@@ -106,8 +106,9 @@ Done by the `new-game` skill; by hand:
    `href="pages/<id>.html"`, the Arabic name (`.island__sign`), one short sentence (`.island__desc`), and an
    emoji (`data-emoji` + `data-fallback`). **The island's emoji and grass colour are the game's identity:** the game page
    uses the same emoji in `GameShell.mount({ emoji })` and the same colour as `--game` in its `<style>`.
-2. More than four games: raise `--map-h` on `.map` (default 760; about 1000 for six islands) and re-place the
-   islands. The dotted route is drawn from the islands' `--x`/`--y` by script, boat/hover/sound logic picks the
+2. More than four games: raise `--map-h` on `.map` (it is 1350 now, for nine islands: three columns at `--x` 18 / 50 / 82 % (islands are 36 % wide, so the outer ones touch the map's edges exactly — any further out and the page scrolls sideways at 1024 px),
+   three rows around `--y` 15 / 50 / 85 %, a few percent of vertical jitter so it does not look like a grid; keep rows ≥ 28 % apart,
+   an island is about 27 % of the map height) and re-place the islands (and the whale `.critter`). The dotted route is drawn from the islands' `--x`/`--y` by script, boat/hover/sound logic picks the
    island up automatically (`[data-island]`), and the tablet/phone layouts need no change.
 3. Run `node tools/check-landing.js`.
 

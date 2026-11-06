@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>بطولة مكعب ترتيب الأعداد</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.84 0.1 235); }
+
+    /* a short list of numbers (between / order / pattern): up to 6-digit numbers three or four times on one line */
+    .number-row { font-size: clamp(1.9rem, 0.9rem + 3.6vw, 4rem); line-height: 1.5; }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../common.js"></script>
+  <script src="../game-shell.js"></script>
+  <script>
+    /* ===== وجوه المكعب: كل وجه نوع من الأسئلة ===== */
+    const FACES = [
+      { type: 'prev', title: 'العدد السابق', icon: 'skip-back' },
+      { type: 'next', title: 'العدد التالي', icon: 'skip-forward' },
+      { type: 'between', title: 'بين عددين', icon: 'arrows-horizontal' },
+      { type: 'order', title: 'ترتيب الأعداد', icon: 'sort-ascending' },
+      { type: 'line', title: 'خط الأعداد', icon: 'ruler' },
+      { type: 'pattern', title: 'تحدي النمط', icon: 'lightning' }
+    ];
+    const OPTIONS = 4;
+
+    /* ===== أدوات صغيرة خاصة بهذه اللعبة ===== */
+    const pickOne = arr => arr[rnd(0, arr.length - 1)];
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+    const num = n => toArabicNumber(n);
+    const expr = text => `<span class="expr">${text}</span>`;
+    const row = items => `<div class="number-row">${items.join(' ، ')}</div>`;
+
+    /* الخيارات: الإجابة + أخطاء شائعة، ثم أعداد مجاورة؛ كلها مختلفة وغير سالبة */
+    function makeChoices(correct, mistakes) {
+      const out = [correct];
+      const add = v => { if (out.length < OPTIONS && v >= 0 && !out.includes(v)) out.push(v); };
+      mistakes.forEach(add);
+      for (let k = 1; out.length < OPTIONS && k < 30; k++) { add(correct + k); add(correct - k); }
+      return shuffle(out);
+    }
+
+    /* عدد أساسي بعيد عن الصفر وعن نهاية المستوى */
+    const baseNumber = max => rnd(Math.max(10, max / 10), max - 10);
+
+    /* ===== أنواع الأسئلة (واحد لكل وجه) ===== */
+    const BUILDERS = {
+      prev(max) {
+        const n = baseNumber(max);
+        return {
+          body: `<div class="problem-hint">ما العدد الذي يَسْبِق هذا العدد مباشرة؟</div><div>${num(n)}</div>`,
+          choices: makeChoices(n - 1, [n + 1, n - 2, n - 10]), answer: n - 1
+        };
+      },
+      next(max) {
+        const n = baseNumber(max);
+        return {
+          body: `<div class="problem-hint">ما العدد الذي يَلِي هذا العدد مباشرة؟</div><div>${num(n)}</div>`,
+          choices: makeChoices(n + 1, [n - 1, n + 2, n + 10]), answer: n + 1
+        };
+      },
+      between(max) {
+        const n = baseNumber(max);
+        return {
+          body: `<div class="problem-hint">ما العدد الذي يَقَع بَيْنَ العددين؟</div>${row([expr(num(n)), expr(num(n + 2))])}`,
+          choices: makeChoices(n + 1, [n, n + 2, n + 3, n - 1]), answer: n + 1
+        };
+      },
+      order(max) {
+        const n = baseNumber(max);
+        // ثلاثة أعداد مختلفة: الوسط والأكبر والأصغر، تُعرض بترتيب عشوائي غير مرتب
+        const set = new Set([n, n + rnd(2, 15), Math.max(1, n - rnd(2, 15))]);
+        let shown, sorted;
+        do { shown = shuffle([...set]); sorted = [...set].sort((a, b) => a - b); } while (shown.join() === sorted.join());
+        // الإجابة هي الترتيب الصحيح؛ والخيارات الأخرى ترتيبات خاطئة (منها التنازلي)
+        const perms = [[0, 1, 2], [2, 1, 0], [1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1]].map(p => p.map(i => sorted[i]));
+        const [right, ...wrong] = perms;
+        const picks = [right, ...shuffle(wrong).slice(0, OPTIONS - 1)];
+        const key = a => a.join(',');
+        const label = a => a.map(v => '\u202D' + num(v) + '\u202C').join(' ، ');   // كل عدد يُجبَر على اتجاهه كي لا تلتصق الفواصل بالأرقام
+        return {
+          body: `<div class="problem-hint">رتّب الأعداد من الأَصْغَرِ إِلَى الأَكْبَرِ</div>${row(shown.map(v => expr(num(v))))}`,
+          choices: shuffle(picks).map(a => ({ value: key(a), label: label(a) })), answer: key(right)
+        };
+      },
+      line(max) {
+        const n = baseNumber(max);
+        const maxSteps = Math.min(5, Math.floor(n / 10), Math.floor((max - n) / 10));   // العددان داخل المستوى وغير سالبين
+        const step = rnd(1, Math.max(1, maxSteps)) * 10;
+        return {
+          body: `<div class="problem-text">العددان ${expr(num(n - step))} و ${expr(num(n + step))} على خط الأعداد. ما العدد الذي يقع في المنتصف تماماً؟</div>`,
+          choices: makeChoices(n, [n + 10, n - 10, n + step]), answer: n
+        };
+      },
+      pattern() {
+        const start = rnd(3, 50), step = rnd(2, 10);
+        const answer = start + step * 2;
+        return {
+          body: `<div class="problem-hint">أكمل نمط الأعداد</div>${row([expr(num(start)), expr(num(start + step)), '؟', expr(num(start + step * 3))])}`,
+          choices: makeChoices(answer, [answer + 1, answer - 1, answer + step]), answer
+        };
+      }
+    };
+    let lastFace = -1;
+
+    /* ===== بناء السؤال (تستدعيه المنصة عند بدء كل جولة): المكعب "يُرمى" ويحدد النوع ===== */
+    function buildQuestion() {
+      const max = parseInt(document.getElementById('level').value, 10);
+      let face;
+      do { face = rnd(0, FACES.length - 1); } while (face === lastFace);
+      lastFace = face;
+      const q = BUILDERS[FACES[face].type](max);
+      return { html: GameShell.cubeHTML(FACES, face) + q.body, choices: q.choices, answer: q.answer };
+    }
+
+    GameShell.mount({
+      id: 'order-cube',
+      storagePrefix: 'order_cube',
+      title: 'بطولة مكعب ترتيب الأعداد',
+      heading: 'بطولة مكعب ترتيب الأعداد',
+      emoji: { code: '1f3b2', fallback: '🎲' },   // نفس إيموجي جزيرتها على الخريطة
+      exportFilename: 'نتائج_مكعب_ترتيب_الأعداد.xlsx',
+      timer: { value: 30, min: 10, max: 90 },
+      intro: 'اختر طالباً واضغط «ابدأ اللعب» ليُرمى المكعب ويحدد نوع السؤال',
+      settingsHTML: `
+        <div class="toolbar">
+          <div class="group">
+            <label class="label" for="level">مستوى الأعداد:</label>
+            <select id="level">
+              <option value="100">حتى ١٠٠ (للصفوف الأولى)</option>
+              <option value="1000">حتى ١٠٠٠ (للصفوف المتوسطة)</option>
+              <option value="1000000">حتى الملايين (متقدم)</option>
+            </select>
+          </div>
+        </div>`,
+      buildQuestion
+    });
+  </script>
+</body>
+
+</html>

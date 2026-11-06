@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>مهمة إنقاذ الروبوت حاسوب</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* only what is specific to this game; the look comes from ../style.css */
+    :root { --game: oklch(0.84 0.09 215); }
+
+    /* ---- dice row ---- */
+    .dice-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--s-4); margin-block: var(--s-2) var(--s-4); }
+    .die { font-size: 4rem; line-height: 1; color: var(--ink); }
+    .dice-text { min-width: 8rem; font: 800 1.4rem/1.2 var(--f-display); }
+
+    /* ---- the track: 25 stones in a snake, the crew's rocket on one of them, the trapped robot at the end ---- */
+    .robot-board {
+      position: relative; container-type: inline-size; width: min(100%, 36rem); aspect-ratio: 100 / 68; margin: var(--s-6) auto 0;
+      border-radius: 1.5rem; background: var(--white); box-shadow: 0 0 0 3px var(--ink), 0 0.4rem 0 3px oklch(0.27 0.06 250 / 0.25);
+    }
+    .track { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--sea); }
+    .track polyline { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 0.1 3; }
+    .stone {
+      --st: var(--c3);
+      position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) / 0.68 * 1%); translate: -50% -50%;
+      display: grid; place-items: center; width: clamp(1.6rem, 6.5cqw, 2.6rem); aspect-ratio: 1; border-radius: 50%;
+      background: var(--st); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); font: 800 0.9rem/1 var(--f-display);
+    }
+    .stone[data-zone="2"] { --st: var(--c4); }
+    .stone[data-zone="3"] { --st: var(--c5); }
+    .stone--start, .stone--end { --st: var(--sun); width: clamp(2.4rem, 9cqw, 3.6rem); font-size: 1.6rem; }
+    .stone--end { --st: var(--coral); }
+    .crew {
+      position: absolute; left: 0; top: 0; z-index: 2; display: grid; place-items: center;
+      width: clamp(2rem, 8cqw, 3.2rem); aspect-ratio: 1; border-radius: 50%; background: var(--sun); color: var(--ink);
+      box-shadow: 0 0 0 3px var(--ink), 0 0.25rem 0 3px oklch(0.27 0.06 250 / 0.3); font-size: clamp(1.1rem, 4.5cqw, 1.8rem);
+      translate: calc(var(--x) * 1cqw - 50%) calc(var(--y) * 1cqw - 50%);
+    }
+    .crew.is-hopping { transition: translate 0.3s var(--ease-out); }
+    .stage { text-align: center; margin-top: var(--s-3); }
+
+    /* ---- extras under a card ---- */
+    .robot-extra { display: grid; justify-items: center; gap: var(--s-3); margin-top: var(--s-4); }
+
+    @media (max-width: 40rem) {
+      .die { font-size: 3.25rem; }
+      .robot-extra > button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .crew.is-hopping { transition: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script src="../common.js"></script>
+  <script src="../game-shell.js"></script>
+  <script>
+    /* ===== المسار: ٢٥ حجراً (٠ = البداية، ٢٤ = مكان الروبوت) بشكل ثعبان من ٥ صفوف ===== */
+    const LAST = 24;
+    const spot = i => {            // x: ٠–١٠٠ من عرض اللوحة، y: بنفس الوحدة (ارتفاع اللوحة ٦٨)
+      const row = Math.floor(i / 5), col = i % 5;
+      return { x: row % 2 === 0 ? 86 - 18 * col : 14 + 18 * col, y: 60 - 12.5 * row };
+    };
+    const zoneOf = i => (i < 8 ? 1 : i < 16 ? 2 : 3);
+    const STAGES = ['المرحلة الأولى: الوصول إلى مكان الروبوت', 'المرحلة الثانية: تجهيز خطة الإنقاذ', 'المرحلة الثالثة: مهمة الإنقاذ!'];
+
+    /* ===== البطاقات (من ملف المعلم) =====
+       challenge: سؤال اختيار من متعدد · surprise: مكافأة أو عقبة تنفَّذ فوراً (reward 0 = رمية نرد إضافية) · mission: مهمة جماعية يحكم عليها المعلم */
+    const MASTER = [
+      { type: 'challenge', text: 'جسر الأرقام السحري: قفوا عند 9 واقفزوا 3 خطوات للأمام تصاعدياً. أين ستصلون؟', options: [11, 12, 13, 14], answer: 12, reward: 1, penalty: 0 },
+      { type: 'challenge', text: 'صندوق الطاقة المزدوج: وجدتم صندوقاً يفتح بكلمة سر. ما هي كلمة السر (7 + 7)؟', options: [13, 14, 15, 12], answer: 14, reward: 1, penalty: 0 },
+      { type: 'challenge', text: 'لغز البطاريات الثلاث: ناتج 2 + 8 + 4 ؟ (مع أي بطاريتين ستدمجون أولاً لتسهيل المهمة؟)', options: ['4 و 8', '8 و 2', '4 و 2', 'لا يمكن الدمج'], answer: '8 و 2', reward: 2, penalty: 0 },
+      { type: 'challenge', text: 'الشفرة الناقصة لتشغيل الشاشة: 9 = 5 + ؟', options: [3, 4, 5, 6], answer: 4, reward: 1, penalty: -1 },
+      { type: 'challenge', text: 'حكمة سلمى: حفظت 3 سور ثم 4 سور. كم سورة حفظت؟', options: [6, 7, 8, 9], answer: 7, reward: 1, penalty: 0 },
+      { type: 'challenge', text: 'خاصية الصفر: طاقة الروبوت الحالية صفر، أضفنا 6 بطاريات. كم المجموع ( 0 + 6 )؟', options: [0, 6, 60, 10], answer: 6, reward: 1, penalty: 0 },
+
+      { type: 'surprise', text: 'زلاجة الجاذبية!\nعثرتم على زلاجة سريعة تختصر المسافة.. تقدموا مربعين للأمام مجاناً!', icon: 'rocket-launch', reward: 2 },
+      { type: 'surprise', text: 'شحنة طاقة إضافية!\nفريقكم مليء بالحماس! يحق لكم رمي النرد مرة أخرى.', icon: 'lightning', reward: 0 },
+      { type: 'surprise', text: 'ممر سري!\nاكتشفتم نفقاً يوصلكم فوراً للأعلى. تقدموا 3 مربعات!', icon: 'flag-checkered', reward: 3 },
+      { type: 'surprise', text: 'رياح التوقف!\nهبت عاصفة رملية غطت طريقكم. تراجعوا خطوة واحدة للحماية.', icon: 'wind', penalty: -1 },
+
+      { type: 'mission', text: 'عاصفة الأرقام:\nليتمكن فريقكم من الرؤية وسط العاصفة، يجب أن يتعاون 3 أعضاء لذكر 3 عمليات جمع مختلفة نتيجتها 10 خلال 30 ثانية!', reward: 2, penalty: 0 },
+      { type: 'mission', text: 'الباب المزدوج:\nاشرحوا كيف يمكننا استخدام حقيقة الجمع (6 + 6 = 12) لمعرفة ناتج (7 + 6) لفتح هذا الباب.', reward: 2, penalty: 0 },
+      { type: 'mission', text: 'اكتشف الخطأ:\nوجدتم خريطة قديمة مكتوب عليها: (17 = 17 + 8 + 2). تشاوروا معاً.. هل الخريطة صحيحة؟ صححوا الخطأ لتجدوا الطريق!', reward: 2, penalty: -1 }
+    ];
+    const KINDS = {
+      challenge: { title: 'تحدي الإنقاذ', icon: 'target', tone: 'var(--c4)' },
+      surprise: { title: 'مفاجأة سارة', icon: 'gift', tone: 'var(--c5)' },
+      mission: { title: 'مهمة ذهبية جماعية', icon: 'handshake', tone: 'var(--c2)' }
+    };
+
+    /* ===== حالة اللعبة =====
+       المركبة واحدة للصف كله: كل طالب يرمي النرد ويجيب، وكل إجابة صحيحة تقرّبنا من الروبوت. تُحفظ في الذاكرة فقط. */
+    const $ = id => document.getElementById(id);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const DICE = ['one', 'two', 'three', 'four'];
+    let pos = 0;               // مكان المركبة
+    let roundId = 0;           // يتغير مع كل جولة: أي حركة قديمة تتوقف
+    let roundCounted = true;   // false بعد "أعد توليد السؤال": تدريب، لا تتحرك فيه المركبة ولا تُحسب نتيجته
+    let phase = 'idle';        // idle | roll | busy | card
+    let deck = [], deckKey = '';
+    let card = null;
+    let claimResolve = null;
+
+    const alive = my => my === roundId && gameStarted && !answered;
+    const stepsText = n => (n === 1 ? 'خطوة واحدة' : n === 2 ? 'خطوتين' : `${toArabicNumber(n)} خطوات`);
+    const cardText = t => esc(toArabicText(t)).replace(/\n/g, '<br>');
+
+    /* ===== الرسم ===== */
+    function renderBoard() {
+      const stones = [];
+      for (let i = 0; i <= LAST; i++) {
+        const { x, y } = spot(i);
+        const cls = i === 0 ? ' stone--start' : i === LAST ? ' stone--end' : '';
+        const inner = i === 0 ? '<i class="ph-fill ph-flag-checkered" aria-hidden="true"></i>' : i === LAST ? '<i class="ph-fill ph-robot" aria-hidden="true"></i>' : toArabicNumber(i);
+        stones.push(`<span class="stone${cls}" data-zone="${zoneOf(i)}" style="--x:${x};--y:${y}">${inner}</span>`);
+      }
+      const points = Array.from({ length: LAST + 1 }, (_, i) => { const s = spot(i); return `${s.x},${s.y}`; }).join(' ');
+      $('robotBoard').innerHTML =
+        `<svg class="track" viewBox="0 0 100 68" preserveAspectRatio="none" aria-hidden="true"><polyline points="${points}"/></svg>${stones.join('')}` +
+        `<span class="crew" id="crew" aria-hidden="true"><i class="ph-fill ph-rocket-launch"></i></span>`;
+      placeCrew();
+    }
+    function placeCrew() {
+      const { x, y } = spot(pos);
+      const crew = $('crew');
+      crew.style.setProperty('--x', x); crew.style.setProperty('--y', y);
+      $('stage').textContent = STAGES[zoneOf(pos) - 1];
+      $('robotBoard').setAttribute('aria-label', `مسار الإنقاذ: المركبة عند الحجر ${toArabicNumber(pos)} من ${toArabicNumber(LAST)}`);
+    }
+
+    function setDie(n) { $('die').className = 'die ph-fill ph-dice-' + DICE[n - 1]; }
+
+    function clearCard() {
+      $('choices').innerHTML = '';
+      $('robotExtra').hidden = true;
+      $('judge').hidden = true;
+      document.querySelectorAll('#judge button').forEach(b => { b.disabled = false; });
+      $('claimBtn').hidden = true;
+      claimResolve = null;
+    }
+
+    function renderCard() {
+      const k = KINDS[card.type];
+      $('problem').innerHTML =
+        `<span class="kind-chip" style="--fc:${k.tone}"><i class="ph-bold ph-${card.icon || k.icon}" aria-hidden="true"></i>&nbsp;${k.title}</span>` +
+        `<div class="problem-text">${cardText(card.text)}</div>`;
+      if (phase !== 'card') return;
+      clearCard();
+      if (card.type === 'challenge') {
+        correctAnsGlobal = card.answer;
+        card.options.forEach((opt, i) => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'choice'; b.dataset.key = toArabicNumber(i + 1);
+          b.innerHTML = esc(toArabicText(opt)); b._value = opt;
+          b.onclick = () => answerChoice(opt);
+          $('choices').appendChild(b);
+        });
+      } else if (card.type === 'mission') {
+        correctAnsGlobal = null;
+        $('robotExtra').hidden = false;
+        $('judge').hidden = false;
+      }
+    }
+
+    /* ===== حركة المركبة، حجراً حجراً ===== */
+    async function moveTo(target, my) {
+      target = Math.max(0, Math.min(LAST, target));
+      const crew = $('crew');
+      crew.classList.add('is-hopping');
+      while (pos !== target && my === roundId) {
+        pos += pos < target ? 1 : -1;
+        placeCrew();
+        game.sfx('pop', pos % 6);
+        await sleep(320);
+      }
+      crew.classList.remove('is-hopping');
+    }
+
+    /* ===== الجولة =====
+       ارمِ النرد ← تتقدم المركبة ← تُسحب بطاقة. المفاجأة تنفَّذ ثم تُسحب بطاقة أخرى (أو رمية إضافية)، والتحدي والمهمة هما ما يُحسب للطالب. */
+    function enabledTypes() {
+      const on = new Set(['challenge']);
+      document.querySelectorAll('input[name="cards"]:checked').forEach(i => on.add(i.value));
+      return on;
+    }
+    function draw() {
+      const on = enabledTypes(), key = [...on].sort().join();
+      if (key !== deckKey || !deck.length) { deckKey = key; deck = shuffle(MASTER.filter(c => on.has(c.type))); }
+      return deck.pop();
+    }
+
+    function newRound(ctx, { counted }) {
+      roundCounted = counted;
+      roundId++;
+      card = null; phase = 'roll';
+      clearCard();
+      $('problem').innerHTML = `<span class="problem-text">ارمِ النرد لتتقدّم المركبة نحو الروبوت</span>${counted ? '' : '<div class="problem-hint">جولة تدريب: لا تتحرك فيها المركبة ولا تُحسب</div>'}`;
+      $('dieText').textContent = '';
+      $('rollBtn').disabled = false;
+      startTimer(() => finish(false, '❌ الوقت انتهى!'));   // الوقت يشمل النرد والبطاقة معاً، فلا تتعطل الجولة إن لم يرمِ أحد النرد
+    }
+
+    async function roll() {
+      if (phase !== 'roll' || !gameStarted || answered) return;
+      const my = roundId;
+      phase = 'busy'; $('rollBtn').disabled = true;
+      for (let i = 0; i < 10 && alive(my); i++) { setDie(rnd(1, 4)); game.sfx('pop', i % 6); await sleep(90); }
+      if (!alive(my)) return;
+      const steps = rnd(1, 4);
+      setDie(steps);
+      $('dieText').textContent = 'النتيجة: ' + toArabicNumber(steps);
+      await sleep(500);
+      if (!alive(my)) return;
+      if (roundCounted) {
+        await moveTo(pos + steps, my);
+        if (!alive(my)) return;
+        if (pos >= LAST) return rescued('وصلت المركبة بنفسها!');
+      }
+      await nextCard(my);
+    }
+
+    /* نسحب بطاقات حتى نصل إلى تحدٍّ أو مهمة (هذان يُحسبان)، وننفذ المفاجآت في الطريق */
+    async function nextCard(my) {
+      while (alive(my)) {
+        card = draw();
+        if (card.type !== 'surprise') {
+          phase = 'card';
+          renderCard();
+          return;
+        }
+        // مفاجأة: تظهر، ثم يضغط الطالب "استلام" فتُنفَّذ
+        phase = 'busy';
+        renderCard();
+        $('robotExtra').hidden = false; $('claimBtn').hidden = false;
+        await new Promise(res => { claimResolve = res; });
+        if (!alive(my)) return;
+        clearCard();
+        const move = (card.reward || 0) + (card.penalty || 0);
+        if (roundCounted && move) {
+          await moveTo(pos + move, my);
+          if (!alive(my)) return;
+          if (pos >= LAST) return rescued('المفاجأة أوصلتنا إلى الروبوت!');
+        }
+        if (card.reward === 0) {   // رمية نرد إضافية
+          phase = 'roll'; $('rollBtn').disabled = false;
+          $('problem').innerHTML = '<span class="problem-text">ارمِ النرد مرة أخرى!</span>';
+          return;
+        }
+      }
+    }
+
+    function answerChoice(opt) {
+      if (phase !== 'card' || !gameStarted || answered) return;
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        if (b._value === card.answer) b.classList.add('correct');
+        else if (b._value === opt) b.classList.add('wrong');
+        b.disabled = true;
+      });
+      finish(opt === card.answer);
+    }
+
+    /* نهاية جولة فيها بطاقة: الإجابة الصحيحة تقدّم المركبة (reward) والخاطئة قد ترجعها (penalty) */
+    function finish(correct, message) {
+      if (!gameStarted || answered) return;
+      const my = roundId;
+      phase = 'busy';
+      $('rollBtn').disabled = true;
+      $('claimBtn').hidden = true; claimResolve = null;
+      document.querySelectorAll('#choices .choice').forEach(b => { if (card && b._value === card.answer) b.classList.add('correct'); b.disabled = true; });
+      document.querySelectorAll('#judge button').forEach(b => { b.disabled = true; });
+      const move = roundCounted && card && card.type !== 'surprise' ? (correct ? card.reward || 0 : card.penalty || 0) : 0;
+      const arrives = pos + move >= LAST;
+      const name = currentStudent;
+      if (!message && roundCounted) {
+        message = correct
+          ? (arrives ? `🎉 أحسنت يا ${name}! وصلنا إلى الروبوت` : `✅ أحسنت يا ${name}! تتقدّم المركبة ${stepsText(move)}`)
+          : (move < 0 ? `❌ محاولة غير موفقة: عطل في النظام والمركبة تتراجع ${stepsText(-move)}` : '❌ محاولة غير موفقة، تبقى المركبة في مكانها');
+      } else if (message && move < 0) {
+        message += ` — والمركبة تتراجع ${stepsText(-move)}`;
+      }
+      game.finishRound(correct, { counted: roundCounted, message, delay: 1800 });
+      if (move) moveTo(pos + move, my).then(() => { if (pos >= LAST) rescued(); });
+    }
+
+    /* وصلت المركبة إلى الروبوت: احتفال ثم مهمة إنقاذ جديدة من البداية */
+    function rescued(why) {
+      try { confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } }); } catch (e) { /* the library may not have loaded */ }
+      game.sfx('win', 8);
+      $('stage').textContent = '🎉 تم إنقاذ الروبوت حاسوب!';
+      if (!answered && gameStarted) {   // وصلنا قبل أي سؤال: الجولة نجاح للطالب
+        phase = 'busy';
+        game.finishRound(true, { counted: roundCounted, message: `🎉 ${why || 'أنقذنا الروبوت!'} أحسنت يا ${currentStudent}، أنقذتم الروبوت حاسوب!`, face: '🎉', delay: 2600 });
+      }
+      $('rollBtn').disabled = true;
+      setTimeout(() => { pos = 0; placeCrew(); }, 2600);
+    }
+
+    const game = GameShell.mount({
+      id: 'robot-rescue',
+      storagePrefix: 'robot_rescue',
+      title: 'مهمة إنقاذ الروبوت حاسوب',
+      heading: 'مهمة إنقاذ الروبوت حاسوب',
+      emoji: { code: '1f916', fallback: '🤖' },   // نفس إيموجي جزيرتها على الخريطة
+      exportFilename: 'نتائج_إنقاذ_الروبوت.xlsx',
+      timer: { value: 45, min: 15, max: 120 },
+      intro: 'اختر طالباً واضغط «ابدأ اللعب»، ثم ارمِ النرد. كل إجابة صحيحة تقرّب مركبة الصف من الروبوت حاسوب!',
+      footerHTML: 'تسابَقوا لجمع الطاقة للروبوت حاسوب، واستخدموا طرائق الجمع لتخطي العقبات.',
+      settingsHTML: `
+        <div class="toolbar">
+          <div class="group group--stack">
+            <span class="label">البطاقات مع التحدي:</span>
+            <div class="checkbox-group">
+              <label class="checkbox-option checked">
+                <input type="checkbox" name="cards" value="surprise" checked>
+                <i class="ph-bold ph-gift" aria-hidden="true"></i><span>مفاجآت</span>
+              </label>
+              <label class="checkbox-option checked">
+                <input type="checkbox" name="cards" value="mission" checked>
+                <i class="ph-bold ph-handshake" aria-hidden="true"></i><span>مهام جماعية (يحكم المعلم)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="restartTrack"><i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i> إعادة المركبة إلى البداية</button>
+        </div>`,
+      gameAreaHTML: `
+        <div class="dice-row">
+          <i class="die ph-fill ph-dice-one" id="die" aria-hidden="true"></i>
+          <span class="dice-text" id="dieText" aria-live="polite"></span>
+          <button type="button" class="btn--sun" id="rollBtn" disabled><i class="ph-bold ph-dice-five" aria-hidden="true"></i> ارمِ النرد</button>
+        </div>
+        <div class="choices" id="choices"></div>
+        <div class="robot-extra" id="robotExtra" hidden>
+          <button type="button" class="btn--primary" id="claimBtn" hidden><i class="ph-bold ph-gift" aria-hidden="true"></i> استلام المفاجأة</button>
+          <div class="judge-row" id="judge" hidden>
+            <button type="button" class="is-ok" id="judgeOk"><i class="ph-bold ph-check" aria-hidden="true"></i> نجحت المهمة</button>
+            <button type="button" class="is-bad" id="judgeBad"><i class="ph-bold ph-x" aria-hidden="true"></i> لم تنجح</button>
+          </div>
+        </div>
+        <div class="robot-board" id="robotBoard" role="img"></div>
+        <p class="problem-hint stage" id="stage"></p>`,
+      newRound,
+      onNumbersToggle() {
+        // أرقام المسار والبطاقة المفتوحة تتبع نوع الأرقام، دون تغيير البطاقة
+        renderBoard();
+        if (card && (phase === 'card' || phase === 'busy') && gameStarted) renderCard();
+        return false;
+      },
+      onReady() {
+        renderBoard();
+        $('rollBtn').addEventListener('click', roll);
+        $('claimBtn').addEventListener('click', () => { if (claimResolve) { const r = claimResolve; claimResolve = null; $('claimBtn').hidden = true; r(); } });
+        $('judgeOk').addEventListener('click', () => finish(true));
+        $('judgeBad').addEventListener('click', () => finish(false));
+        $('restartTrack').addEventListener('click', () => { pos = 0; placeCrew(); });
+        document.addEventListener('keydown', e => {   // مسافة أو Enter خارج الحقول ترمي النرد أيضاً
+          if (e.key === ' ' && phase === 'roll' && gameStarted && !answered && !/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test((e.target || {}).tagName || '')) { e.preventDefault(); roll(); }
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

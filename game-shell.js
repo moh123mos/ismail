@@ -458,5 +458,19 @@
     return ctx;
   }
 
-  window.GameShell = { mount, createUsedStore, current: null };
+  /* ===== مكعب نوع السؤال (للألعاب التي ترمي مكعباً ليحدد نوع السؤال) ===== */
+  /**
+   * HTML of the decorative "question-type" cube: six faces (icon each) that rolls and lands on `active`, plus a label chip.
+   * @param {{title:string, icon:string}[]} faces  exactly six; `icon` is a Phosphor name without the "ph-" prefix (e.g. 'ruler')
+   * @param {number} active  index (0–5) of the face that ends up on top
+   * Put the result inside the `html` of a question. Styles: `.cube-box` in style.css.
+   */
+  function cubeHTML(faces, active) {
+    const tone = i => `var(--c${(i % 6) + 1})`;
+    const sides = faces.map((f, i) => `<span class="cube__face" style="--fc:${tone(i)}"><i class="ph-bold ph-${esc(f.icon)}" aria-hidden="true"></i></span>`).join('');
+    return `<div class="cube-box"><div class="cube-scene" aria-hidden="true"><div class="cube" data-face="${active}">${sides}</div></div>` +
+      `<span class="kind-chip" style="--fc:${tone(active)}">${esc(faces[active].title)}</span></div>`;
+  }
+
+  window.GameShell = { mount, createUsedStore, cubeHTML, current: null };
 })();

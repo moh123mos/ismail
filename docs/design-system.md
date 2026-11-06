@@ -75,6 +75,9 @@ for projectors. Breakpoints: `62rem` (tablet and below), `40rem` (phone), and a 
 | Question text | the shell styles `#problem` (Baloo, fluid 2.5–5.5rem, centred). Put only the content in it — **no inline font sizes**. `.problem-hint` = small grey line under the question. |
 | Answers | `.choices` / `.choice` are built by the shell for multiple-choice games; colours cycle through `--c1…--c6`; `.correct` / `.wrong` are added by the shell. |
 | Custom play area | a game with its own widgets (`gameAreaHTML`) uses tokens: white/sand surfaces, `--ink` outlines (`box-shadow: 0 0 0 3px var(--ink)`), sticker shadows. Make widgets real `<button>`s so they work with keyboard and touch. |
+| Sentence-length question | `.problem-text` — smaller than the big number in `#problem` (word problems, card text, up to ~42 characters wide). `.expr` forces an equation (`٧ + ٨ = ؟`) to read left-to-right (bidi-override). Use `toArabicText()` for free text. |
+| Question-type cube | `GameShell.cubeHTML(faces, active)` → `.cube-box` > `.cube-scene` > `.cube` (6 `.cube__face`, coloured `--c1…--c6`) + `.kind-chip` (pill label in the same colour, also usable on its own for a card kind). The cube is decorative (`aria-hidden`); the chip carries the text. |
+| Teacher-judged answer | `.judge-row` with two buttons `.is-ok` / `.is-bad` ("إجابة صحيحة" / "إجابة خاطئة"), then call `ctx.finishRound(true/false)`. |
 | Medals / avatars | `.medal--gold|silver|bronze` and `.student-avatar` (written by `common.js`). |
 | Utility | `.visually-hidden`, `[hidden]` (always wins), `.emoji` (animated-emoji slot), `.wrap`. |
 

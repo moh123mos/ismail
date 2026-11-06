@@ -48,7 +48,7 @@ once copied into every game and drifted apart (different bugs per page). One imp
 - Optional per-game "used questions" list (`GameShell.createUsedStore(key)`).
 
 Existing prefixes (do not rename — it would orphan saved data): `equations`, `add_minus` (math-operations),
-`mul_game` (multi-tables), `counting_money`.
+`mul_game` (multi-tables), `counting_money`, `rounding_cube`, `order_cube`, `order_festival`, `doubles_bingo`, `robot_rescue`.
 
 Ranking: `score = ok − 0.5 × bad`; ties broken by lower total time, then name.
 
@@ -60,6 +60,11 @@ Ranking: `score = ok − 0.5 × bad`; ties broken by lower total time, then name
 | `math-operations.html` | multiple choice | Add/subtract with/without carrying; vertical or horizontal layout. |
 | `multi-tables.html` | multiple choice | Pick multiplication tables 2–12 or 1×2 / 2×2 digit modes. |
 | `counting-money.html` | custom interaction | Tap Saudi riyal notes/coins to reach a target amount. |
+| `rounding-cube.html` | multiple choice | Rounding to the nearest 10 / 100 / 1000. A decorative cube (`GameShell.cubeHTML`) "rolls" a question type each round: quick round, number line, spot the mistake, add-then-round, subtract-then-round, word problem. Prefix `rounding_cube`. |
+| `order-cube.html` | multiple choice | Number sense up to 100 / 1000 / 1 000 000: previous, next, between, ordering, number-line midpoint, pattern. Same cube. Prefix `order_cube`. |
+| `order-festival.html` | multiple choice | Previous / next / between / pattern with 2–4 options, numbers to 100 or 1000. No cube. Prefix `order_festival`. |
+| `doubles-bingo.html` | custom interaction | "Doubles plus one" facts. A board of 9/16/25 cards (core / application / challenge); the student picks a card (or a random one), a right answer wins it, a full line is "بينجو!" (shared by the whole class). Multiple-choice cards are auto-graded, "explain" cards are judged by the teacher. Board is in memory only. Prefix `doubles_bingo`. |
+| `robot-rescue.html` | custom interaction | One shared track of 25 stones: roll the dice (1–4), the crew's rocket moves, then a card: challenge (multiple choice), surprise (applied on tap, then another card) or team mission (teacher judges). Reaching the robot is a success and restarts the track. Position is in memory only. Prefix `robot_rescue`. |
 
 Files starting with a dot in `pages/` (e.g. `.counting-money-old.html`) are archived drafts, git-ignored by
 `*old.html`; do not edit or link them.
