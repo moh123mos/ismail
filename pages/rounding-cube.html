@@ -1,224 +1,816 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>بطولة مكعب تقريب الأعداد</title>
-  <link rel="stylesheet" href="../style.css" />
-  <style>
-    /* only what is specific to this game; the look comes from ../style.css */
-    :root { --game: oklch(0.86 0.11 50); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطولة مكعب تقريب الأعداد</title>
+    
+    <!-- مكتبات قراءة الملفات -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
-    /* "123 + 456 = ؟": up to 5-digit numbers twice, so smaller than the single big number */
-    .big-expr { font-size: clamp(1.9rem, 0.9rem + 3.6vw, 4rem); }
-  </style>
+    <style>
+        :root {
+            --bg-color: #0f172a; --bg-grad: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            --primary: #3b82f6; --primary-glow: rgba(59, 130, 246, 0.6);
+            --secondary: #8b5cf6; --accent: #f59e0b;
+            --text-light: #f8fafc; --success: #10b981; --danger: #ef4444;
+            --panel-bg: rgba(30, 41, 59, 0.85); --glass-border: rgba(255, 255, 255, 0.1);
+            --cube-size: 260px; --tz: 130px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0f172a; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 5px; border: 2px solid #0f172a; }
+
+        body { background: var(--bg-grad); color: var(--text-light); min-height: 100vh; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: 60px; }
+        button { cursor: pointer; font-family: inherit; transition: all 0.2s; outline: none; border: none; }
+        button:active { transform: scale(0.95); }
+
+        .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; background: var(--bg-grad); opacity: 0; pointer-events: none; transition: opacity 0.5s; overflow-y: auto; padding-bottom: 80px; }
+        .screen.active { opacity: 1; pointer-events: auto; position: absolute; height: auto; min-height: 100vh; }
+        
+        #particles { position: fixed; top:0; left:0; width: 100%; height: 100vh; z-index: 1; pointer-events: none; }
+        .particle { position: absolute; background: white; border-radius: 50%; animation: floatUp linear infinite; opacity: 0.3; }
+        @keyframes floatUp { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-10vh) scale(1); opacity: 0; } }
+
+        .title-box { text-align: center; margin-bottom: 30px; z-index: 11; margin-top: 50px; }
+        .title-box h1 { font-size: 3.5rem; color: var(--accent); margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+        .title-box h2 { font-size: 1.5rem; color: #94a3b8; }
+        .btn-large { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; font-size: 1.5rem; padding: 15px 40px; border-radius: 30px; box-shadow: 0 4px 15px var(--primary-glow); z-index: 11; margin: 10px; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); }
+        .btn-large:hover { box-shadow: 0 6px 20px var(--primary-glow); filter: brightness(1.1); transform: translateY(-3px); }
+        
+        .top-bar { position: fixed; top: 20px; right: 20px; left: 20px; display: flex; justify-content: space-between; z-index: 50; }
+        .btn-icon { background: var(--panel-bg); color: white; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); font-weight: bold; font-size: 1rem; }
+        .btn-icon:hover { background: var(--primary); }
+        
+        #game-hud { position: absolute; top: 80px; width: 100%; padding: 20px; display: flex; justify-content: center; gap: 20px; z-index: 20; pointer-events: none; flex-wrap: wrap; }
+        .team-card { background: var(--panel-bg); border: 2px solid var(--glass-border); padding: 15px 25px; border-radius: 15px; text-align: center; min-width: 150px; transition: all 0.3s; backdrop-filter: blur(10px); }
+        .team-card.active-team { border-color: var(--accent); box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); transform: scale(1.1); }
+        .team-score { font-size: 2rem; font-weight: bold; color: var(--accent); margin-top: 5px; }
+        #timer-container { position: fixed; top: 120px; right: 20px; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; z-index: 20; background: var(--panel-bg); border-radius: 50%; border: 3px solid var(--primary); font-size: 1.5rem; font-weight: bold; display: none; }
+        #timer-container.warning { border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+
+        .scene { width: var(--cube-size); height: var(--cube-size); perspective: 1200px; z-index: 15; margin: 120px auto 50px auto; }
+        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transform: translateZ(calc(var(--tz) * -1)) rotateX(-20deg) rotateY(-30deg); transition: transform 3s cubic-bezier(0.1, 0.8, 0.1, 1); }
+        .cube.shake { animation: shake 0.5s infinite; transition: none; }
+        .cube__face { position: absolute; width: var(--cube-size); height: var(--cube-size); background: rgba(30, 41, 59, 0.95); border: 5px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; text-align: center; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); border-radius: 15px; color: white; padding: 10px; backface-visibility: hidden; }
+        
+        .cube__face--front  { transform: rotateY(  0deg) translateZ(var(--tz)); }
+        .cube__face--right  { transform: rotateY( 90deg) translateZ(var(--tz)); }
+        .cube__face--back   { transform: rotateY(180deg) translateZ(var(--tz)); }
+        .cube__face--left   { transform: rotateY(-90deg) translateZ(var(--tz)); }
+        .cube__face--top    { transform: rotateX( 90deg) translateZ(var(--tz)); }
+        .cube__face--bottom { transform: rotateX(-90deg) translateZ(var(--tz)); }
+        
+        .face-icon { font-size: 4rem; margin-bottom: 15px; line-height: 1;}
+        .face-title { font-size: 1.6rem; }
+
+        @keyframes shake { 0% { transform: translateZ(calc(var(--tz) * -1)) rotateX(-20deg) rotateY(-30deg) translateY(0); } 25% { transform: translateZ(calc(var(--tz) * -1)) rotateX(-15deg) rotateY(-25deg) translateY(-30px); } 50% { transform: translateZ(calc(var(--tz) * -1)) rotateX(-25deg) rotateY(-35deg) translateY(0); } 75% { transform: translateZ(calc(var(--tz) * -1)) rotateX(-15deg) rotateY(-35deg) translateY(-30px); } 100% { transform: translateZ(calc(var(--tz) * -1)) rotateX(-20deg) rotateY(-30deg) translateY(0); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes spinSlow { from { transform: translateZ(calc(var(--tz) * -1)) rotateX(0deg) rotateY(0deg); } to { transform: translateZ(calc(var(--tz) * -1)) rotateX(360deg) rotateY(360deg); } }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px; }
+        .overlay.active { opacity: 1; pointer-events: auto; }
+        .task-card { background: var(--panel-bg); border: 2px solid var(--primary); width: 100%; max-width: 800px; border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.8); transform: scale(0.5) translateY(100px); opacity: 0; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin: auto; }
+        .overlay.active .task-card { transform: scale(1) translateY(0); opacity: 1; }
+        .team-info-section { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .leader-highlight { font-size: 1.8rem; font-weight: bold; color: var(--accent); text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        .task-header { display: inline-block; padding: 8px 25px; background: var(--primary); color: white; border-radius: 25px; font-weight: bold; margin-bottom: 20px; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .task-content { font-size: 2rem; margin-bottom: 30px; line-height: 1.5; color: var(--text-light); direction: rtl; font-weight: bold; white-space: pre-line; }
+        .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .btn-action { padding: 12px 25px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; color: white; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .btn-action:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        .btn-answer { background: var(--success); }
+        .btn-support { background: var(--primary); }
+        .btn-challenge { background: linear-gradient(45deg, #ef4444, #f59e0b); animation: borderGlow 2s infinite alternate; }
+        @keyframes borderGlow { from { box-shadow: 0 0 10px #ef4444; } to { box-shadow: 0 0 20px #f59e0b; } }
+        .support-panel { display: none; margin-top: 20px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; text-align: start; border: 1px solid var(--primary); }
+        .support-content { font-size: 1.4rem; margin-bottom: 15px; color: #a7f3d0; border-right: 4px solid var(--success); padding-right: 15px; white-space: pre-line;}
+        .teacher-judge { display: none; margin-top: 25px; border-top: 1px solid var(--glass-border); padding-top: 20px; }
+        .judge-btns { display: flex; justify-content: center; gap: 15px; }
+
+        #teacher-panel-container { position: fixed; top: 0; right: -350px; width: 340px; height: 100vh; background: #1e293b; border-left: 2px solid var(--primary); z-index: 200; transition: right 0.3s; overflow-y: auto; padding: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        #teacher-panel-container.open { right: 0; }
+        .panel-header { font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .close-btn { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { color: var(--danger); transform: scale(1.1); }
+        .control-group { margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .control-group label.group-label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #94a3b8; font-weight: bold; }
+        .panel-btn { width: 100%; background: #334155; color: white; padding: 10px; border-radius: 5px; margin-bottom: 8px; text-align: center; font-size: 1rem; border: 1px solid #475569; }
+        .panel-btn:hover { background: #475569; }
+
+        .checkbox-container { display: block; position: relative; padding-right: 35px; margin-bottom: 12px; cursor: pointer; font-size: 1rem; user-select: none; color: #f8fafc; }
+        .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+        .checkmark { position: absolute; top: 0; right: 0; height: 25px; width: 25px; background-color: #334155; border: 1px solid #475569; border-radius: 4px; }
+        .checkbox-container:hover input ~ .checkmark { background-color: #475569; }
+        .checkbox-container input:checked ~ .checkmark { background-color: var(--primary); }
+        .checkmark:after { content: ""; position: absolute; display: none; }
+        .checkbox-container input:checked ~ .checkmark:after { display: block; }
+        .checkbox-container .checkmark:after { left: 9px; top: 5px; width: 5px; height: 10px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+
+        #setup-overlay { display: none; background: rgba(15,23,42,0.95); z-index: 150; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; height: 100vh; position: fixed; top:0; left:0; width:100%; }
+        #setup-overlay.active { display: flex; }
+        .setup-container { background: #1e293b; border: 2px solid var(--primary); border-radius: 20px; padding: 30px; width: 100%; max-width: 1000px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); margin: auto; }
+        .setup-controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;}
+        .setup-controls input[type="text"], .setup-controls input[type="file"], .setup-controls select { padding: 10px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; font-family: inherit;}
+        .teams-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .team-box { background: rgba(0,0,0,0.3); border: 2px dashed #475569; border-radius: 10px; padding: 15px; min-height: 150px; transition: 0.3s; }
+        .team-box.over { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .team-box h3 { text-align: center; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid #475569; padding-bottom: 5px; }
+        .student-pill { background: var(--primary); padding: 8px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 10px; margin: 5px; cursor: grab; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .student-pill:active { cursor: grabbing; opacity: 0.7; }
+        .del-pill-btn { background: none; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 1.1rem;}
+        .del-pill-btn:hover { color: var(--danger); }
+
+        .winner-card-decorated { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border: 5px solid #FFF; border-radius: 20px; padding: 40px; box-shadow: 0 0 60px rgba(255, 215, 0, 0.7); color: #000; max-width: 900px; width: 90%; text-align: center; animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin: auto; margin-top: 80px; position: relative; overflow: hidden; }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        .winner-card-decorated h1 { color: #8B4513; font-size: 4rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(255,255,255,0.5); }
+        .winner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; margin-top: 30px; }
+        .winner-name-badge { background: rgba(255, 255, 255, 0.95); padding: 15px 10px; border-radius: 15px; font-size: 1.6rem; font-weight: bold; color: #b45309; box-shadow: 0 5px 15px rgba(0,0,0,0.15); border: 2px solid #fbbf24; display: flex; align-items: center; justify-content: center; transform: scale(0); animation: badgePop 0.5s forwards; }
+        @keyframes badgePop { to { transform: scale(1); } }
+
+        #confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; pointer-events: none; z-index: 9999; }
+        
+        .answer-reveal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(15, 23, 42, 0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; backdrop-filter: blur(8px); }
+        .answer-reveal.active { opacity: 1; pointer-events: auto; }
+        .answer-reveal h1 { font-size: 4rem; margin-bottom: 10px; }
+        .answer-reveal .the-answer { font-size: 6rem; color: var(--accent); font-weight: bold; text-shadow: 0 0 20px rgba(245, 158, 11, 0.5); padding: 20px 50px; border: 4px dashed var(--accent); border-radius: 20px; background: rgba(0,0,0,0.5); margin-bottom: 30px; direction: rtl; }
+
+        .credit-glow {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.6rem;
+            font-family: 'Aref Ruqaa', 'Segoe UI', Tahoma, serif;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--accent), 0 0 30px var(--accent), 0 0 40px var(--primary);
+            z-index: 9999;
+            pointer-events: none;
+            animation: neonPulse 1.5s ease-in-out infinite alternate;
+            white-space: nowrap;
+        }
+        @keyframes neonPulse {
+            from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--accent), 0 0 20px var(--accent), 0 0 30px #f59e0b; }
+            to { text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 10px var(--primary), 0 0 15px var(--primary), 0 0 25px #3b82f6; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&display=swap" rel="stylesheet">
 </head>
-
 <body>
-  <div id="app"></div>
+    <div class="credit-glow">✤ تصميم وإعداد معلم الرياضيات: إسماعيل مصطفى عامر ✤</div>
 
-  <script src="../common.js"></script>
-  <script src="../game-shell.js"></script>
-  <script>
-    /* ===== وجوه المكعب: كل وجه نوع من الأسئلة ===== */
-    const FACES = [
-      { type: 'direct', title: 'تحدي السرعة', icon: 'lightning' },
-      { type: 'line', title: 'خط الأعداد', icon: 'ruler' },
-      { type: 'error', title: 'المفتش الذكي', icon: 'magnifying-glass' },
-      { type: 'add', title: 'اجمع وقرّب', icon: 'plus' },
-      { type: 'sub', title: 'اطرح وقرّب', icon: 'minus' },
-      { type: 'word', title: 'مسألة بطل', icon: 'crown' }
-    ];
+    <div id="particles"></div>
 
-    const LEVEL_WORD = { 10: 'عَشَرَةٍ', 100: 'مِئَةٍ', 1000: 'أَلْفٍ' };
+    <div class="top-bar">
+        <button class="btn-icon" onclick="toggleTeacherPanel()">⚙️ تحكم المعلم</button>
+        <button class="btn-icon" onclick="toggleSound()" id="sound-btn">🔊</button>
+    </div>
 
-    /* مسائل لفظية من الدرس: value = العدد قبل التقريب (الإجابة تُحسب منه، فلا تُكتب بيدٍ فتخطئ) */
-    const WORD_BANK = {
-      10: [
-        { text: 'تَحْتاجُ لَيْلَى إِلَى 67 ريالًا لِتَشْتَرِي حَقِيبَةً، فَكَمْ رِيَالًا تَحْتَاجُ مُقَرِّبًا إِلَى أَقْرَبِ عَشْرَةٍ؟', value: 67 },
-        { text: 'وَفَّرَ خَالِدٌ 1486 ريالًا، وَوَفَّرَتْ أُخْتُهُ عَائِشَةُ 1252 ريالًا، مَا الْفَرقُ بَينَ المَبْلَغَينِ مُقَرِّبًا إِلَى أَقْرَبِ عَشَرَةٍ؟', value: 1486 - 1252 },
-        { text: 'تَسْتَعْمِلُ رِيمَا الْحَاسُوبَ مُدَّةَ 116 دَقِيقَةً يَوْمِيًّا. كَمْ دَقِيقَةً تَقْرِيبًا تَسْتَعْمِلُ رِيمَا الْحَاسُوبَ مُقَرَّبًا لِأَقْرَبِ عَشَرَةٍ؟', value: 116 }
-      ],
-      100: [
-        { text: 'قَرَأَ حُسَينٌ كِتابًا فِيهِ 267 صَفْحَةً، مَا عَدَدُ الصَّفَحاتِ الَّتِي قَرَأَها مُقَرَّبًا إِلَى أَقْرَبِ مِئَةٍ؟', value: 267 },
-        { text: 'جَمَعَتْ سَارَةُ 1423 ريالًا، كَمْ ريالًا جَمَعَتْ سَارَةُ مُقَرِّبًا إِلَى أَقْرَبِ مِئَةٍ؟', value: 1423 },
-        { text: 'نَظَمَتْ نورَةُ 228 خَرَزَةً فِي خَيْطٍ. إِذَا أَضَافَتْ إِلَيْهَا 25 خَرَزَةً أُخْرَى، فَكَمْ يُصْبِحُ عَدَدُ الْخَرَزَاتِ مُقَرِّبًا إِلَى أَقْرَبِ مِئَةٍ؟', value: 228 + 25 },
-        { text: 'قَطَعَ قِطارٌ مَسافَةَ 1687 كيلومترًا، ما عَدَدُ الكيلومتراتِ الَّتِي قَطَعَهَا الْقِطَارُ مُقَرَّبًا إِلَى أَقْرَبِ مِئَةٍ؟', value: 1687 }
-      ],
-      1000: [
-        { text: 'فِي مَزْرَعَةِ وَالِدِ أَحْمدَ 1250 نَخْلةً، قَرِّب عَدَدَ النَّخِيلِ إِلَى أَقْرَبِ أَلْفٍ.', value: 1250 },
-        { text: 'بَلَغَ عَدَدُ حُضُورِ مُباراةِ كُرَةِ قَدَمٍ 6989 شَخْصًا، فَمَا عَدَدُ الْحُضُورِ مُقَرَّبًا إِلَى أَقْرَبِ أَلْفٍ؟', value: 6989 },
-        { text: 'فِي مَكْتَبَةِ المَدْرَسةِ 1483 كِتابًا، فَكَمْ كِتابًا فِي المَكْتَبَةِ مُقَرَّبًا إِلَى أَقْرَبِ أَلْفٍ؟', value: 1483 },
-        { text: 'رَكِبَ سَعْدٌ الطَّائِرَةَ فِي رِحْلَةِ الذَّهَابِ قَاطِعًا مَسافَةَ 1142 كيلومترًا، فَكَمْ كِيلُومِتْرًا قَطَعَتِ الطَّائِرَةُ ذَهَابًا وَإِيابًا مُقَرِّبًا إِلَى أَقْرَبِ أَلْفٍ؟', value: 1142 * 2 }
-      ]
-    };
+    <!-- SCREEN 1: Start Menu -->
+    <div id="screen-start" class="screen active">
+        <div class="scene" style="margin-bottom: 30px;">
+            <div class="cube" id="intro-cube" style="animation: spinSlow 15s linear infinite;"></div>
+        </div>
+        <div class="title-box">
+            <h1>بطولة مكعب التقريب</h1>
+            <h2>تحدي تقريب الأعداد</h2>
+        </div>
+        <button class="btn-large" onclick="openSetupModal()">👥 إعداد الفرق واللعب</button>
+    </div>
 
-    /* ===== أدوات صغيرة خاصة بهذه اللعبة ===== */
-    const pickOne = arr => arr[rnd(0, arr.length - 1)];
-    function shuffle(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; }
-      return a;
-    }
-    const checkedValues = name => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
-    const roundTo = (n, lvl) => Math.round(n / lvl) * lvl;   // الخانة ٥ فأكثر ترفع
-    const floorTo = (n, lvl) => Math.floor(n / lvl) * lvl;
-    const ceilTo = (n, lvl) => Math.ceil(n / lvl) * lvl;
-
-    /* عدد عشوائي بحجم يناسب مستوى التقريب والصعوبة، وليس من مضاعفات الخانة (حتى يحتاج إلى تقريب فعلاً) */
-    const RANGES = {
-      10: { easy: [11, 99], medium: [101, 999], hard: [1001, 9999] },
-      100: { easy: [101, 999], medium: [1001, 9999], hard: [10001, 99999] },
-      1000: { easy: [1001, 9999], medium: [10001, 99999], hard: [100001, 999999] }
-    };
-    function numberFor(lvl, diff, notTie) {
-      const [min, max] = RANGES[lvl][diff];
-      let n;
-      do { n = rnd(min, max); } while (n % lvl === 0 || (notTie && n % lvl === lvl / 2));
-      return n;
-    }
-
-    /* الخيارات: الإجابة + أخطاء شائعة أولاً + مضاعفات قريبة، كلها مختلفة وغير سالبة */
-    function makeChoices(correct, lvl, count, mistakes, avoid) {
-      const out = [correct];
-      const add = v => { if (out.length < count && v >= 0 && !out.includes(v) && !(avoid || []).includes(v)) out.push(v); };
-      (mistakes || []).forEach(add);
-      for (let k = 1; out.length < count && k < 30; k++) { add(correct + k * lvl); add(correct - k * lvl); }
-      return shuffle(out);
-    }
-
-    const num = n => toArabicNumber(n);
-    const expr = text => `<span class="expr">${text}</span>`;
-
-    /* ===== أنواع الأسئلة (واحد لكل وجه) ===== */
-    const BUILDERS = {
-      direct(lvl, diff) {
-        const n = numberFor(lvl, diff);
-        const answer = roundTo(n, lvl);
-        return {
-          body: `<div class="problem-hint">قَرِّب العدد إلى أَقْرَبِ ${LEVEL_WORD[lvl]}</div><div>${num(n)}</div>`,
-          choices: makeChoices(answer, lvl, 4, [floorTo(n, lvl), ceilTo(n, lvl)]), answer
-        };
-      },
-      line(lvl, diff) {
-        const n = numberFor(lvl, diff, true);   // لا نختار منتصفاً تماماً: السؤال "أيهما أقرب" يجب أن يكون له جواب واحد
-        const base = floorTo(n, lvl), upper = base + lvl;
-        const answer = n - base < upper - n ? base : upper;
-        return {
-          body: `<div class="problem-text">على خط الأعداد، هل العدد ${expr(num(n))} أقرب إلى ${expr(num(base))} أم إلى ${expr(num(upper))}؟</div>`,
-          choices: [base, upper], answer
-        };
-      },
-      error(lvl, diff) {
-        const n = numberFor(lvl, diff);
-        const answer = roundTo(n, lvl);
-        const wrong = answer === ceilTo(n, lvl) ? floorTo(n, lvl) : ceilTo(n, lvl);   // الجار الآخر: خطأ صديقك
-        return {
-          body: `<div class="problem-text">قَرَّب صديقك العدد ${expr(num(n))} لأقرب ${LEVEL_WORD[lvl]}، فأجاب: ${expr(num(wrong))}.<br>ما هو الصواب؟</div>`,
-          choices: makeChoices(answer, lvl, 4, [], [wrong]), answer
-        };
-      },
-      add(lvl, diff) {
-        const part = diff === 'hard' ? 'medium' : 'easy';
-        const a = numberFor(lvl, part), b = numberFor(lvl, part);
-        const sum = a + b;
-        const answer = roundTo(sum, lvl);
-        return {
-          body: `<div class="problem-hint">اجمع أولاً ثم قَرِّب الناتج لأقرب ${LEVEL_WORD[lvl]}</div><div class="big-expr">${expr(`${num(a)} + ${num(b)} = ؟`)}</div>`,
-          choices: makeChoices(answer, lvl, 4, [roundTo(a, lvl) + roundTo(b, lvl), floorTo(sum, lvl), ceilTo(sum, lvl)]), answer
-        };
-      },
-      sub(lvl, diff) {
-        const part = diff === 'hard' ? 'medium' : 'easy';
-        let a, b;
-        do { a = numberFor(lvl, part); b = numberFor(lvl, part); } while (Math.abs(a - b) < lvl);   // فرق بحجم يستحق التقريب
-        if (b > a) [a, b] = [b, a];
-        const diffVal = a - b;
-        const answer = roundTo(diffVal, lvl);
-        return {
-          body: `<div class="problem-hint">اطرح أولاً ثم قَرِّب الناتج لأقرب ${LEVEL_WORD[lvl]}</div><div class="big-expr">${expr(`${num(a)} − ${num(b)} = ؟`)}</div>`,
-          choices: makeChoices(answer, lvl, 4, [roundTo(a, lvl) - roundTo(b, lvl), floorTo(diffVal, lvl), ceilTo(diffVal, lvl)]), answer
-        };
-      },
-      word(lvl) {
-        let p;
-        do { p = pickOne(WORD_BANK[lvl]); } while (recentWords.includes(p) && WORD_BANK[lvl].length > recentWords.length);
-        recentWords.push(p); if (recentWords.length > 3) recentWords.shift();
-        const answer = roundTo(p.value, lvl);
-        return { body: `<div class="problem-text">${toArabicText(p.text)}</div>`, choices: makeChoices(answer, lvl, 4, [floorTo(p.value, lvl), ceilTo(p.value, lvl)]), answer };
-      }
-    };
-    const recentWords = [];
-    let lastFace = -1;
-
-    /* ===== بناء السؤال (تستدعيه المنصة عند بدء كل جولة): المكعب "يُرمى" ويحدد النوع ===== */
-    function buildQuestion() {
-      const levels = checkedValues('level').map(Number);
-      const diffs = checkedValues('diff');
-      if (!levels.length) { alert('اختر نوع تقريب واحداً على الأقل'); return null; }
-      if (!diffs.length) { alert('اختر مستوى صعوبة واحداً على الأقل'); return null; }
-
-      let face;
-      do { face = rnd(0, FACES.length - 1); } while (face === lastFace);
-      lastFace = face;
-
-      const q = BUILDERS[FACES[face].type](pickOne(levels), pickOne(diffs));
-      return { html: GameShell.cubeHTML(FACES, face) + q.body, choices: q.choices, answer: q.answer };
-    }
-
-    GameShell.mount({
-      id: 'rounding-cube',
-      storagePrefix: 'rounding_cube',
-      title: 'بطولة مكعب تقريب الأعداد',
-      heading: 'بطولة مكعب تقريب الأعداد',
-      emoji: { code: '1f3af', fallback: '🎯' },   // نفس إيموجي جزيرتها على الخريطة
-      exportFilename: 'نتائج_مكعب_التقريب.xlsx',
-      timer: { value: 30, min: 10, max: 90 },
-      intro: 'اختر طالباً واضغط «ابدأ اللعب» ليُرمى المكعب ويحدد نوع السؤال',
-      settingsHTML: `
-        <div class="toolbar">
-          <div class="group group--stack">
-            <span class="label">التقريب لأقرب:</span>
-            <div class="checkbox-group">
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="level" value="10" checked>
-                <i class="ph-bold ph-target" aria-hidden="true"></i><span>عشرة</span>
-              </label>
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="level" value="100" checked>
-                <i class="ph-bold ph-target" aria-hidden="true"></i><span>مئة</span>
-              </label>
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="level" value="1000" checked>
-                <i class="ph-bold ph-target" aria-hidden="true"></i><span>ألف</span>
-              </label>
+    <!-- SETUP MODAL -->
+    <div id="setup-overlay">
+        <div class="setup-container">
+            <h2 style="color: var(--accent); margin-bottom: 20px; text-align: center; font-size: 2rem;">إعداد الطلاب والفرق</h2>
+            
+            <div class="setup-controls">
+                <input type="text" id="manual-student-name" placeholder="أدخل اسم الطالب..." style="flex:1; font-size: 1.1rem;">
+                <button class="btn-action btn-answer" onclick="addStudentManual()">إضافة ➕</button>
+                <div style="width: 2px; height: 30px; background: #475569; margin: 0 10px;"></div>
+                <label style="color: #94a3b8; font-weight:bold; font-size:0.9rem;">رفع ملف (Excel, Word, Txt):</label>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt,.docx" onchange="handleFileUpload(event)">
             </div>
-          </div>
+            <div class="setup-controls">
+                <label style="color: white; font-weight:bold; font-size: 1.1rem;">عدد الفرق:</label>
+                <select id="sel-teams-setup" onchange="renderSetupUI()" style="font-size: 1.1rem;">
+                    <option value="2">فريقين</option>
+                    <option value="3">٣ فرق</option>
+                    <option value="4">٤ فرق</option>
+                    <option value="5">٥ فرق</option>
+                </select>
+                <button class="btn-action" style="background: var(--secondary);" onclick="randomizeStudents()">🔀 توزيع عشوائي</button>
+                <button class="btn-action" style="background: var(--danger); margin-right: auto;" onclick="clearAllStudents()">🗑️ مسح الكل</button>
+            </div>
+            <div class="teams-grid" id="setup-teams-grid"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn-large" onclick="startGameFromSetup()">🚀 ابدأ اللعبة الآن</button>
+                <button class="btn-large" onclick="closeSetupModal()" style="background: #475569;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: Main Game -->
+    <div id="screen-game" class="screen">
+        <div id="game-hud"></div>
+        <div id="timer-container">60</div>
+        <div class="scene">
+            <div class="cube" id="game-cube"></div>
+        </div>
+        <button class="btn-large" id="btn-roll" onclick="rollCube()" style="margin: 40px auto; width: 280px; display: block; font-size: 1.8rem;">🎲 ارمِ النرد</button>
+    </div>
+
+    <!-- SCREEN 3: Final Winner -->
+    <div id="screen-final" class="screen"></div>
+
+    <!-- Task Overlay -->
+    <div id="task-overlay" class="overlay">
+        <div class="task-card">
+            <div class="team-info-section" id="team-info-display"></div>
+            <div class="task-header" id="task-category">CATEGORY</div>
+            <div class="task-content" id="task-text">Question text goes here?</div>
+            
+            <div id="task-actions" class="action-buttons">
+                <button class="btn-action btn-answer" onclick="selectAction('answer')">🎯 أجب الآن</button>
+                <button class="btn-action btn-support" onclick="selectAction('support')">💡 وسيلة مساعدة</button>
+                <button class="btn-action btn-challenge" id="btn-action-challenge" onclick="selectAction('challenge')">🔥 تحدي بطل (30 نقطة)</button>
+            </div>
+
+            <div id="support-panel" class="support-panel">
+                <div class="support-content" id="support-text">Hint goes here.</div>
+                <div class="action-buttons" style="margin-top: 15px;">
+                    <button class="btn-action btn-answer" onclick="readyToAnswer()">✅ مستعد للإجابة</button>
+                </div>
+            </div>
+
+            <div id="teacher-judge" class="teacher-judge">
+                <p style="color: #94a3b8; font-size: 1rem; margin-bottom: 15px; font-weight:bold;">تقييم المعلم للإجابة:</p>
+                <div class="judge-btns">
+                    <button class="btn-action" style="background: var(--success); font-size: 1.3rem;" onclick="judgeAnswer(true)">✓ إجابة صحيحة</button>
+                    <button class="btn-action" style="background: var(--danger); font-size: 1.3rem;" onclick="judgeAnswer(false)">↻ إجابة خاطئة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answer Reveal Overlay -->
+    <div id="answer-reveal" class="answer-reveal">
+        <h1 id="reveal-title">النتيجة</h1>
+        <p style="font-size: 1.8rem; margin-bottom: 15px; color:#a7f3d0; font-weight:bold;">الإجابة الصحيحة هي:</p>
+        <div class="the-answer" id="reveal-answer-text">15</div>
+        <button class="btn-large" onclick="closeAnswerReveal()">متابعة للفريق التالي ⏭️</button>
+    </div>
+
+    <!-- Teacher Panel -->
+    <div id="teacher-panel-container">
+        <div class="panel-header">
+            <span>تحكم المعلم</span>
+            <button class="close-btn" onclick="toggleTeacherPanel()">✖</button>
+        </div>
+        
+        <div class="control-group">
+            <label class="group-label" style="color: var(--accent); font-size: 1.1rem; border-bottom: 1px dashed #475569; padding-bottom:5px;">أنواع التقريب المسموحة (للأسئلة):</label>
+            <label class="checkbox-container">التقريب لأقرب ١٠
+                <input type="checkbox" id="level-10" checked onchange="updateCubeFaces()">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">التقريب لأقرب ١٠٠
+                <input type="checkbox" id="level-100" checked onchange="updateCubeFaces()">
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">التقريب لأقرب ١٠٠٠
+                <input type="checkbox" id="level-1000" checked onchange="updateCubeFaces()">
+                <span class="checkmark"></span>
+            </label>
+            <p id="level-warning" style="color:var(--danger); font-size:0.8rem; display:none;">يجب اختيار نوع واحد على الأقل!</p>
         </div>
 
-        <div class="toolbar">
-          <div class="group group--stack">
-            <span class="label">حجم الأعداد:</span>
-            <div class="checkbox-group">
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="diff" value="easy" checked>
-                <i class="ph-bold ph-smiley" aria-hidden="true"></i><span>سهل (أعداد قصيرة)</span>
-              </label>
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="diff" value="medium" checked>
-                <i class="ph-bold ph-gauge" aria-hidden="true"></i><span>متوسط (منازل أكبر)</span>
-              </label>
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="diff" value="hard" checked>
-                <i class="ph-bold ph-fire" aria-hidden="true"></i><span>صعب (أعداد كبيرة)</span>
-              </label>
-            </div>
-          </div>
-        </div>`,
-      buildQuestion
-    });
-  </script>
-</body>
+        <div class="control-group">
+            <label class="group-label" style="color: #ec4899; font-size: 1.1rem; border-bottom: 1px dashed #475569; padding-bottom:5px;">مستويات صعوبة الأرقام:</label>
+            <label class="checkbox-container">سهل (أرقام مباشرة قصيرة)
+                <input type="checkbox" id="diff-easy" checked>
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">متوسط (أرقام بمنازل أكبر)
+                <input type="checkbox" id="diff-medium" checked>
+                <span class="checkmark"></span>
+            </label>
+            <label class="checkbox-container">صعب (أرقام كبيرة ومتقدمة)
+                <input type="checkbox" id="diff-hard" checked>
+                <span class="checkmark"></span>
+            </label>
+            <p id="diff-warning" style="color:var(--danger); font-size:0.8rem; display:none;">يجب اختيار صعوبة واحدة على الأقل!</p>
+        </div>
 
+        <div class="control-group">
+            <label class="group-label">المؤقت</label>
+            <select id="sel-timer" class="panel-btn">
+                <option value="0">بدون مؤقت</option>
+                <option value="30">30 ثانية</option>
+                <option value="60" selected>60 ثانية</option>
+                <option value="90">90 ثانية</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label class="group-label">إدارة النقاط للفريق الحالي</label>
+            <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                <select id="custom-points-val" class="panel-btn" style="flex: 1; margin: 0; background: #1e293b;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="panel-btn" style="flex: 1; margin: 0; background: var(--success); font-weight: bold;" onclick="modifyPoints(1)">+ إضافة</button>
+                <button class="panel-btn" style="flex: 1; margin: 0; background: var(--danger); font-weight: bold;" onclick="modifyPoints(-1)">- خصم</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="group-label">تحكم يدوي</label>
+            <button class="panel-btn" onclick="nextTeam()">تخطي للفريق التالي</button>
+            <button class="panel-btn" onclick="resetCubePosition()">ضبط الكاميرا</button>
+            <button class="panel-btn" onclick="resetGame()">إعادة اللعبة</button>
+            <button class="panel-btn" onclick="triggerFinalRound()" style="background: #b45309; font-weight:bold;">إنهاء وعرض الفائز</button>
+        </div>
+    </div>
+
+    <div id="confetti-container"></div>
+
+    <script>
+        // الأنماط الستة الفريدة لوجوه المكعب
+        const CUBE_FACES = [
+            { title: "تحدي السرعة", color: '#3b82f6', icon: '⚡', type: 'direct' },
+            { title: "خط الأعداد", color: '#10b981', icon: '📏', type: 'line' },
+            { title: "المفتش الذكي", color: '#8b5cf6', icon: '🔍', type: 'error' },
+            { title: "اجمع وقرّب", color: '#ec4899', icon: '➕', type: 'add' },
+            { title: "اطرح وقرّب", color: '#f59e0b', icon: '➖', type: 'sub' },
+            { title: "مسألة بطل", color: '#ef4444', icon: '👑', type: 'word' }
+        ];
+
+        // بنك المسائل اللفظية والصعبة المقتبسة من الدرس
+        const q10_hard = [
+            { txt: "تَحْتاجُ لَيْلَى إِلَى ٦٧ ريالًا لِتَشْتَرِي حَقِيبَةً، فَكَمْ رِيَالًا تَحْتَاجُ مُقَرِّبًا إِلَى أَقْرَبِ عَشْرَةِ؟", ans: "٧٠", support: "الآحاد (٧) أكبر من ٥، إذن نزيد العشرات بمقدار ١." },
+            { txt: "وَفَّرَ خَالِدٌ ١٤٨٦ ريالًا، وَوَفَّرَتْ أُخْتُهُ عَائِشَةُ ١٢٥٢ ريالا ، مَا الْفَرقُ بَينَ المَبْلَغَينِ مُقَرِّبًا إِلَى أَقْرَبِ عَشَرَةِ؟", ans: "٢٣٠", support: "اطرح أولاً: ١٤٨٦ - ١٢٥٢ = ٢٣٤، ثم قرب الناتج لأقرب عشرة." },
+            { txt: "تَسْتَعْمِلُ رِيمَا الْحَاسُوبَ مُدَّةَ ١١٦ دَقِيقَةً يَوْمِيًّا. كَمْ دَقِيقَةً تَقْرِيبًا تَسْتَعْمِلُ رِيمَا الْحَاسُوبَ مُقَرَّبًا لأَقْرَبِ عَشَرَةٍ؟", ans: "١٢٠", support: "رقم الآحاد هو ٦، لذا نزيد العشرات بمقدار ١." }
+        ];
+
+        const q100_hard = [
+            { txt: "قَرَأَ حُسَينٌ كِتابًا فِيهِ ٢٦٧ صَفْحَةً، مَا عَدَدُ الصَّفَحاتِ الَّتِي قَرَأَها مُقَرَّبًا إِلَى أَقْرَبِ مِئَةٍ؟", ans: "٣٠٠", support: "رقم العشرات هو ٦، لذا نزيد المئات بمقدار ١." },
+            { txt: "جَمَعَتْ سَارَةُ ١٤٢٣ ريالا، كَمْ ريالًا جَمَعَتْ سَارَةُ مُقَرِّبًا إِلَى أَقْرَبِ مِئَةٍ؟", ans: "١٤٠٠", support: "رقم العشرات هو ٢، إذن المئات تبقى كما هي." },
+            { txt: "نَظَمَتْ نورَةُ ۲۲۸ خَرَزَةً فِي خَيْطِ . إِذَا أَضَافَتْ إِلَيْهَا ٢٥ خَرَزَةً أُخْرَى، فَكَمْ يُصْبِحُ عَدَدُ الْخَرَزَاتِ مُقَرِّبًا إِلَى أَقْرَبِ مِئَةٍ ؟", ans: "٣٠٠", support: "اجمع أولاً: ٢٢٨ + ٢٥ = ٢٥٣، ثم قرب الناتج لأقرب مئة." },
+            { txt: "قَطَعَ قِطارُ مَسافَةَ ١٦٨٧ كيلومترًا، ما عَدَدُ الكيلومتراتِ الَّتِي قَطَعَهَا الْقِطَارُ مُقَرِّبًا إِلَى أَقْرَبِ مِئَةٍ؟", ans: "١٧٠٠", support: "رقم العشرات هو ٨، لذا نزيد المئات بمقدار ١." }
+        ];
+
+        const q1000_hard = [
+            { txt: "فِي مَزْرَعَةِ وَالِدِ أَحْمدَ ١٢٥٠ نَخْلةً ، قَرِّب عَدَدَ النَّخِيلِ إِلَى أَقْرَبِ أَلْفِ.", ans: "١٠٠٠", support: "المئات هي ٢ (أقل من ٥)، إذن لا نزيد الألوف." },
+            { txt: "بَلَغَ عَدَدُ حُضُورِ مُباراةِ كُرَةِ قَدَمٍ ٦۹۸۹ شَخْصًا، فَمَا عَدَدُ الْحُضُورِ مُقَرَّبًا إِلَى أَقْرَبِ أَلْفٍ؟", ans: "٧٠٠٠", support: "المئات هي ٩ (أكبر من ٥)، إذن نزيد الألوف بمقدار ١." },
+            { txt: "فِي مَكْتَبَةِ المَدْرَسةِ ١٤٨٣ كِتابًا، فَكَمْ كِتابًا في المَكْتَبَةِ مُقَرَّبًا إِلَى أَقْرَبِ أَلْفٍ ؟", ans: "١٠٠٠", support: "المئات هي ٤، لذا لا نزيد الألوف." },
+            { txt: "رَكِبَ سَعْدٌ الطَّائِرَةَ فِي رِحْلَةِ الذَّهَابِ قَاطِعًا مَسافَةَ ١١٤٢ كيلومترًا، فَكَمْ كِيلُومِتْرًا قَطَعَتِ الطَّائِرَةُ ذَهَابًا وَإِيابًا مُقَرِّبًا إِلَى أَقْرَبٍ أَلْفِ؟", ans: "٢٠٠٠", support: "اجمع المسافة ذهاباً وإياباً: ١١٤٢ + ١١٤٢ = ٢٢٨٤، ثم قرب لأقرب ألف." }
+        ];
+
+        let currentActiveFaces = []; 
+        let unassignedStudents = []; let teams = []; let currentTeamIndex = 0;
+        let isRolling = false; let currentFaceIndex = 0; let currentTaskObj = null; let currentBasePoints = 0;
+        let timerInterval = null; let timeLeft = 0; let audioCtx = null; let soundEnabled = true;
+        let draggedStudent = null; let draggedSourceId = null;
+        let hindiDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            createParticles();
+            updateCubeFaces();
+        });
+
+        function formatNumH(num) { return num.toString().replace(/[0-9]/g, d => hindiDigits[d]); }
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        
+        function roundTo10(num) { return Math.round(num / 10) * 10; }
+        function roundTo100(num) { return Math.round(num / 100) * 100; }
+        function roundTo1000(num) { return Math.round(num / 1000) * 1000; }
+
+        function getActiveLevels() {
+            let levels = [];
+            if(document.getElementById('level-10').checked) levels.push(10);
+            if(document.getElementById('level-100').checked) levels.push(100);
+            if(document.getElementById('level-1000').checked) levels.push(1000);
+            return levels;
+        }
+
+        function getActiveDifficulties() {
+            let diffs = [];
+            if(document.getElementById('diff-easy').checked) diffs.push('easy');
+            if(document.getElementById('diff-medium').checked) diffs.push('medium');
+            if(document.getElementById('diff-hard').checked) diffs.push('hard');
+            return diffs;
+        }
+
+        function updateCubeFaces() {
+            if (getActiveLevels().length === 0) {
+                document.getElementById('level-warning').style.display = 'block';
+                document.getElementById('level-10').checked = true; 
+            } else {
+                document.getElementById('level-warning').style.display = 'none';
+            }
+
+            if (getActiveDifficulties().length === 0) {
+                document.getElementById('diff-warning').style.display = 'block';
+                document.getElementById('diff-easy').checked = true;
+            } else {
+                document.getElementById('diff-warning').style.display = 'none';
+            }
+
+            currentActiveFaces = [...CUBE_FACES]; // جلب الوجوه الستة الفريدة
+
+            // خلط الوجوه لضمان عشوائية ظهورها على المكعب
+            for (let i = currentActiveFaces.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentActiveFaces[i], currentActiveFaces[j]] = [currentActiveFaces[j], currentActiveFaces[i]];
+            }
+
+            setupCubeFacesHTML();
+        }
+
+        function setupCubeFacesHTML() { 
+            const cubes = [document.getElementById('intro-cube'), document.getElementById('game-cube')];
+            const classes = ['front', 'right', 'back', 'left', 'top', 'bottom'];
+            
+            cubes.forEach(cube => {
+                if(!cube) return;
+                let facesHTML = '';
+                for(let idx = 0; idx < 6; idx++){
+                    const faceData = currentActiveFaces[idx];
+                    facesHTML += `<div class="cube__face cube__face--${classes[idx]}" style="border-color:${faceData.color}; text-shadow: 0 0 10px ${faceData.color}"><div class="face-icon">${faceData.icon}</div><div class="face-title">${faceData.title}</div></div>`;
+                }
+                cube.innerHTML = facesHTML;
+            });
+        }
+
+        function generateDynamicTask(faceData, forceDifficulty = null) {
+            let activeLevels = getActiveLevels();
+            let diffs = getActiveDifficulties();
+            
+            if (activeLevels.length === 0) activeLevels.push(10); 
+            if (diffs.length === 0) diffs.push('easy');
+            
+            const lvl = activeLevels[Math.floor(Math.random() * activeLevels.length)];
+            const selectedDiff = forceDifficulty || diffs[Math.floor(Math.random() * diffs.length)];
+            
+            let obj = { txt: "", support: "", ans: "", points: 10 };
+            const type = faceData.type;
+
+            function generateValidNum(level, diffStr) {
+                let n = 0;
+                do {
+                    if(level === 10) {
+                        n = diffStr==='easy' ? getRandomInt(11,99) : diffStr==='medium' ? getRandomInt(101,999) : getRandomInt(1001,9999);
+                    } else if(level === 100) {
+                        n = diffStr==='easy' ? getRandomInt(101,999) : diffStr==='medium' ? getRandomInt(1001,9999) : getRandomInt(10001,99999);
+                    } else {
+                        n = diffStr==='easy' ? getRandomInt(1001,9999) : diffStr==='medium' ? getRandomInt(10001,99999) : getRandomInt(100001,999999);
+                    }
+                } while(n % level === 0);
+                return n;
+            }
+
+            let num = generateValidNum(lvl, selectedDiff);
+            let lvlText = lvl === 10 ? 'عَشَرَةٍ' : lvl === 100 ? 'مِئَةٍ' : 'أَلْفٍ';
+
+            if (type === 'word') {
+                let qArr = lvl === 10 ? q10_hard : lvl === 100 ? q100_hard : q1000_hard;
+                let q = qArr[Math.floor(Math.random() * qArr.length)];
+                obj.txt = "👑 مسألة الأبطال:\n\n" + q.txt; 
+                obj.support = q.support; 
+                obj.ans = q.ans; 
+                obj.points = 20;
+            } 
+            else if (type === 'direct') {
+                let correct = lvl === 10 ? roundTo10(num) : lvl === 100 ? roundTo100(num) : roundTo1000(num);
+                obj.txt = `قَرِّب العدد ( ${formatNumH(num)} ) إلى أَقْرَب ${lvlText}.`;
+                let hintDigit = lvl === 10 ? (num%10) : lvl === 100 ? Math.floor((num%100)/10) : Math.floor((num%1000)/100);
+                if(hintDigit >= 5) obj.support = `تلميح: الرقم (${formatNumH(hintDigit)}) هو ٥ أو أكبر، إذن نزيد المنزلة المطلوبة بمقدار ١.`;
+                else obj.support = `تلميح: الرقم (${formatNumH(hintDigit)}) أقل من ٥، إذن تبقى المنزلة المطلوبة كما هي.`;
+                obj.ans = formatNumH(correct);
+                obj.points = selectedDiff === 'easy' ? 10 : selectedDiff === 'medium' ? 15 : 20;
+            }
+            else if (type === 'line') {
+                let base = Math.floor(num / lvl) * lvl;
+                let upper = base + lvl;
+                let correct = Math.abs(num - base) < Math.abs(num - upper) ? base : upper;
+                obj.txt = `على خط الأعداد، هل العدد ( ${formatNumH(num)} ) أقرب إلى ${formatNumH(base)} أم إلى ${formatNumH(upper)} ؟`;
+                obj.support = `تلميح: تذكر أن المنتصف بينهما هو ${formatNumH(base + (lvl/2))}. حدد موقع العدد بالنسبة للمنتصف.`;
+                obj.ans = formatNumH(correct);
+                obj.points = selectedDiff === 'easy' ? 10 : 15;
+            }
+            else if (type === 'error') {
+                let correct = lvl === 10 ? roundTo10(num) : lvl === 100 ? roundTo100(num) : roundTo1000(num);
+                let wrong = correct > num ? Math.floor(num/lvl)*lvl : Math.ceil(num/lvl)*lvl;
+                obj.txt = `قَرَّب صديقك العدد ( ${formatNumH(num)} ) لأقرب ${lvlText}، فأجاب: ${formatNumH(wrong)}.\nما هو الصواب؟`;
+                let hintDigit = lvl === 10 ? (num%10) : lvl === 100 ? Math.floor((num%100)/10) : Math.floor((num%1000)/100);
+                obj.support = `تلميح: صديقك أخطأ في تقدير الرقم (${formatNumH(hintDigit)}).`;
+                obj.ans = formatNumH(correct);
+                obj.points = selectedDiff === 'easy' ? 15 : 20;
+            }
+            else if (type === 'add') {
+                let n1 = generateValidNum(lvl, selectedDiff === 'hard' ? 'medium' : 'easy');
+                let n2 = generateValidNum(lvl, selectedDiff === 'hard' ? 'medium' : 'easy');
+                let sum = n1 + n2;
+                let correct = lvl === 10 ? roundTo10(sum) : lvl === 100 ? roundTo100(sum) : roundTo1000(sum);
+                obj.txt = `اجمع أولاً ثم قَرِّب الناتج لأقرب ${lvlText}:\n ${formatNumH(n1)} + ${formatNumH(n2)} = ؟`;
+                obj.support = `تلميح: ناتج الجمع هو ${formatNumH(sum)}.`;
+                obj.ans = formatNumH(correct);
+                obj.points = selectedDiff === 'easy' ? 15 : 20;
+            }
+            else if (type === 'sub') {
+                let n1 = generateValidNum(lvl, selectedDiff === 'hard' ? 'medium' : 'easy');
+                let n2 = generateValidNum(lvl, selectedDiff === 'hard' ? 'medium' : 'easy');
+                if(n2 > n1) { let temp = n1; n1 = n2; n2 = temp; }
+                let diffVal = n1 - n2;
+                let correct = lvl === 10 ? roundTo10(diffVal) : lvl === 100 ? roundTo100(diffVal) : roundTo1000(diffVal);
+                obj.txt = `اطرح أولاً ثم قَرِّب الناتج لأقرب ${lvlText}:\n ${formatNumH(n1)} - ${formatNumH(n2)} = ؟`;
+                obj.support = `تلميح: ناتج الطرح هو ${formatNumH(diffVal)}.`;
+                obj.ans = formatNumH(correct);
+                obj.points = selectedDiff === 'easy' ? 15 : 20;
+            }
+            
+            return obj;
+        }
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+        function toggleTeacherPanel() { document.getElementById('teacher-panel-container').classList.toggle('open'); }
+        function openSetupModal() { document.getElementById('setup-overlay').classList.add('active'); if(teams.length === 0) renderSetupUI(); }
+        function closeSetupModal() { document.getElementById('setup-overlay').classList.remove('active'); }
+
+        function renderSetupUI() {
+            const numTeams = parseInt(document.getElementById('sel-teams-setup').value);
+            while(teams.length < numTeams) { teams.push({ id: teams.length, name: `الفريق ${teams.length+1}`, members: [], score: 0, leaderIndex: 0 }); }
+            while(teams.length > numTeams) { const removed = teams.pop(); unassignedStudents.push(...removed.members); }
+            const grid = document.getElementById('setup-teams-grid'); grid.innerHTML = '';
+            grid.appendChild(createTeamBox('unassigned', 'الطلاب غير الموزعين', unassignedStudents));
+            teams.forEach(t => grid.appendChild(createTeamBox(t.id, t.name, t.members)));
+        }
+
+        function createTeamBox(id, title, members) {
+            const box = document.createElement('div'); box.className = 'team-box'; box.innerHTML = `<h3>${title} <span style="font-size:0.9em; color:#fff; background:var(--primary); padding:2px 8px; border-radius:10px;">${members.length}</span></h3>`;
+            box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
+            box.addEventListener('dragleave', e => box.classList.remove('over'));
+            box.addEventListener('drop', e => handleDrop(e, id));
+            members.forEach(m => {
+                const pill = document.createElement('div'); pill.className = 'student-pill'; pill.draggable = true;
+                pill.innerHTML = `<span>${m}</span> <button class="del-pill-btn" onclick="removeStudent('${m}', '${id}')">✖</button>`;
+                pill.addEventListener('dragstart', e => { draggedStudent = m; draggedSourceId = id; e.dataTransfer.effectAllowed = 'move'; });
+                box.appendChild(pill);
+            });
+            return box;
+        }
+
+        function handleDrop(e, targetId) { e.preventDefault(); e.currentTarget.classList.remove('over'); if(draggedSourceId === targetId) return; if(draggedSourceId === 'unassigned') unassignedStudents = unassignedStudents.filter(s => s !== draggedStudent); else teams[draggedSourceId].members = teams[draggedSourceId].members.filter(s => s !== draggedStudent); if(targetId === 'unassigned') unassignedStudents.push(draggedStudent); else teams[targetId].members.push(draggedStudent); renderSetupUI(); }
+        function removeStudent(name, sourceId) { if(sourceId === 'unassigned') unassignedStudents = unassignedStudents.filter(s => s !== name); else teams[sourceId].members = teams[sourceId].members.filter(s => s !== name); renderSetupUI(); }
+        function addStudentManual() { const inp = document.getElementById('manual-student-name'); const val = inp.value.trim(); if(val) { unassignedStudents.push(val); inp.value = ''; renderSetupUI(); } }
+        function clearAllStudents() { if(confirm('هل أنت متأكد من حذف جميع الطلاب؟')) { unassignedStudents = []; teams.forEach(t => t.members = []); renderSetupUI(); document.getElementById('fileInput').value = ""; } }
+        function randomizeStudents() { let all = [...unassignedStudents]; teams.forEach(t => { all.push(...t.members); t.members = []; }); unassignedStudents = []; for(let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; } let tIdx = 0; all.forEach(s => { teams[tIdx].members.push(s); tIdx = (tIdx + 1) % teams.length; }); renderSetupUI(); }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return; 
+            const fileName = file.name.toLowerCase(); 
+            
+            if (fileName.endsWith('.txt')) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const text = e.target.result;
+                    const names = text.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 1);
+                    processNamesArray(names);
+                };
+                reader.readAsText(file, 'utf-8');
+            } 
+            else if (fileName.endsWith('.docx')) {
+                if(typeof mammoth !== 'undefined') {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        mammoth.extractRawText({arrayBuffer: e.target.result})
+                            .then(result => {
+                                const names = result.value.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 1);
+                                processNamesArray(names);
+                            })
+                            .catch(err => alert("حدث خطأ أثناء قراءة ملف الوورد."));
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    alert("مكتبة قراءة الوورد غير متوفرة حالياً، جرب ملف نصي TXT.");
+                }
+            }
+            else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) {
+                if (typeof XLSX !== 'undefined') { 
+                    const reader = new FileReader();
+                    reader.onload = e => { 
+                        try {
+                            const data = new Uint8Array(e.target.result); 
+                            const workbook = XLSX.read(data, {type: 'array'}); 
+                            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); 
+                            let names = []; 
+                            json.forEach(row => row.forEach(cell => { if (typeof cell === 'string' && cell.trim().length > 1) names.push(cell.trim()); })); 
+                            processNamesArray(names); 
+                        } catch(err) {
+                            alert("حدث خطأ أثناء قراءة ملف الإكسل.");
+                        }
+                    }; 
+                    reader.readAsArrayBuffer(file); 
+                } else {
+                    alert("مكتبة الإكسل غير متوفرة.");
+                }
+            } else {
+                 alert("الرجاء رفع ملف إكسل، وورد، أو ملف نصي (TXT).");
+            }
+        }
+        function processNamesArray(namesList) { namesList.forEach(name => { if (!unassignedStudents.includes(name)) unassignedStudents.push(name); }); renderSetupUI(); }
+
+        function startGameFromSetup() { 
+            if(teams.length === 0) return; 
+            updateCubeFaces(); 
+            initAudio(); closeSetupModal(); 
+            document.getElementById('screen-start').classList.remove('active'); 
+            document.getElementById('screen-game').classList.add('active'); 
+            teams.forEach(t => { t.score = 0; t.leaderIndex = 0; }); currentTeamIndex = 0; 
+            renderTeamsHUD(); resetCubePosition(); playTone(440, 'triangle', 0.1); 
+        }
+        function renderTeamsHUD() { const container = document.getElementById('game-hud'); container.innerHTML = ''; teams.forEach((t, i) => { const card = document.createElement('div'); card.className = `team-card ${i === currentTeamIndex ? 'active-team' : ''}`; card.innerHTML = `<div style="font-weight:bold; font-size:1.2rem;">${t.name}</div><div class="team-score">${t.score}</div>`; container.appendChild(card); }); }
+
+        function rollCube() {
+            if (isRolling) return; 
+            initAudio(); 
+            isRolling = true; 
+            document.getElementById('timer-container').style.display = 'none'; 
+            clearInterval(timerInterval);
+            const cube = document.getElementById('game-cube'); 
+            document.getElementById('btn-roll').style.opacity = '0.5'; 
+            playNoiseLoop(3); 
+            
+            cube.style.transition = "transform 3s cubic-bezier(0.1, 0.8, 0.1, 1)";
+            
+            currentFaceIndex = Math.floor(Math.random() * 6);
+            let rotX = 0, rotY = 0;
+            switch(currentFaceIndex) { 
+                case 0: rotX = 0; rotY = 0; break; 
+                case 1: rotX = 0; rotY = -90; break; 
+                case 2: rotX = 0; rotY = -180; break; 
+                case 3: rotX = 0; rotY = 90; break; 
+                case 4: rotX = -90; rotY = 0; break; 
+                case 5: rotX = 90; rotY = 0; break; 
+            }
+            rotX += 1440; 
+            rotY += 1440; 
+            cube.style.transform = `translateZ(calc(var(--tz) * -1)) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            
+            setTimeout(() => {
+                cube.style.transition = "transform 1.5s ease-in-out";
+                cube.style.transform = `translateZ(200px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                
+                setTimeout(() => { 
+                    playTone(300, 'square', 0.2); 
+                    setTimeout(() => playTone(500, 'square', 0.3), 150); 
+                    showTaskCard(); 
+                }, 1600); 
+            }, 3000); 
+        }
+
+        function showTaskCard() {
+            const faceData = currentActiveFaces[currentFaceIndex];
+            currentTaskObj = generateDynamicTask(faceData);
+            currentBasePoints = currentTaskObj.points; 
+            
+            document.getElementById('task-category').innerText = faceData.title + ` (${currentBasePoints} نقطة)`; 
+            document.getElementById('task-category').style.backgroundColor = faceData.color; 
+            document.getElementById('task-text').innerText = currentTaskObj.txt;
+            
+            const team = teams[currentTeamIndex]; let leaderName = 'الفريق ككل';
+            if(team.members.length > 0) { if(team.leaderIndex >= team.members.length) team.leaderIndex = 0; leaderName = team.members[team.leaderIndex]; team.leaderIndex++; }
+            
+            const infoDiv = document.getElementById('team-info-display'); const membersStr = team.members.length > 0 ? team.members.join(' ، ') : '-';
+            infoDiv.innerHTML = `<div style="font-weight:bold; font-size:1.1rem; color:#cbd5e1;">الفريق: ${team.name} | الأعضاء: ${membersStr}</div><div class="leader-highlight">⭐ قائد هذه الجولة هو البطل: ${leaderName} ⭐</div>`;
+            
+            document.getElementById('support-panel').style.display = 'none'; 
+            document.getElementById('teacher-judge').style.display = 'none'; 
+            document.getElementById('task-actions').style.display = 'flex'; 
+            
+            // إظهار زر التحدي فقط إذا لم يكن السؤال الحالي بالفعل "تحدي الأبطال" (مسألة بطل)
+            if (faceData.type === 'word') {
+                document.getElementById('btn-action-challenge').style.display = 'none';
+            } else {
+                document.getElementById('btn-action-challenge').style.display = 'flex';
+            }
+
+            document.getElementById('task-overlay').classList.add('active'); 
+            playTone(600, 'sine', 0.4);
+            
+            const encouragements = ["أنت قدها يا بطل", "نثق بذكائك", "أرنا إبداعك", "يا بطل الرياضيات", "أنت لها"];
+            let randomEnc = encouragements[Math.floor(Math.random() * encouragements.length)];
+            let ttsSentence = `السؤال لفريق ${team.name}، بطل هذه الجولة هو ${leaderName}، ${randomEnc}!`; 
+            if(team.members.length === 0) ttsSentence = `السؤال لفريق ${team.name}، بالتوفيق للجميع!`; 
+            speakText(ttsSentence);
+        }
+
+        function selectAction(action) {
+            const faceData = currentActiveFaces[currentFaceIndex];
+            
+            if (action === 'answer') { 
+                document.getElementById('task-actions').style.display = 'none';
+                document.getElementById('teacher-judge').style.display = 'block'; 
+                startTimer(); 
+            } 
+            else if (action === 'support') { 
+                document.getElementById('task-actions').style.display = 'none';
+                currentBasePoints = Math.max(0, currentBasePoints - 5); 
+                document.getElementById('task-category').innerText = faceData.title + ` (${currentBasePoints} نقطة)`; 
+                document.getElementById('support-text').innerText = "تم استخدام التلميح (خصم ٥ نقاط)\n\n" + currentTaskObj.support; 
+                document.getElementById('support-panel').style.display = 'block'; 
+                playTone(400, 'triangle', 0.3); 
+            } 
+            else if (action === 'challenge') { 
+                // توليد مسألة صعبة بشكل قسري
+                currentTaskObj = generateDynamicTask({ type: 'word' }, 'hard'); 
+                currentBasePoints = 30; // رفع النقاط بسبب التحدي
+                
+                document.getElementById('task-category').innerText = "🔥 تحدي بطل (30 نقطة)"; 
+                document.getElementById('task-category').style.backgroundColor = '#ef4444'; 
+                document.getElementById('task-text').innerText = currentTaskObj.txt; 
+                document.querySelector('.task-card').style.animation = 'borderGlow 1s infinite alternate'; 
+                playTone(800, 'sawtooth', 0.5); 
+                
+                // إخفاء زر التحدي لمنع استخدامه أكثر من مرة
+                document.getElementById('btn-action-challenge').style.display = 'none';
+            }
+        }
+
+        function readyToAnswer() { document.getElementById('support-panel').style.display = 'none'; document.getElementById('teacher-judge').style.display = 'block'; startTimer(); }
+
+        function judgeAnswer(isCorrect) {
+            clearInterval(timerInterval); document.getElementById('timer-container').style.display = 'none'; window.speechSynthesis.cancel(); 
+            const teamName = teams[currentTeamIndex].name;
+            
+            if (isCorrect) { 
+                playSuccessSound(); startConfetti(2500); modifyPointsBase(currentBasePoints);
+                speakText(`إجابة صحيحة، رائع جداً يا ${teamName}، عمل ممتاز!`);
+            } else { 
+                playTone(200, 'sawtooth', 0.5); 
+                speakText(`للأسف إجابة خاطئة يا ${teamName}، لا بأس، حاولوا بتركيز في المرة القادمة!`);
+            }
+
+            document.getElementById('task-overlay').classList.remove('active');
+            document.querySelector('.task-card').style.animation = 'none';
+            
+            const revealTitle = document.getElementById('reveal-title');
+            revealTitle.innerText = isCorrect ? "إجابة صحيحة! أحسنت 🤩" : "إجابة خاطئة! 😢";
+            revealTitle.style.color = isCorrect ? "var(--success)" : "var(--danger)";
+            document.getElementById('reveal-answer-text').innerText = currentTaskObj.ans;
+            document.getElementById('answer-reveal').classList.add('active');
+        }
+
+        function closeAnswerReveal() {
+            document.getElementById('answer-reveal').classList.remove('active');
+            resetCubePosition(); nextTeam();
+        }
+
+        function modifyPointsBase(pts) { if (teams.length > 0) { teams[currentTeamIndex].score += pts; if(teams[currentTeamIndex].score < 0) teams[currentTeamIndex].score = 0; renderTeamsHUD(); } }
+        function modifyPoints(multiplier) { const val = parseInt(document.getElementById('custom-points-val').value); modifyPointsBase(val * multiplier); playTone(multiplier > 0 ? 500 : 300, 'sine', 0.2); }
+        function nextTeam() { if (teams.length > 0) { currentTeamIndex = (currentTeamIndex + 1) % teams.length; renderTeamsHUD(); } document.getElementById('btn-roll').style.opacity = '1'; isRolling = false; window.speechSynthesis.cancel(); }
+
+        function startTimer() { const tSetting = parseInt(document.getElementById('sel-timer').value); if(tSetting === 0) return; timeLeft = tSetting; const tBox = document.getElementById('timer-container'); tBox.style.display = 'flex'; tBox.innerText = timeLeft; tBox.classList.remove('warning'); timerInterval = setInterval(() => { timeLeft--; tBox.innerText = timeLeft; if(timeLeft <= 10) { tBox.classList.add('warning'); if(soundEnabled && timeLeft > 0) playTone(400, 'sine', 0.1); } if(timeLeft <= 0) { clearInterval(timerInterval); playTone(200, 'sawtooth', 1); } }, 1000); }
+
+        function resetCubePosition() { 
+            const cube = document.getElementById('game-cube');
+            cube.style.transition = "transform 1s ease-in-out";
+            cube.style.transform = `translateZ(calc(var(--tz) * -1)) rotateX(-20deg) rotateY(-30deg)`; 
+        }
+        
+        function resetGame() { window.speechSynthesis.cancel(); document.getElementById('screen-final').classList.remove('active'); document.getElementById('screen-game').classList.remove('active'); document.getElementById('screen-start').classList.add('active'); isRolling = false; resetCubePosition(); }
+        
+        function triggerFinalRound() { 
+            document.getElementById('screen-game').classList.remove('active'); 
+            let maxScore = -1, winnerTeam = null; 
+            teams.forEach(t => { if(t.score > maxScore) { maxScore = t.score; winnerTeam = t; } }); 
+            const finalScreen = document.getElementById('screen-final'); 
+            finalScreen.innerHTML = `<div class="winner-card-decorated"><h1 style="font-size: 5rem; margin-bottom:10px; animation: pulse 2s infinite;">🏆</h1><h1>الفريق البطل!</h1><h2>${winnerTeam.name} برصيد (${winnerTeam.score} نقطة)</h2><div class="winner-grid">${winnerTeam.members.map((member, idx) => `<div class="winner-name-badge" style="animation-delay: ${idx * 0.15}s">🌟 ${member} 🌟</div>`).join('')}</div><button class="btn-large" onclick="resetGame()" style="box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 2px solid #fff; margin-top:20px;">العودة للرئيسية</button></div>`; 
+            finalScreen.classList.add('active'); 
+            startConfetti(10000); 
+            let speech = `ألف مبروك! الفائز في بطولة التقريب هو ${winnerTeam.name}، تهانينا الحارة للأبطال ${winnerTeam.members.join(' و ')}، أنتم حقاً عباقرة الرياضيات!`; 
+            speakText(speech); 
+        }
+
+        function toggleSound() { soundEnabled = !soundEnabled; document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇'; }
+        function playTone(freq, type, duration) { if (!soundEnabled || !audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); }
+        function playNoiseLoop(duration) { if (!soundEnabled || !audioCtx) return; const bufferSize = audioCtx.sampleRate * duration; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; const noise = audioCtx.createBufferSource(); noise.buffer = buffer; const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400; const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); }
+        function playSuccessSound() { if (!soundEnabled || !audioCtx) return; playTone(440, 'sine', 0.1); setTimeout(() => playTone(554, 'sine', 0.1), 100); setTimeout(() => playTone(659, 'sine', 0.3), 200); }
+        
+        function speakText(text) { if (!('speechSynthesis' in window) || !soundEnabled) return; window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'ar-SA'; utterance.rate = 0.9; utterance.pitch = 1.1; const voices = window.speechSynthesis.getVoices(); const voice = voices.find(v => v.lang.includes('ar-SA')) || voices.find(v => v.lang.includes('ar')); if (voice) utterance.voice = voice; window.speechSynthesis.speak(utterance); }
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); }; 
+
+        function startConfetti(durationMs) { const container = document.getElementById('confetti-container'); container.innerHTML = ''; const colors = ['#FFD700', '#3498db', '#e74c3c', '#2ecc71', '#9b59b6']; for (let i = 0; i < 150; i++) { const confetti = document.createElement('div'); confetti.style.position = 'absolute'; confetti.style.width = '15px'; confetti.style.height = '15px'; confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; confetti.style.left = Math.random() * 100 + 'vw'; confetti.style.top = '-20px'; confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0'; confetti.style.transform = `rotate(${Math.random() * 360}deg)`; const fallDur = (Math.random() * 3 + 2) + 's'; confetti.style.transition = `top ${fallDur} ease-in, left ${fallDur} ease-in-out, transform ${fallDur}`; container.appendChild(confetti); setTimeout(() => { confetti.style.top = '100vh'; confetti.style.left = (parseFloat(confetti.style.left) + (Math.random() * 20 - 10)) + 'vw'; confetti.style.transform = `rotate(${Math.random() * 720}deg)`; }, 50); } setTimeout(() => { container.innerHTML = ''; }, durationMs || 4000); }
+
+        function createParticles() { const c = document.getElementById('particles'); for(let i=0; i<30; i++){ let p = document.createElement('div'); p.className = 'particle'; p.style.left = Math.random() * 100 + 'vw'; p.style.width = Math.random() * 5 + 2 + 'px'; p.style.height = p.style.width; p.style.animationDuration = Math.random() * 5 + 5 + 's'; p.style.animationDelay = Math.random() * 5 + 's'; c.appendChild(p); } }
+    </script>
+</body>
 </html>

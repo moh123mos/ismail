@@ -1,105 +1,640 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>مهرجان ترتيب الأعداد</title>
-  <link rel="stylesheet" href="../style.css" />
-  <style>
-    /* only what is specific to this game; the look comes from ../style.css */
-    :root { --game: oklch(0.86 0.1 350); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مهرجان ترتيب الأعداد</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
-    /* the numbers around the missing one: three or four numbers on one line */
-    .number-row { font-size: clamp(2rem, 1rem + 3.6vw, 4rem); line-height: 1.5; }
-    .missing { color: var(--bad-deep); }
-  </style>
+    <style>
+        :root {
+            --bg-dark: #121212; --panel-bg: #1e1e1e;
+            --primary: #9b59b6; --primary-hover: #8e44ad;
+            --danger: #e74c3c; --danger-hover: #c0392b;
+            --success: #2ecc71; --success-hover: #27ae60;
+            --text-light: #ffffff; --text-muted: #aaaaaa;
+            --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32; --blue: #3498db;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; padding: 0; padding-bottom: 60px; text-align: center; }
+        
+        .banner-container { width: 100%; padding: 20px 0; background: linear-gradient(135deg, var(--primary), var(--blue)); border-bottom: 4px solid var(--gold); margin-bottom: 15px; }
+        .banner-container h1 { margin: 0; font-size: clamp(28px, 5vw, 48px); }
+        .banner-container p { margin: 5px 0 0 0; font-size: clamp(16px, 3vw, 20px); color: #ecf0f1; }
+
+        .container { width: 95%; max-width: 1100px; margin: 0 auto; padding: 15px; background-color: var(--panel-bg); border-radius: 15px; border: 1px solid #333; }
+        .controls-row { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
+        input, select { padding: 10px; font-size: 16px; border: 1px solid #444; border-radius: 8px; background-color: #2c2c2c; color: white; outline: none; font-family: inherit;}
+        button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; font-family: inherit;}
+        
+        .btn-primary { background-color: var(--primary); } .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-danger { background-color: var(--danger); } .btn-danger:hover { background-color: var(--danger-hover); }
+        .btn-success { background-color: var(--success); } .btn-success:hover { background-color: var(--success-hover); }
+        .btn-start { background-color: var(--success); padding: 15px 40px; font-size: 22px; width: 100%; max-width: 400px; margin-top: 20px;}
+        .btn-toggle { background-color: var(--blue); }
+        .btn-start-turn { background-color: var(--gold); color: #000; font-size: 28px; padding: 15px 50px; border-radius: 50px; margin-top: 20px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); }
+        
+        .game-nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        
+        /* Individual List */
+        .students-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 15px 0; max-height: 350px; overflow-y: auto; padding: 10px; background: #111; border-radius: 10px; }
+        .student-badge { background-color: #333; padding: 10px 15px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #555; font-weight: bold; cursor: grab; }
+        .student-badge.over { border: 2px dashed var(--gold); transform: scale(1.02); }
+        .drag-handle { margin-left: 10px; color: var(--text-muted); cursor: inherit; }
+        .delete-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 18px; padding: 0 5px; }
+
+        /* Teams Grid */
+        .teams-grid { display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; text-align: right; }
+        .team-box { background: rgba(0,0,0,0.3); border: 2px dashed #475569; border-radius: 10px; padding: 15px; min-height: 150px; transition: 0.3s; }
+        .team-box.over { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .team-box h3 { text-align: center; margin-bottom: 15px; color: var(--gold); border-bottom: 1px solid #475569; padding-bottom: 5px; }
+        .student-pill { background: var(--primary); padding: 8px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 10px; margin: 5px; cursor: grab; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
+        .del-pill-btn { background: none; border: none; color: white; cursor: pointer; font-weight: bold; }
+
+        #gameArea { display: none; padding: 10px; position: relative; }
+        #readyScreen { display: none; margin-top: 30px; }
+        #questionScreen { display: none; width: 100%; }
+        #questionScreen h3 { margin: 2px 0 15px 0; font-size: 1.6em; color: #f39c12; }
+        .timer-display { margin: 0 0 5px 0; font-size: 1.4em; color: var(--gold); font-family: monospace; }
+
+        .question-box { font-size: clamp(2em, 5vw, 3.5em); margin: 0 auto 20px auto; padding: 25px; background-color: #252525; border: 2px solid #444; border-radius: 15px; direction: rtl; max-width: 900px; display: flex; justify-content: center; align-items: center; gap: 20px; }
+        .target-digit { color: var(--danger); font-weight: bold; }
+
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; max-width: 900px; margin: 0 auto; }
+        .option-btn { background-color: #34495e; font-size: 32px; padding: 18px; direction: rtl; border: 2px solid #2c3e50; border-radius: 10px; }
+        .option-btn:hover { background-color: #2c3e50; border-color: var(--primary); }
+        .option-btn:disabled { opacity: 0.8; cursor: not-allowed; }
+
+        .feedback-emoji { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 150px; z-index: 100; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .show-emoji { transform: translate(-50%, -50%) scale(1); }
+
+        #resultsArea { display: none; margin-top: 15px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #252525; color: white; }
+        th, td { padding: 12px; border: 1px solid #444; font-size: 18px; }
+        th { background-color: #333; }
+        .rank-1 { background-color: rgba(255, 215, 0, 0.15) !important; color: var(--gold); font-weight: bold; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto;}
+        .modal-content { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 40px; border-radius: 20px; text-align: center; color: #000; box-shadow: 0 0 50px rgba(255, 215, 0, 0.5); width: 100%; max-width: 600px; border: 5px solid #FFF; margin: auto; }
+        .winner-item { font-size: 1.6em; margin: 15px 0; font-weight: bold; background: rgba(255,255,255,0.4); padding: 10px; border-radius: 10px; }
+        
+        #confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+
+        /* Glowing Credit Footer */
+        .credit-glow {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--primary), 0 0 30px var(--primary), 0 0 40px var(--primary);
+            z-index: 9999;
+            pointer-events: none;
+            animation: neonPulse 1.5s ease-in-out infinite alternate;
+            white-space: nowrap;
+        }
+        @keyframes neonPulse {
+            from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--accent), 0 0 20px var(--accent); }
+            to { text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 10px var(--primary), 0 0 15px var(--primary); }
+        }
+    </style>
 </head>
-
 <body>
-  <div id="app"></div>
+    <div class="credit-glow">صُمم بإستخدام معلم الرياضيات : إسماعيل مصطفي عامر</div>
 
-  <script src="../common.js"></script>
-  <script src="../game-shell.js"></script>
-  <script>
-    /* ===== أدوات صغيرة خاصة بهذه اللعبة ===== */
-    const pickOne = arr => arr[rnd(0, arr.length - 1)];
-    function shuffle(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; }
-      return a;
-    }
-    const num = n => toArabicNumber(n);
-    const expr = text => `<span class="expr">${text}</span>`;
-    const row = items => `<div class="number-row">${items.join(' ، ')}</div>`;
+    <div class="banner-container">
+        <h1>مهرجان ترتيب الأعداد 🔢</h1>
+        <p>العدد السابق (يسبق) • العدد التالي (يلي) • بين عددين</p>
+    </div>
 
-    /* الخيارات: الإجابة + الخطأ الشائع لهذا النوع، ثم أعداد مجاورة؛ كلها مختلفة وغير سالبة */
-    function makeChoices(correct, mistake, count) {
-      const out = [correct];
-      const add = v => { if (out.length < count && v >= 0 && !out.includes(v)) out.push(v); };
-      add(mistake);
-      for (let k = 1; out.length < count && k < 30; k++) { add(correct + k); add(correct - k); }
-      return shuffle(out);
-    }
+    <div class="container" id="mainContainer">
+        <section id="setupArea">
+            <h2>لوحة تحكم المسابقة والإعداد</h2>
+            
+            <div class="controls-row">
+                <label style="font-weight:bold; color:var(--gold);">نظام اللعب:</label>
+                <select id="gameModeSelect" onchange="toggleGameMode()">
+                    <option value="individual">لعب فردي (قائمة طلاب)</option>
+                    <option value="teams">لعب بنظام الفرق</option>
+                </select>
 
-    /* ===== أنواع الأسئلة: السابق، التالي، بين عددين، تكملة النمط ===== */
-    const BUILDERS = {
-      prev: n => ({
-        body: `<div class="problem-hint">ما العدد الذي يَسْبِق العدد التالي؟ (قبله)</div><div>${num(n)}</div>`,
-        answer: n - 1, mistake: n + 1
-      }),
-      next: n => ({
-        body: `<div class="problem-hint">ما العدد الذي يَلِي العدد التالي؟ (بعده)</div><div>${num(n)}</div>`,
-        answer: n + 1, mistake: n - 1
-      }),
-      between: n => ({
-        body: `<div class="problem-hint">ما العدد الذي يَقَع بَيْنَ العددين؟</div>${row([expr(num(n)), '<span class="missing">؟</span>', expr(num(n + 2))])}`,
-        answer: n + 1, mistake: n
-      }),
-      pattern: n => ({
-        body: `<div class="problem-hint">أكمل نمط الأعداد المتتالية</div>${row([expr(num(n)), expr(num(n + 1)), '<span class="missing">؟</span>', expr(num(n + 3))])}`,
-        answer: n + 2, mistake: n + 3
-      })
-    };
+                <div id="teamsCountWrapper" style="display:none; margin-right: 15px;">
+                    <label style="font-weight:bold;">عدد الفرق:</label>
+                    <select id="teamsCountSelect" onchange="renderTeamsUI()">
+                        <option value="2">2 فرق</option>
+                        <option value="3">3 فرق</option>
+                        <option value="4">4 فرق</option>
+                    </select>
+                    <button class="btn-toggle" style="margin-right: 10px;" onclick="randomizeTeams()">🔀 توزيع عشوائي للفرق</button>
+                </div>
+            </div>
 
-    /* ===== بناء السؤال (تستدعيه المنصة عند بدء كل جولة) ===== */
-    function buildQuestion() {
-      const hundred = document.getElementById('levelSelect').value === '100';
-      const count = parseInt(document.getElementById('optionsCountSelect').value, 10);
-      const n = hundred ? rnd(1, 97) : rnd(100, 996);   // فوق ٠ وتحت نهاية المستوى كي يبقى "التالي" و"بين" داخله
-      const q = BUILDERS[pickOne(Object.keys(BUILDERS))](n);
-      return { html: q.body, choices: makeChoices(q.answer, q.mistake, count), answer: q.answer };
-    }
+            <div class="controls-row">
+                <button class="btn-toggle" onclick="toggleNumberFormat()" id="formatBtn">الأرقام: هندية (١٢٣)</button>
+                <select id="levelSelect">
+                    <option value="100">إلى ١٠٠</option>
+                    <option value="1000">إلى ١٠٠٠</option>
+                </select>
+                <select id="optionsCountSelect">
+                    <option value="4">4 خيارات (صعب)</option>
+                    <option value="3">3 خيارات (متوسط)</option>
+                    <option value="2">خيارين (سهل)</option>
+                </select>
+            </div>
 
-    GameShell.mount({
-      id: 'order-festival',
-      storagePrefix: 'order_festival',
-      title: 'مهرجان ترتيب الأعداد',
-      heading: 'مهرجان ترتيب الأعداد',
-      emoji: { code: '1f388', fallback: '🎈' },   // نفس إيموجي جزيرتها على الخريطة
-      exportFilename: 'نتائج_مهرجان_ترتيب_الأعداد.xlsx',
-      timer: { value: 20, min: 5, max: 90 },
-      settingsHTML: `
-        <div class="toolbar">
-          <div class="group">
-            <label class="label" for="levelSelect">الأعداد:</label>
-            <select id="levelSelect">
-              <option value="100">إلى ١٠٠</option>
-              <option value="1000">إلى ١٠٠٠</option>
-            </select>
-          </div>
-          <div class="group">
-            <label class="label" for="optionsCountSelect">عدد الخيارات:</label>
-            <select id="optionsCountSelect">
-              <option value="4">٤ خيارات (صعب)</option>
-              <option value="3">٣ خيارات (متوسط)</option>
-              <option value="2">خياران (سهل)</option>
-            </select>
-          </div>
-        </div>`,
-      buildQuestion
-    });
-  </script>
+            <div class="controls-row">
+                <input type="text" id="studentName" placeholder="أدخل اسم الطالب يدوياً...">
+                <button class="btn-primary" onclick="addStudent()">إضافة ➕</button>
+                <div style="width: 1px; height: 30px; background: #555; margin: 0 10px;"></div>
+                <label style="color: #aaa;">ملف أسماء:</label>
+                <input type="file" id="fileInput" accept=".txt,.csv,.xlsx,.xls,.docx,.pdf" onchange="handleFileUpload(event)">
+                <button class="btn-danger" onclick="deleteAllStudents()">🗑️ مسح الكل</button>
+            </div>
+            
+            <!-- List for Individual Mode -->
+            <div class="students-list" id="studentsList"></div>
+
+            <!-- Grid for Teams Mode -->
+            <div class="teams-grid" id="teamsSetupGrid"></div>
+
+            <button class="btn-start" onclick="startGame()">🚀 بدء المهرجان (لعب مستمر)</button>
+        </section>
+
+        <section id="gameArea">
+            <div class="game-nav">
+                <button class="btn-primary" onclick="returnToSetup()">🔙 العودة للإعدادات</button>
+                <button class="btn-toggle" onclick="showMidGameResults()">📊 النتائج المؤقتة</button>
+                <button class="btn-danger" onclick="endGameEarly()">⏹️ إنهاء المسابقة</button>
+            </div>
+
+            <div id="readyScreen">
+                <h2 style="color: var(--success); font-size: 2em;" id="readyTeamText">الآن دور البطل</h2>
+                <h1 id="readyStudentName" style="font-size: 3.5em; margin-bottom: 20px;"></h1>
+                <button class="btn-start-turn" onclick="startStudentQuestion()">ابدأ سؤالي 🚀</button>
+            </div>
+
+            <div id="questionScreen">
+                <div class="timer-display" id="timerDisplay">⏱️ 0.0 ثانية</div>
+                <h2 id="currentStudentDisplay" style="color: var(--primary);"></h2>
+                <h3 id="questionTitleText">السؤال هنا...</h3>
+                
+                <div class="question-box" id="questionDisplay"></div>
+                <div class="options-grid" id="optionsContainer"></div>
+                <div id="feedbackEmoji" class="feedback-emoji"></div>
+            </div>
+        </section>
+
+        <section id="resultsArea">
+            <h2 style="color: var(--gold); font-size: 32px;">🏆 لوحة الشرف والنتائج 🏆</h2>
+            <div class="controls-row">
+                <button id="resumeBtn" class="btn-success" style="display:none;" onclick="resumeGame()">▶️ استئناف اللعب</button>
+                <button class="btn-primary" onclick="showTop3Modal()">🎉 البطاقة النهائية للأبطال</button>
+                <button class="btn-danger" onclick="resetGameKeepStudents()">🔄 مسابقة جديدة بالكامل</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المركز</th>
+                            <th>الاسم / الفريق</th>
+                            <th>النقاط</th>
+                            <th>الزمن (ثانية)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="winnersModal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 أبطال المهرجان 🎉</h2>
+            <div id="top3List"></div>
+            <button class="btn-danger" style="margin-top:20px" onclick="document.getElementById('winnersModal').style.display='none'">إغلاق البطاقة</button>
+        </div>
+    </div>
+
+    <div id="confetti-container"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            }
+        });
+
+        // Global Variables
+        let unassignedStudents = []; // Base list of all added students
+        let teams = []; // Teams structure
+        let gameEntities = []; // The entities playing (either individuals or teams)
+        
+        let currentEntityIndex = 0; 
+        let currentCorrectAnswer = 0; 
+        let numFormat = 'hindi';
+        let questionStartTime = 0; let timerInterval; let accumulatedTime = 0;
+        const hindiDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+        let dragStartIndexIndividual = null;
+        let draggedStudentTeam = null; let draggedSourceIdTeam = null;
+
+        // Utilities
+        function formatNum(num) {
+            let strNum = num.toString();
+            if (numFormat === 'hindi') return strNum.replace(/[0-9]/g, d => hindiDigits[d]);
+            return strNum; 
+        }
+
+        function toggleNumberFormat() {
+            const btn = document.getElementById('formatBtn');
+            if (numFormat === 'hindi') { numFormat = 'arabic'; btn.innerText = 'الأرقام: عربية (123)'; } 
+            else { numFormat = 'hindi'; btn.innerText = 'الأرقام: هندية (١٢٣)'; }
+        }
+
+        function speakText(text, callback) {
+            if (!('speechSynthesis' in window)) { if(callback) callback(); return; }
+            window.speechSynthesis.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(text); 
+            utterance.lang = 'ar-SA'; utterance.rate = 0.9; utterance.pitch = 1.1;
+            const voices = window.speechSynthesis.getVoices(); 
+            const arabicVoice = voices.find(v => v.lang.includes('ar-SA')) || voices.find(v => v.lang.includes('ar')); 
+            if (arabicVoice) utterance.voice = arabicVoice;
+            let hasFiredCallback = false; utterance.onend = () => { if(!hasFiredCallback && callback) { hasFiredCallback = true; callback(); } };
+            if (callback) setTimeout(() => { if(!hasFiredCallback) { hasFiredCallback = true; callback(); } }, text.length * 150 + 1000);
+            window.speechSynthesis.speak(utterance);
+        }
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+
+        // Setup Mode Logic
+        function toggleGameMode() {
+            const mode = document.getElementById('gameModeSelect').value;
+            if (mode === 'teams') {
+                document.getElementById('studentsList').style.display = 'none';
+                document.getElementById('teamsCountWrapper').style.display = 'inline-block';
+                document.getElementById('teamsSetupGrid').style.display = 'grid';
+                renderTeamsUI();
+            } else {
+                document.getElementById('studentsList').style.display = 'grid';
+                document.getElementById('teamsCountWrapper').style.display = 'none';
+                document.getElementById('teamsSetupGrid').style.display = 'none';
+                renderIndividualUI();
+            }
+        }
+
+        function addStudent() {
+            const nameInput = document.getElementById('studentName'); const name = nameInput.value.trim();
+            if (name !== "" && !unassignedStudents.includes(name)) { 
+                unassignedStudents.push(name); 
+                updateCurrentUI(); 
+                nameInput.value = ""; nameInput.focus(); 
+            }
+        }
+
+        function deleteAllStudents() { 
+            if (confirm("هل أنت متأكد من حذف جميع الطلاب؟")) { 
+                unassignedStudents = []; teams.forEach(t => t.members = []); updateCurrentUI(); 
+            } 
+        }
+
+        function updateCurrentUI() {
+            const mode = document.getElementById('gameModeSelect').value;
+            if (mode === 'teams') renderTeamsUI(true); else renderIndividualUI();
+        }
+
+        // --- Individual Mode Setup ---
+        function renderIndividualUI() {
+            const list = document.getElementById('studentsList'); list.innerHTML = "";
+            unassignedStudents.forEach((studentName, index) => {
+                const badge = document.createElement('div'); badge.className = 'student-badge'; badge.draggable = true; badge.dataset.index = index;
+                badge.innerHTML = `<div style="display:flex; align-items:center;"><span class="drag-handle">☰</span><span style="margin-right:10px;">${studentName}</span></div><button class="delete-btn" onclick="deleteStudentIndividual(${index})">✖</button>`;
+                badge.addEventListener('dragstart', function(e) { dragStartIndexIndividual = +this.dataset.index; this.style.opacity = '0.5'; e.dataTransfer.effectAllowed = 'move'; });
+                badge.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('over'); });
+                badge.addEventListener('dragleave', function() { this.classList.remove('over'); });
+                badge.addEventListener('drop', function(e) { e.stopPropagation(); const dragEndIndex = +this.dataset.index; this.classList.remove('over'); swapStudentsIndividual(dragStartIndexIndividual, dragEndIndex); });
+                badge.addEventListener('dragend', function() { this.style.opacity = '1'; document.querySelectorAll('.student-badge').forEach(b => b.classList.remove('over')); });
+                list.appendChild(badge);
+            });
+        }
+        function deleteStudentIndividual(index) { unassignedStudents.splice(index, 1); renderIndividualUI(); }
+        function swapStudentsIndividual(fromIndex, toIndex) { const itemToMove = unassignedStudents.splice(fromIndex, 1)[0]; unassignedStudents.splice(toIndex, 0, itemToMove); renderIndividualUI(); }
+
+        // --- Teams Mode Setup ---
+        function renderTeamsUI(keepExisting = false) {
+            const numTeams = parseInt(document.getElementById('teamsCountSelect').value);
+            if (!keepExisting) {
+                while(teams.length < numTeams) { teams.push({ id: teams.length, name: `الفريق ${teams.length+1}`, members: [] }); }
+                while(teams.length > numTeams) { const removed = teams.pop(); unassignedStudents.push(...removed.members); }
+            }
+            const grid = document.getElementById('teamsSetupGrid'); grid.innerHTML = '';
+            grid.appendChild(createTeamBox('unassigned', 'الطلاب غير الموزعين', unassignedStudents));
+            teams.forEach(t => grid.appendChild(createTeamBox(t.id, t.name, t.members)));
+        }
+        function createTeamBox(id, title, members) {
+            const box = document.createElement('div'); box.className = 'team-box'; box.innerHTML = `<h3>${title} <span style="font-size:0.8em; color:#fff">(${members.length})</span></h3>`;
+            box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
+            box.addEventListener('dragleave', e => box.classList.remove('over'));
+            box.addEventListener('drop', e => handleDropTeam(e, id));
+            members.forEach(m => {
+                const pill = document.createElement('div'); pill.className = 'student-pill'; pill.draggable = true;
+                pill.innerHTML = `<span>${m}</span> <button class="del-pill-btn" onclick="removeStudentTeam('${m}', '${id}')">✖</button>`;
+                pill.addEventListener('dragstart', e => { draggedStudentTeam = m; draggedSourceIdTeam = id; });
+                box.appendChild(pill);
+            });
+            return box;
+        }
+        function handleDropTeam(e, targetId) { e.preventDefault(); e.currentTarget.classList.remove('over'); if(draggedSourceIdTeam == targetId) return; if(draggedSourceIdTeam === 'unassigned') unassignedStudents = unassignedStudents.filter(s => s !== draggedStudentTeam); else teams[draggedSourceIdTeam].members = teams[draggedSourceIdTeam].members.filter(s => s !== draggedStudentTeam); if(targetId === 'unassigned') unassignedStudents.push(draggedStudentTeam); else teams[targetId].members.push(draggedStudentTeam); renderTeamsUI(true); }
+        function removeStudentTeam(name, sourceId) { if(sourceId === 'unassigned') unassignedStudents = unassignedStudents.filter(s => s !== name); else teams[sourceId].members = teams[sourceId].members.filter(s => s !== name); renderTeamsUI(true); }
+        
+        function randomizeTeams() {
+            let all = [...unassignedStudents]; teams.forEach(t => { all.push(...t.members); t.members = []; });
+            unassignedStudents = [];
+            for(let i=all.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [all[i],all[j]] = [all[j],all[i]]; }
+            let tIdx = 0; all.forEach(s => { teams[tIdx].members.push(s); tIdx = (tIdx + 1) % teams.length; });
+            renderTeamsUI(true);
+        }
+
+        // --- File Upload ---
+        async function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return; const fileName = file.name.toLowerCase(); const reader = new FileReader();
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) { reader.onload = e => { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let names = []; json.forEach(row => { row.forEach(cell => { if (typeof cell === 'string' && cell.trim().length > 1) names.push(cell.trim()); }); }); processNamesArray(names); }; reader.readAsArrayBuffer(file); }
+            else if (fileName.endsWith('.docx')) { reader.onload = e => { mammoth.extractRawText({arrayBuffer: e.target.result}).then(res => processRawText(res.value)); }; reader.readAsArrayBuffer(file); }
+            else if (fileName.endsWith('.pdf')) { reader.onload = async e => { if (typeof pdfjsLib === 'undefined') { alert("مكتبة PDF لم تُحمل بعد."); return; } const typedarray = new Uint8Array(e.target.result); const pdf = await pdfjsLib.getDocument(typedarray).promise; let fullText = ""; for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const textContent = await page.getTextContent(); fullText += textContent.items.map(item => item.str).join(" ") + "\n"; } processRawText(fullText); }; reader.readAsArrayBuffer(file); }
+            else { reader.onload = e => processRawText(e.target.result); reader.readAsText(file); }
+        }
+        function processRawText(text) { let names = text.split(/[\n,\t\r]+/).map(n => n.trim()).filter(n => n.length > 1); processNamesArray(names); }
+        function processNamesArray(namesList) { namesList.forEach(name => { if (!unassignedStudents.includes(name)) unassignedStudents.push(name); }); updateCurrentUI(); }
+
+        // --- Core Game Flow ---
+        function startGame() {
+            const mode = document.getElementById('gameModeSelect').value;
+            gameEntities = [];
+            
+            if (mode === 'individual') {
+                if (unassignedStudents.length === 0) { alert("الرجاء إضافة طلاب للعب!"); return; }
+                unassignedStudents.forEach(name => { gameEntities.push({ type: 'individual', name: name, score: 0, totalTime: 0 }); });
+            } else {
+                let validTeams = teams.filter(t => t.members.length > 0);
+                if (validTeams.length === 0) { alert("الرجاء وضع الطلاب داخل الفرق!"); return; }
+                validTeams.forEach(t => { gameEntities.push({ type: 'team', name: t.name, members: [...t.members], currentMemberIndex: 0, score: 0, totalTime: 0 }); });
+            }
+
+            currentEntityIndex = 0;
+            document.getElementById('setupArea').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            speakText("بسم الله، نبدأ مهرجان الأعداد!", null);
+            document.getElementById('mainContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            nextTurn();
+        }
+
+        function returnToSetup() { clearInterval(timerInterval); document.getElementById('gameArea').style.display = 'none'; document.getElementById('setupArea').style.display = 'block'; window.speechSynthesis.cancel(); }
+        
+        function nextTurn() {
+            // Infinite Loop logic: if we reach the end of the entities array, just loop back to 0.
+            if (currentEntityIndex >= gameEntities.length) { 
+                currentEntityIndex = 0; 
+            }
+            
+            const entity = gameEntities[currentEntityIndex];
+            document.getElementById('questionScreen').style.display = 'none';
+            document.getElementById('readyScreen').style.display = 'block';
+            
+            let displayName = entity.name;
+            let announceText = "";
+            if (entity.type === 'team') {
+                let memberName = entity.members[entity.currentMemberIndex];
+                document.getElementById('readyTeamText').innerText = `دور: ${entity.name}`;
+                displayName = `البطل: ${memberName}`;
+                announceText = `دور ${entity.name}، بطل هذه الجولة هو ${memberName}. مستعد؟`;
+            } else {
+                document.getElementById('readyTeamText').innerText = "الآن دور البطل";
+                announceText = `دور البطل ${entity.name}. مستعد؟`;
+            }
+            
+            document.getElementById('readyStudentName').innerText = displayName;
+            speakText(announceText, null);
+        }
+
+        function startStudentQuestion() {
+            document.getElementById('readyScreen').style.display = 'none'; 
+            document.getElementById('questionScreen').style.display = 'block'; 
+            
+            const entity = gameEntities[currentEntityIndex];
+            let displayTitle = (entity.type === 'team') ? `دور: ${entity.name} (البطل: ${entity.members[entity.currentMemberIndex]})` : `البطل: ${entity.name}`;
+            document.getElementById('currentStudentDisplay').innerText = displayTitle;
+            
+            generateQuestion();
+            document.getElementById('mainContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            accumulatedTime = 0;
+            questionStartTime = Date.now(); 
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => { 
+                const elapsed = accumulatedTime + ((Date.now() - questionStartTime) / 1000); 
+                document.getElementById('timerDisplay').innerText = `⏱️ ${formatNum(elapsed.toFixed(1))} ثانية`; 
+            }, 100);
+        }
+
+        function generateQuestion() {
+            const level = parseInt(document.getElementById('levelSelect').value);
+            const optionsCount = parseInt(document.getElementById('optionsCountSelect').value);
+            let min = (level === 100) ? 1 : 100;
+            let max = (level === 100) ? 98 : 997;
+
+            const number = Math.floor(Math.random() * (max - min)) + min;
+            const qType = Math.floor(Math.random() * 4); 
+            
+            let questionText = ""; let displayHTML = ""; let correctAnswer = 0;
+
+            if (qType === 0) {
+                questionText = "ما العدد الذي يَسْبِق العدد التالي؟ (قبله)";
+                displayHTML = `<div class="target-digit">${formatNum(number)}</div>`;
+                correctAnswer = number - 1;
+            } else if (qType === 1) {
+                questionText = "ما العدد الذي يَلِي العدد التالي؟ (بعده)";
+                displayHTML = `<div class="target-digit">${formatNum(number)}</div>`;
+                correctAnswer = number + 1;
+            } else if (qType === 2) {
+                questionText = "ما العدد الذي يَقَع بَيْنَ العددين؟";
+                displayHTML = `<span style="color:#bdc3c7">${formatNum(number)}</span> <span class="target-digit" style="margin: 0 15px;">؟</span> <span style="color:#bdc3c7">${formatNum(number + 2)}</span>`;
+                correctAnswer = number + 1;
+            } else {
+                questionText = "أكمل نمط الأعداد المتتالية:";
+                displayHTML = `<div style="direction: rtl;"><span style="color:#bdc3c7">${formatNum(number)}</span> ، <span style="color:#bdc3c7">${formatNum(number + 1)}</span> ، <span class="target-digit">؟</span> ، <span style="color:#bdc3c7">${formatNum(number + 3)}</span></div>`;
+                correctAnswer = number + 2;
+            }
+
+            currentCorrectAnswer = correctAnswer;
+            document.getElementById('questionTitleText').innerText = questionText;
+            document.getElementById('questionDisplay').innerHTML = displayHTML;
+            generateOptionsForOrdering(currentCorrectAnswer, number, qType, optionsCount);
+        }
+
+        function generateOptionsForOrdering(correctAnswer, baseNumber, qType, count) {
+            const options = new Set();
+            options.add(correctAnswer);
+            
+            while (options.size < count) {
+                let diff = Math.floor(Math.random() * 5) + 1;
+                let sign = Math.random() > 0.5 ? 1 : -1;
+                let wrongAnswer = correctAnswer + (diff * sign);
+                if (wrongAnswer < 0) wrongAnswer = correctAnswer + diff;
+                
+                if (options.size === 1) {
+                    if (qType === 0) options.add(baseNumber + 1);
+                    else if (qType === 1) options.add(baseNumber - 1);
+                    else if (qType === 2) options.add(baseNumber); 
+                    else options.add(baseNumber + 3);
+                } else {
+                    options.add(wrongAnswer);
+                }
+            }
+
+            const optionsArray = Array.from(options).sort(() => Math.random() - 0.5);
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = "";
+            
+            optionsArray.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = formatNum(opt);
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedAnswer, clickedBtn) {
+            clearInterval(timerInterval); 
+            const timeTaken = accumulatedTime + ((Date.now() - questionStartTime) / 1000); 
+            
+            const entity = gameEntities[currentEntityIndex];
+            entity.totalTime += timeTaken;
+            
+            let announceName = entity.type === 'team' ? entity.members[entity.currentMemberIndex] : entity.name;
+
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true); 
+            const emojiDiv = document.getElementById('feedbackEmoji');
+            
+            if (selectedAnswer === currentCorrectAnswer) {
+                entity.score += 10; clickedBtn.style.backgroundColor = "var(--success)"; emojiDiv.innerText = "🤩"; emojiDiv.classList.add('show-emoji'); startConfetti(2000); 
+                speakText(`أحسنت يا بطل ${announceName}، إجابة صحيحة!`, () => finishTurn(emojiDiv, entity));
+            } else {
+                clickedBtn.style.backgroundColor = "var(--danger)"; emojiDiv.innerText = "😢"; emojiDiv.classList.add('show-emoji');
+                speakText(`حاول مرة أخرى يا ${announceName}`, () => finishTurn(emojiDiv, entity));
+            }
+        }
+
+        function finishTurn(emojiDiv, entity) {
+            setTimeout(() => { 
+                emojiDiv.classList.remove('show-emoji'); 
+                if (entity.type === 'team') {
+                    entity.currentMemberIndex = (entity.currentMemberIndex + 1) % entity.members.length;
+                }
+                currentEntityIndex++; 
+                nextTurn(); 
+            }, 500); 
+        }
+
+        function showMidGameResults() {
+            clearInterval(timerInterval);
+            if(document.getElementById('questionScreen').style.display === 'block') {
+                accumulatedTime += ((Date.now() - questionStartTime) / 1000);
+            }
+            window.speechSynthesis.cancel();
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('resultsArea').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'inline-block';
+            renderLeaderboard();
+        }
+
+        function resumeGame() {
+            document.getElementById('resultsArea').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            if (document.getElementById('questionScreen').style.display === 'block') {
+                questionStartTime = Date.now();
+                timerInterval = setInterval(() => { 
+                    const elapsed = accumulatedTime + ((Date.now() - questionStartTime) / 1000); 
+                    document.getElementById('timerDisplay').innerText = `⏱️ ${formatNum(elapsed.toFixed(1))} ثانية`; 
+                }, 100);
+            }
+        }
+
+        function endGameEarly() { clearInterval(timerInterval); window.speechSynthesis.cancel(); endAndShowResults(); }
+
+        function endAndShowResults() { 
+            document.getElementById('gameArea').style.display = 'none'; 
+            document.getElementById('resultsArea').style.display = 'block'; 
+            document.getElementById('resumeBtn').style.display = 'none';
+            renderLeaderboard(); 
+        }
+        
+        function resetGameKeepStudents() { 
+            gameEntities.forEach(e => { e.score = 0; e.totalTime = 0; if(e.type==='team') e.currentMemberIndex = 0; }); 
+            currentEntityIndex = 0; 
+            document.getElementById('resultsArea').style.display = 'none'; 
+            document.getElementById('setupArea').style.display = 'block'; 
+            window.speechSynthesis.cancel();
+        }
+
+        function getRankedEntities() { 
+            let sortedEntities = [...gameEntities].filter(e => e.score > 0 || e.totalTime > 0).sort((a, b) => { if (b.score !== a.score) return b.score - a.score; return parseFloat(a.totalTime.toFixed(1)) - parseFloat(b.totalTime.toFixed(1)); }); 
+            if(sortedEntities.length === 0) return sortedEntities;
+            sortedEntities[0].rank = 1;
+            for(let i = 1; i < sortedEntities.length; i++){
+                if(sortedEntities[i].score === sortedEntities[i-1].score && sortedEntities[i].totalTime.toFixed(1) === sortedEntities[i-1].totalTime.toFixed(1)) { sortedEntities[i].rank = sortedEntities[i-1].rank; } else { sortedEntities[i].rank = sortedEntities[i-1].rank + 1; }
+            }
+            return sortedEntities; 
+        }
+
+        function renderLeaderboard() {
+            const rankedEntities = getRankedEntities(); const tbody = document.getElementById('resultsTableBody'); tbody.innerHTML = "";
+            rankedEntities.forEach((entity) => {
+                const tr = document.createElement('tr'); let rankText = formatNum(entity.rank); 
+                let medal = ""; if (entity.rank === 1) { tr.className = "rank-1"; medal = "🥇 "; } else if (entity.rank === 2) { medal = "🥈 "; tr.className = "rank-2"; } else if (entity.rank === 3) { medal = "🥉 "; tr.className = "rank-3"; }
+                let displayName = entity.type === 'team' ? `${entity.name}` : entity.name;
+                tr.innerHTML = `<td>${medal} ${rankText}</td><td>${displayName}</td><td>${formatNum(entity.score)}</td><td>${formatNum(entity.totalTime.toFixed(1))}</td>`; tbody.appendChild(tr);
+            });
+        }
+
+        function showTop3Modal() {
+            const rankedEntities = getRankedEntities(); const topEntities = rankedEntities.filter(s => s.rank <= 3); 
+            const modal = document.getElementById('winnersModal'); const list = document.getElementById('top3List'); list.innerHTML = "";
+            
+            let rank1 = topEntities.filter(s => s.rank === 1); 
+            let rank2 = topEntities.filter(s => s.rank === 2); 
+            let rank3 = topEntities.filter(s => s.rank === 3);
+            
+            let announceText = "نتائج المهرجان هي. ";
+            
+            if (rank1.length > 0) { 
+                let displayHTML = rank1.map(e => e.type === 'team' ? `( ${e.name} ) <br> <span style="font-size:0.8em; color:#fff">${e.members.join(' ، ')}</span>` : e.name).join("<br>");
+                let speechNames = rank1.map(e => e.type === 'team' ? `فريق ${e.name} والأبطال هم ${e.members.join(' و ')}` : e.name).join(" ، و ");
+                list.innerHTML += `<div class="winner-item">🥇 المركز الأول : <br> ${displayHTML}</div>`; 
+                announceText += `المركز الأول للأبطال ${speechNames}. `;
+            }
+            if (rank2.length > 0) { 
+                let displayHTML = rank2.map(e => e.type === 'team' ? `( ${e.name} ) <br> <span style="font-size:0.8em; color:#fff">${e.members.join(' ، ')}</span>` : e.name).join("<br>");
+                list.innerHTML += `<div class="winner-item">🥈 المركز الثاني : <br> ${displayHTML}</div>`; 
+            }
+            if (rank3.length > 0) { 
+                let displayHTML = rank3.map(e => e.type === 'team' ? `( ${e.name} ) <br> <span style="font-size:0.8em; color:#fff">${e.members.join(' ، ')}</span>` : e.name).join("<br>");
+                list.innerHTML += `<div class="winner-item">🥉 المركز الثالث : <br> ${displayHTML}</div>`; 
+            }
+            
+            modal.style.display = 'flex'; startConfetti(5000); speakText(announceText, null);
+        }
+
+        function startConfetti(durationMs) {
+            const container = document.getElementById('confetti-container'); container.innerHTML = ''; const colors = ['#FFD700', '#3498db', '#e74c3c', '#2ecc71', '#9b59b6'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div'); confetti.style.position = 'absolute'; confetti.style.width = '12px'; confetti.style.height = '12px'; confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; confetti.style.left = Math.random() * 100 + 'vw'; confetti.style.top = '-20px'; confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0'; confetti.style.transform = `rotate(${Math.random() * 360}deg)`; const fallDuration = (Math.random() * 3 + 2) + 's'; confetti.style.transition = `top ${fallDuration} ease-in, left ${fallDuration} ease-in-out, transform ${fallDuration}`; container.appendChild(confetti);
+                setTimeout(() => { confetti.style.top = '100vh'; confetti.style.left = (parseFloat(confetti.style.left) + (Math.random() * 20 - 10)) + 'vw'; confetti.style.transform = `rotate(${Math.random() * 720}deg)`; }, 50);
+            }
+            setTimeout(() => { container.innerHTML = ''; }, durationMs || 4000);
+        }
+    </script>
 </body>
-
 </html>

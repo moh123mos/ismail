@@ -1,345 +1,1231 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>بينجو جمع العدد ونفسه</title>
-  <link rel="stylesheet" href="../style.css" />
-  <style>
-    /* only what is specific to this game; the look comes from ../style.css */
-    :root { --game: oklch(0.84 0.11 300); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بينجو التعلم المتمايز - جمع العدد ونفسه</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 
-    /* ---- the bingo board: a grid of cards, each a real button ---- */
-    .bingo-board { --n: 5; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--s-1); margin-top: var(--s-6); }
-    .tile {
-      --t: var(--c6); --td: var(--c6d);
-      flex-direction: column; gap: 0; min-height: 3rem; aspect-ratio: 1 / 0.85; padding: var(--s-1); min-width: 0;
-      border-radius: 1rem; background: var(--t); box-shadow: 0 0.3rem 0 var(--td);
-      font: 800 1rem/1.1 var(--f-display);
-    }
-    .tile[data-cat="APP"] { --t: var(--c4); --td: var(--c4d); }
-    .tile[data-cat="CHALL"] { --t: var(--c2); --td: var(--c2d); }
-    .tile.is-active { outline: 4px solid var(--ink); outline-offset: 2px; }
-    .tile.is-spinning { transform: translateY(-0.3rem) scale(1.06); box-shadow: 0 0.6rem 0 var(--td); }
-    .tile.is-claimed { background: var(--sea-deep); color: var(--white); box-shadow: 0 0.3rem 0 var(--sea-deeper); }
-    .tile.is-bingo { background: var(--sun); color: var(--ink); box-shadow: 0 0.3rem 0 var(--c2d); }
-    .tile[aria-disabled="true"] { cursor: default; }
-    .tile__name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 0.9rem/1.2 var(--f-body); }
-    .tile i { font-size: 1.3em; }
+        :root {
+            /* Theme Colors - Deep vibrant space/ocean blend */
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.95);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Category Colors */
+            --core-color: #10b981; /* Green - أساسي */
+            --app-color: #3b82f6; /* Blue - تطبيق */
+            --chall-color: #f59e0b; /* Orange - تحدي */
+            
+            /* Team Colors */
+            --team-1: #ec4899; /* Pink */
+            --team-2: #8b5cf6; /* Purple */
+            --team-3: #06b6d4; /* Cyan */
+            --team-4: #eab308; /* Yellow */
 
-    .bingo-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
-    .bingo-legend .kind-chip { min-height: 2rem; padding-inline: var(--s-3); font-size: 1rem; }
+            --font-ar: 'Cairo', sans-serif;
+        }
 
-    /* ---- extras under a question: hint + the teacher's suggested answer ---- */
-    .bingo-extra { display: grid; justify-items: center; gap: var(--s-3); margin-top: var(--s-4); }
-    .bingo-note { max-width: 42ch; padding: var(--s-3) var(--s-4); border-radius: 1.25rem; background: var(--white); font-weight: 600; text-align: center; }
-    .bingo-answer summary { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 2.75rem; padding: 0 var(--s-4); border-radius: 999px; background: var(--white); cursor: pointer; font-weight: 600; }
-    .bingo-answer[open] summary { margin-bottom: var(--s-2); }
+        * { box-sizing: border-box; font-family: var(--font-ar); }
 
-    @media (max-width: 40rem) {
-      .tile { font-size: 0.95rem; }
-    }
-  </style>
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            height: 100vh; width: 100vw;
+            user-select: none;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.2), transparent 30%),
+                radial-gradient(circle at 85% 30%, rgba(245, 158, 11, 0.2), transparent 30%),
+                linear-gradient(to bottom, #020617, #0f172a);
+        }
+
+        .bg-shapes {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1; overflow: hidden;
+        }
+        .shape {
+            position: absolute; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            animation: float 20s infinite linear;
+        }
+        @keyframes float {
+            0% { transform: translateY(110vh) rotate(0deg); }
+            100% { transform: translateY(-10vh) rotate(360deg); }
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1);
+            z-index: 10; height: 65px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .game-title {
+            font-size: 1.6rem; font-weight: 900;
+            background: linear-gradient(45deg, #60a5fa, #c084fc);
+            background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header-controls { display: flex; gap: 10px; align-items: center;}
+        .header-controls button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: white;
+            padding: 8px 15px; border-radius: 8px; cursor: pointer;
+            font-weight: bold; transition: all 0.2s; font-size: 1rem;
+        }
+        .header-controls button:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px);}
+
+        .main-container {
+            display: flex; flex: 1; overflow: hidden; position: relative;
+        }
+
+        .sidebar {
+            width: 280px; background: var(--panel-bg); backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255,255,255,0.05); padding: 15px;
+            display: flex; flex-direction: column; gap: 10px; z-index: 5;
+            overflow-y: auto; box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+        }
+
+        .team-card {
+            background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px;
+            border: 2px solid transparent; transition: all 0.3s ease;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .team-card.active-team {
+            transform: scale(1.03); border-color: currentColor;
+            box-shadow: 0 0 20px currentColor, inset 0 0 10px rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
+        }
+        .team-indicator {
+            position: absolute; top: 0; right: 0; width: 6px; height: 100%;
+        }
+        
+        .team-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 5px; margin-bottom: 5px;}
+        .team-name { font-weight: 900; font-size: 1.2rem; }
+        .team-score { font-size: 1.5rem; font-weight: 900; background: rgba(0,0,0,0.4); padding: 2px 10px; border-radius: 8px;}
+        
+        .team-members { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+        .member-row { display: flex; align-items: center; gap: 5px; color: var(--text-muted);}
+        .member-row.leader { color: #fbbf24; font-weight: bold; }
+
+        .board-wrapper {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            perspective: 1200px; padding: 20px; position: relative;
+        }
+
+        .bingo-board {
+            display: grid;
+            gap: 12px;
+            width: 85vmin; max-width: 750px; aspect-ratio: 1;
+            transform: rotateX(12deg); transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .board-wrapper.zoomed .bingo-board { transform: rotateX(0deg) scale(0.9); }
+
+        .tile {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .board-mode-random .tile { pointer-events: none; }
+        .board-mode-manual .tile:hover:not(.claimed):not(.spinning) { transform: translateZ(15px); }
+        .tile.spinning { border: 3px solid white; border-radius:12px; box-shadow: 0 0 25px white; transform: scale(1.08) translateZ(20px);}
+
+        .tile-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 12px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4), inset 0 2px 2px rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.1); padding: 5px; text-align: center;
+        }
+
+        .tile-front { background: linear-gradient(135deg, #1e293b, #0f172a); }
+        .tile[data-cat="CORE"] .tile-front { border-bottom: 5px solid var(--core-color); }
+        .tile[data-cat="APP"] .tile-front { border-bottom: 5px solid var(--app-color); }
+        .tile[data-cat="CHALL"] .tile-front { border-bottom: 5px solid var(--chall-color); }
+
+        .cat-badge {
+            padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 900;
+            margin-bottom: 10px; width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .cat-CORE { background: rgba(16, 185, 129, 0.2); color: var(--core-color); border: 1px solid var(--core-color);}
+        .cat-APP { background: rgba(59, 130, 246, 0.2); color: var(--app-color); border: 1px solid var(--app-color);}
+        .cat-CHALL { background: rgba(245, 158, 11, 0.2); color: var(--chall-color); border: 1px solid var(--chall-color);}
+
+        .points-display { font-size: 1.8rem; font-weight: 900; color: white; }
+
+        .tile-back {
+            background: linear-gradient(135deg, #334155, #1e293b);
+            transform: rotateY(180deg); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 5px;
+        }
+        .tile.flipped { transform: rotateY(180deg) translateZ(40px) scale(1.15); z-index: 10; }
+        .tile.claimed { pointer-events: none; }
+        
+        .claimed-team-name {
+            font-size: 1.2rem; font-weight: 900; color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); text-align: center; line-height:1.2;
+            word-wrap: break-word; width: 100%;
+        }
+
+        .randomizer-btn {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+            color: #000; border: none; padding: 15px 40px; border-radius: 30px;
+            font-size: 1.5rem; font-weight: 900; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.5); z-index: 5;
+            transition: all 0.2s; display: none;
+            align-items: center; gap:10px;
+        }
+        .randomizer-btn:hover { transform: translateX(-50%) scale(1.05); }
+
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .question-card {
+            background: var(--panel-bg); border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 20px; width: 90%; max-width: 750px; padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+            transform: translateY(50px) scale(0.9); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-overlay.active .question-card { transform: translateY(0) scale(1); }
+
+        .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; position:relative;}
+        .q-task-type { font-size: 1.5rem; font-weight: 900; display:flex; align-items:center; gap:10px;}
+        .q-points { font-size: 1.5rem; font-weight: 900; background: #334155; padding: 5px 20px; border-radius: 20px;}
+        
+        .secret-teacher-btn {
+            background: transparent; border: none; font-size: 1.2rem; cursor: pointer;
+            opacity: 0.2; transition: opacity 0.3s; padding: 5px; outline: none;
+        }
+        .secret-teacher-btn:hover { opacity: 1; }
+
+        .q-body { font-size: 2.2rem; line-height: 1.5; margin-bottom: 30px; text-align: center; font-weight: bold; color: #fff;}
+        .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        
+        .btn-option {
+            background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2);
+            padding: 15px; border-radius: 12px; color: white; font-size: 1.6rem; font-weight: bold;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-option:hover { background: rgba(255,255,255,0.15); border-color: white; transform: translateY(-2px);}
+        .btn-option.correct { background: var(--core-color) !important; border-color: var(--core-color) !important; }
+        .btn-option.wrong { background: #ef4444 !important; border-color: #ef4444 !important; }
+
+        .support-tools { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;}
+        .btn-support {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-main); padding: 10px 20px; border-radius: 20px;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; font-size:1.1rem; transition: background 0.2s;
+        }
+        .btn-support:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+        .btn-support:disabled { opacity: 0.3; cursor: not-allowed; }
+        #btnHint { display: none; } /* Hidden by default */
+
+        .support-content {
+            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 1.4rem; border-right: 4px solid var(--app-color); display: none; text-align: center;
+        }
+        
+        .teacher-answer-area {
+            background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.5);
+            padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none;
+            text-align: center; font-size: 1.3rem; color: #a7f3d0;
+        }
+
+        .teacher-judge { display: none; justify-content: center; gap: 20px; margin-top: 20px; padding-top:20px; border-top: 1px dashed rgba(255,255,255,0.2);}
+        .btn-accept { background: var(--core-color); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 1.3rem; cursor:pointer; font-weight:bold;}
+        .btn-retry { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 1.3rem; cursor:pointer; font-weight:bold;}
+
+        .setup-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 200; display: flex; flex-direction: column;
+            padding: 30px; overflow-y: auto; align-items: center;
+        }
+        .setup-container { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 25px; }
+        .setup-header { text-align: center; font-size: 2.8rem; font-weight: 900; color: #60a5fa; margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.5);}
+        
+        .setup-row { display: flex; gap: 25px; flex-wrap: wrap; }
+        .setup-panel {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px; padding: 25px; flex: 1; min-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .setup-panel h3 { margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; color: #fbbf24; display:flex; justify-content:space-between; align-items:center;}
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 1.1rem;}
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 12px; border-radius: 8px; font-size: 1.1rem; outline: none; transition: border-color 0.2s;
+        }
+        .form-group textarea { height: 100px; resize: none; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #3b82f6; }
+
+        .btn-action {
+            background: #3b82f6; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; display:inline-flex; align-items:center; gap:5px; justify-content:center;
+        }
+        .btn-action:hover { background: #2563eb; }
+        .btn-action.danger { background: #ef4444; }
+        .btn-action.danger:hover { background: #dc2626; }
+
+        .teams-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px;}
+        .team-dropzone {
+            background: rgba(0,0,0,0.5); border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px; padding: 15px; min-height: 180px; display: flex; flex-direction: column;
+        }
+        .team-dropzone.dragover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+        
+        .editable-team-name {
+            background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.3);
+            color: inherit; font-weight: bold; text-align: center; width: 100%; 
+            outline: none; padding: 5px; border-radius: 5px; transition: all 0.2s; margin-bottom: 15px; font-size:1.2rem;
+        }
+        .editable-team-name:focus, .editable-team-name:hover { background: rgba(255,255,255,0.1); border-color: white;}
+
+        .student-item {
+            background: rgba(255,255,255,0.1); padding: 8px 10px; margin-bottom: 8px;
+            border-radius: 8px; cursor: grab; display: flex; justify-content: space-between; align-items: center;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .student-item:hover { background: rgba(255,255,255,0.2); }
+        .student-item:active { cursor: grabbing; transform: scale(0.95); opacity: 0.8; }
+        .student-item.leader { border-right: 5px solid #fbbf24; background: rgba(251, 191, 36, 0.15); }
+        
+        .student-info { display: flex; align-items: center; gap: 8px; }
+        .student-actions { display: flex; align-items: center; gap: 5px; }
+        
+        .leader-badge { font-size: 0.8rem; background: #fbbf24; color: black; padding: 2px 6px; border-radius: 12px; font-weight:bold;}
+        .make-leader-btn { background: transparent; border: none; font-size: 1.1rem; cursor: pointer; filter: grayscale(1); transition: filter 0.2s; padding:0;}
+        .make-leader-btn:hover { filter: grayscale(0); transform: scale(1.1);}
+        
+        .del-student-btn { background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 1rem; padding: 0; transition: transform 0.2s; }
+        .del-student-btn:hover { transform: scale(1.2); color: #ef4444; }
+
+        .start-game-big-btn {
+            background: linear-gradient(45deg, #10b981, #059669); color: white; border: none;
+            padding: 18px 50px; border-radius: 40px; font-size: 1.8rem; font-weight: 900;
+            cursor: pointer; align-self: center; margin-top: 20px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s;
+        }
+        .start-game-big-btn:hover { transform: scale(1.05); box-shadow: 0 15px 35px rgba(16, 185, 129, 0.5); }
+
+        .teacher-panel {
+            position: absolute; top: 0; left: -380px; width: 350px; height: 100%;
+            background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(255,255,255,0.1); padding: 25px; z-index: 150;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display:flex; flex-direction:column; gap:15px; overflow-y:auto;
+        }
+        .teacher-panel.open { left: 0; }
+        
+        .tc-header { display: flex; justify-content: space-between; align-items: center; font-size:1.4rem; font-weight:900; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; color: #60a5fa;}
+        .tc-btn { background: rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1); padding:12px; border-radius:8px; cursor:pointer; text-align:start; font-size:1.1rem; font-weight:bold;}
+        .tc-btn:hover { background: rgba(255,255,255,0.15); }
+        .tc-btn.danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);}
+        .tc-btn.success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);}
+        
+        .tc-toggle-group { display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;}
+        .tc-toggle-group label { color: #fbbf24; font-weight: bold;}
+
+        .bingo-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            display:none; justify-content:center; align-items:center; z-index:300; background:rgba(0,0,0,0.9);
+            flex-direction: column; text-align: center; padding: 20px; backdrop-filter: blur(10px);
+        }
+        .bingo-text { font-size: 6rem; font-weight:900; color:#fbbf24; text-shadow: 0 0 50px rgba(251, 191, 36, 0.8), 0 0 20px #fbbf24; animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+        .bingo-subtext { font-size: 2.5rem; color:#60a5fa; margin-top:10px; font-weight:bold;}
+        .winning-team-display { font-size: 3.5rem; color: white; margin-top: 20px; font-weight: 900; background: rgba(255,255,255,0.1); padding: 15px 50px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);}
+        .winning-members { font-size: 1.8rem; color: #cbd5e1; margin-top: 20px; max-width: 80%; line-height: 1.5;}
+        
+        .overlay-buttons { display: flex; gap: 20px; margin-top: 50px; flex-wrap: wrap; justify-content: center;}
+        
+        @keyframes popIn { 0% {transform:scale(0) translateY(100px); opacity:0;} 100% {transform:scale(1) translateY(0); opacity:1;} }
+    </style>
 </head>
-
 <body>
-  <div id="app"></div>
+    <div class="bg-shapes" id="bgShapes"></div>
 
-  <script src="../common.js"></script>
-  <script src="../game-shell.js"></script>
-  <script>
-    /* ===== أنواع البطاقات ===== */
-    const CATS = {
-      CORE: { label: 'مهارة أساسية', icon: 'puzzle-piece', tone: 'var(--c6)' },
-      APP: { label: 'تطبيق', icon: 'book-open', tone: 'var(--c4)' },
-      CHALL: { label: 'تحدي', icon: 'fire', tone: 'var(--c2)' }
-    };
-
-    /* ===== بنك الأسئلة (من ملف المعلم): obj = اختيار من متعدد (ans = رقم الخيار)، sub = تشرحه الطالب ويحكم المعلم ===== */
-    const BANK = [
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 4 + 4 = 8 ، فما هو ناتج 4 + 5 ؟', opts: ['7', '8', '9', '10'], ans: 2, hint: 'العدد 5 يزيد عن 4 بواحد، أضف 1 للناتج.' },
-      { cat: 'CORE', type: 'obj', task: 'اربط', q: 'لإيجاد ناتج 7 + 8 ، ما هي حقيقة جمع العدد ونفسه التي تساعدك؟', opts: ['6 + 6', '7 + 7', '8 + 8', '9 + 9'], ans: 1, hint: 'ابحث عن العدد الأصغر في الجملة.' },
-      { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'اشرح لفريقك: ماذا نعني بـ "جمع العدد ونفسه مضافاً إليه 1"؟', ansText: 'يعني أن نجمع عدداً مع نفسه، ثم نضيف 1 للناتج لأن أحد العددين يزيد عن الآخر بواحد.', hint: 'تذكر المكعبات عندما نضيف مكعباً واحداً إضافياً.' },
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 6 + 6 = 12 ، فكم يكون 6 + 7 ؟', opts: ['11', '12', '13', '14'], ans: 2, hint: 'الناتج سيكون أكبر بـ 1 من 12.' },
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'حقيقة (العدد ونفسه مطروحاً منه 1) تعني أن الناتج سيكون...', opts: ['أكبر بـ 1', 'أصغر بـ 1', 'نفس الناتج', 'الضعف'], ans: 1, hint: 'ركز في كلمة "مطروحاً منه".' },
-      { cat: 'CORE', type: 'obj', task: 'اربط', q: 'ما الحقيقة المناسبة لإيجاد ناتج 5 + 6 ؟', opts: ['4 + 4', '5 + 5', '6 + 6', '3 + 3'], ans: 1, hint: 'استخدم العدد الأول (الأصغر).' },
-      { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'كيف تستفيد من حقيقة 9 + 9 لمعرفة 8 + 9 ؟', ansText: 'بما أن 8 أقل من 9 بواحد، فإن الناتج سيكون ناتج (9+9) ناقص 1.', hint: '8 أقل من 9 بواحد.' },
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'أي من الجمل التالية تمثل جمع العدد ونفسه؟', opts: ['4 + 5 = 9', '6 + 6 = 12', '7 + 8 = 15', '9 + 1 = 10'], ans: 1, hint: 'العدد يتكرر مرتين.' },
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 8 + 8 = 16 ، فإن 8 + 7 = ...', opts: ['15', '16', '17', '18'], ans: 0, hint: 'العدد 7 أصغر من 8، لذا نطرح 1.' },
-      { cat: 'CORE', type: 'obj', task: 'اختر', q: 'ناتج 2 + 3 هو نفس ناتج (2 + 2) مضافاً إليه...', opts: ['0', '1', '2', '3'], ans: 1, hint: '3 تزيد عن 2 بمقدار كم؟' },
-
-      { cat: 'APP', type: 'obj', task: 'ابحث عن الخطأ', q: 'يقول زميلك: لحساب 6 + 5 نستخدم حقيقة 7 + 7. هل هذا صحيح؟', opts: ['صحيح', 'خطأ، نستخدم 6+6 أو 5+5', 'خطأ، نستخدم 4+4'], ans: 1, hint: 'يجب استخدام أحد الأرقام الموجودة في المسألة.' },
-      { cat: 'APP', type: 'sub', task: 'طبّق', q: 'لديك 7 كرات حمراء و 8 كرات زرقاء. كيف تستخدم درس اليوم لمعرفة المجموع سريعاً؟', ansText: 'أستخدم حقيقة 7+7=14 ثم أضيف 1 ليصبح المجموع 15.', hint: 'العددان هما 7 و 8. فكر في 7+7.' },
-      { cat: 'APP', type: 'obj', task: 'اختر', q: 'أي الجمل تصف قاعدة (جمع العدد ونفسه مضافاً إليه 1)؟', opts: ['3 + 3 = 6', '4 + 5 = 9', '6 + 5 = 11', '1 + 8 = 9'], ans: 1, hint: 'يجب أن يكون العدد الثاني أكبر من الأول بواحد.' },
-      { cat: 'APP', type: 'sub', task: 'طبّق', q: 'ارسم أو تخيل 4 مكعبات و 5 مكعبات. كيف تحسبها كـ (عدد ونفسه)؟', ansText: 'أضع 4 مكعبات بجانب 4 مكعبات (يساوي 8) ثم يتبقى مكعب واحد أضيفه ليصبح 9.', hint: 'قسّم العدد 5 إلى 4 و 1.' },
-      { cat: 'APP', type: 'sub', task: 'اكتشف', q: 'اكتب مسألة جمع يكون حلها باستخدام الحقيقة (8 + 8 + 1).', ansText: 'مسألة 8 + 9.', hint: 'الرقم الأساسي هو 8، والثاني يزيد عنه بواحد.' },
-      { cat: 'APP', type: 'obj', task: 'اختر', q: 'أنا أعرف أن 3 + 3 = 6 ، إذن 3 + 2 = ...', opts: ['7', '5', '4', '8'], ans: 1, hint: 'العدد 2 أقل من 3، فماذا نفعل بالناتج؟' },
-      { cat: 'APP', type: 'obj', task: 'اختر', q: 'الناتج يقل واحداً فقط عند استخدام قاعدة:', opts: ['العدد ونفسه زائد 1', 'العدد ونفسه ناقص 1', 'العدد ونفسه'], ans: 1, hint: 'يقل تعني طرح.' },
-      { cat: 'APP', type: 'sub', task: 'علّل', q: 'لماذا لا تساعدنا حقيقة 4+4 في حل 7+8 ؟', ansText: 'لأن الأرقام بعيدة جداً، قاعدة درس اليوم تشترط استخدام نفس الرقم الموجود في المسألة (7 أو 8).', hint: 'انظر للأرقام الموجودة في مسألة 7+8.' },
-
-      { cat: 'CHALL', type: 'sub', task: 'حلّل', q: 'هل يمكننا استخدام حقيقة 5 + 5 لحل مسألة 5 + 7 ؟ ولماذا؟', ansText: 'لا، لأن درس اليوم يطبق فقط إذا كان الفرق بين العددين هو 1. هنا الفرق 2.', hint: 'الفرق بين 5 و 7 هو 2، وليس 1.' },
-      { cat: 'CHALL', type: 'obj', task: 'توقّع', q: 'إذا كان جمع عدد ونفسه = 14 ، فما هو ناتج جمعه مع العدد السابق له؟', opts: ['13', '15', '14', '16'], ans: 0, hint: 'ما هو العدد الذي إذا جمعته مع نفسه كان 14؟ ثم ما هو العدد السابق له؟' },
-      { cat: 'CHALL', type: 'sub', task: 'إبداع', q: 'ابتكر قصة قصيرة عن طيور على شجرة تتطلب استخدام "جمع العدد ونفسه مضافاً إليه 1".', ansText: 'أمثلة: 6 عصافير على غصن، وانضم إليهم 7 عصافير على غصن آخر. 6+6+1=13.', hint: 'استخدم رقمين متتاليين مثل 6 و 7.' },
-      { cat: 'CHALL', type: 'sub', task: 'تحدٍّ ذهني', q: 'إذا كان 50 + 50 = 100، كيف تستخدم درس اليوم لمعرفة 50 + 51 سريعاً؟', ansText: 'بما أن 51 تزيد عن 50 بواحد، إذن 100 + 1 = 101.', hint: 'القاعدة تعمل مع كل الأرقام حتى الكبيرة!' },
-      { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'ما هو النمط في النواتج عند تطبيق (العدد ونفسه + 1) بالترتيب: 1+2، 2+3، 3+4 ؟', opts: ['تزيد بمقدار 1', 'تزيد بمقدار 2', 'جميعها أعداد زوجية'], ans: 1, hint: 'النواتج هي: 3، 5، 7... ما هو النمط؟' },
-      { cat: 'CHALL', type: 'sub', task: 'قارن', q: 'أيهما أسهل لك في حل 8 + 9 : استخدام (8+8+1) أم (9+9-1)؟ برر إجابتك.', ansText: 'يقبل أي تبرير منطقي للطالب.', hint: 'لا توجد إجابة خاطئة، المهم أن تشرح السبب.' },
-      { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'إذا كان ضعف العدد يساوي 20، فما هو هذا العدد مضافاً إليه العدد الذي يليه؟', opts: ['19', '21', '20', '22'], ans: 1, hint: 'الضعف 20 يعني أن العدد هو 10. العدد الذي يليه هو 11.' }
-    ];
-
-    /* ===== حالة اللعبة ===== */
-    const $ = id => document.getElementById(id);
-    const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    let board = [];            // [{cat, q, by}]  by = اسم الطالب الذي كسب البطاقة
-    let boardSize = 5;
-    let active = null;         // رقم البطاقة المفتوحة الآن
-    let roundCounted = true;   // false بعد "أعد توليد السؤال": لا تُحسب في النتائج ولا تُكسب بها بطاقة
-    let announcedLines = new Set();
-    let spinTimer = null;
-
-    /* لوحة جديدة: ٣٦٪ أساسية و٣٢٪ تطبيق والباقي تحدٍّ، موزعة عشوائياً، وكل بطاقة بسؤال مختلف ما أمكن */
-    function newBoard(size) {
-      boardSize = size;
-      const total = size * size, core = Math.ceil(total * 0.36), app = Math.ceil(total * 0.32);
-      const layout = shuffle([...Array(core).fill('CORE'), ...Array(app).fill('APP'), ...Array(total - core - app).fill('CHALL')]);
-      const pools = {};
-      const draw = cat => {
-        if (!pools[cat] || !pools[cat].length) pools[cat] = shuffle(BANK.filter(q => q.cat === cat));
-        return pools[cat].pop();
-      };
-      board = layout.map(cat => ({ cat, q: draw(cat), by: null }));
-      announcedLines = new Set();
-      active = null;
-    }
-
-    function ensureBoard() {
-      const size = parseInt($('boardSize').value, 10);
-      if (board.length !== size * size || board.every(t => t.by)) newBoard(size);
-    }
-
-    /* ===== الرسم ===== */
-    const canPick = () => gameStarted && !answered && active === null;
-
-    function bingoLines() {
-      const n = boardSize, lines = [];
-      for (let r = 0; r < n; r++) lines.push([...Array(n).keys()].map(c => r * n + c));
-      for (let c = 0; c < n; c++) lines.push([...Array(n).keys()].map(r => r * n + c));
-      lines.push([...Array(n).keys()].map(i => i * n + i));
-      lines.push([...Array(n).keys()].map(i => i * n + (n - 1 - i)));
-      return lines;
-    }
-    /* خط كامل تم كسبه (من أي طالب) ويجمع نوعين مختلفين على الأقل: نفس شرط ملف المعلم */
-    const completeLines = () => bingoLines().filter(l => l.every(i => board[i].by) && new Set(l.map(i => board[i].cat)).size >= 2);
-
-    function renderBoard() {
-      const grid = $('bingoBoard');
-      grid.style.setProperty('--n', boardSize);
-      const inBingo = new Set(completeLines().flat());
-      grid.innerHTML = '';
-      board.forEach((t, i) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'tile' + (t.by ? ' is-claimed' : '') + (inBingo.has(i) ? ' is-bingo' : '') + (i === active ? ' is-active' : '');
-        b.dataset.cat = t.cat; b.dataset.index = i;
-        b.setAttribute('aria-disabled', (t.by || !canPick()) ? 'true' : 'false');
-        b.setAttribute('aria-label', `بطاقة ${toArabicNumber(i + 1)}: ${CATS[t.cat].label}` + (t.by ? ` — كسبها ${t.by}` : ''));
-        b.innerHTML = t.by
-          ? `<i class="ph-fill ph-check-circle" aria-hidden="true"></i><span class="tile__name">${esc(t.by)}</span>`
-          : `<i class="ph-bold ph-${CATS[t.cat].icon}" aria-hidden="true"></i><span>${toArabicNumber(i + 1)}</span>`;
-        grid.appendChild(b);
-      });
-    }
-    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    function clearQuestion() {
-      $('choices').innerHTML = '';
-      $('bingoExtra').hidden = true;
-      $('judge').hidden = true;
-      document.querySelectorAll('#judge button').forEach(b => { b.disabled = false; });
-      $('hintBtn').hidden = true;
-      $('hintText').hidden = true;
-      $('answerBox').hidden = true;
-    }
-
-    /* السؤال المفتوح: يُرسم من جديد عند تبديل نوع الأرقام أيضاً */
-    function renderQuestion() {
-      const tile = board[active], q = tile.q, cat = CATS[tile.cat];
-      $('problem').innerHTML =
-        `<span class="kind-chip" style="--fc:${cat.tone}"><i class="ph-bold ph-${cat.icon}" aria-hidden="true"></i>&nbsp;${esc(q.task)} · ${cat.label}</span>` +
-        `<div class="problem-text">${esc(toArabicText(q.q))}</div>`;
-      clearQuestion();
-      $('bingoExtra').hidden = false;
-      $('hintBtn').hidden = false;
-      $('hintText').textContent = '';
-      $('hintText').innerHTML = esc(toArabicText(q.hint));
-      if (q.type === 'obj') {
-        correctAnsGlobal = q.ans;
-        q.opts.forEach((opt, i) => {
-          const b = document.createElement('button');
-          b.type = 'button'; b.className = 'choice'; b.dataset.key = toArabicNumber(i + 1);
-          b.innerHTML = esc(toArabicText(opt)); b._value = i;
-          b.onclick = () => answerChoice(i);
-          $('choices').appendChild(b);
-        });
-      } else {
-        correctAnsGlobal = null;
-        $('answerBox').hidden = false;
-        $('answerText').innerHTML = esc(toArabicText(q.ansText));
-        $('judge').hidden = false;
-      }
-    }
-
-    /* ===== دورة الجولة ===== */
-    function newRound(ctx, { counted }) {
-      roundCounted = counted;
-      clearTimeout(spinTimer);
-      active = null;
-      clearQuestion();
-      ensureBoard();
-      $('problem').innerHTML = $('pickMode').value === 'random'
-        ? '<span class="problem-text">تدور البطاقات… وتتوقف عند بطاقتك</span>'
-        : '<span class="problem-text">اختر بطاقة من اللوحة</span>';
-      renderBoard();
-      startTimer(() => finish(false, '❌ الوقت انتهى!'));
-      if ($('pickMode').value === 'random') spin();
-    }
-
-    /* الاختيار العشوائي: تضيء البطاقات الحرة واحدة بعد أخرى ثم تتوقف عند إحداها */
-    function spin() {
-      const free = board.map((t, i) => i).filter(i => !board[i].by);
-      let step = 0;
-      const tick = () => {
-        if (!gameStarted || answered) return;
-        const i = free[rnd(0, free.length - 1)];
-        document.querySelectorAll('.tile.is-spinning').forEach(el => el.classList.remove('is-spinning'));
-        const el = document.querySelector(`.tile[data-index="${i}"]`);
-        if (el) el.classList.add('is-spinning');
-        game.sfx('pop', step % 6);
-        if (++step > 12) { openTile(i); return; }
-        spinTimer = setTimeout(tick, 90);
-      };
-      tick();
-    }
-
-    function openTile(i) {
-      if (!canPick() || board[i].by) return;
-      active = i;
-      game.sfx('pop', i % 6);
-      renderBoard();
-      renderQuestion();
-    }
-
-    function lockQuestion(picked) {
-      document.querySelectorAll('#choices .choice').forEach(b => {
-        if (b._value === correctAnsGlobal) b.classList.add('correct');
-        else if (b._value === picked) b.classList.add('wrong');
-        b.disabled = true;
-      });
-      document.querySelectorAll('#judge button').forEach(b => { b.disabled = true; });
-    }
-
-    function answerChoice(i) {
-      if (!gameStarted || answered) return;
-      lockQuestion(i);
-      finish(i === board[active].q.ans);
-    }
-
-    /* نهاية الجولة: الإجابة الصحيحة (في جولة محسوبة) تكسب البطاقة للطالب، وخط كامل يعني "بينجو!" */
-    function finish(correct, message) {
-      if (!gameStarted || answered) return;
-      clearTimeout(spinTimer);
-      lockQuestion(null);
-      let face, speak;
-      if (correct && roundCounted && active !== null) {
-        board[active].by = currentStudent;
-        const lines = completeLines().filter(l => !announcedLines.has(l.join()));
-        lines.forEach(l => announcedLines.add(l.join()));
-        if (lines.length) { message = `🎉 بينجو يا ${currentStudent}! اكتمل خط كامل`; speak = 'بينجو!'; face = '🎉'; }
-        if (board.every(t => t.by)) message = (message || `✅ أحسنت يا ${currentStudent}`) + ' — اكتملت اللوحة، تبدأ لوحة جديدة';
-      }
-      game.finishRound(correct, { counted: roundCounted, message, speak, face });
-      renderBoard();
-    }
-
-    const game = GameShell.mount({
-      id: 'doubles-bingo',
-      storagePrefix: 'doubles_bingo',
-      title: 'بينجو جمع العدد ونفسه',
-      heading: 'بينجو جمع العدد ونفسه',
-      emoji: { code: '1f3b1', fallback: '🎱' },   // نفس إيموجي جزيرتها على الخريطة
-      exportFilename: 'نتائج_بينجو_جمع_العدد_ونفسه.xlsx',
-      timer: { value: 40, min: 10, max: 120 },
-      intro: 'اختر طالباً واضغط «ابدأ اللعب» ثم اختر بطاقة من اللوحة. من يجيب صح يكسب البطاقة، وخط كامل يعني «بينجو!»',
-      settingsHTML: `
-        <div class="toolbar">
-          <div class="group">
-            <label class="label" for="boardSize">حجم اللوحة:</label>
-            <select id="boardSize">
-              <option value="3">٣ × ٣ (٩ بطاقات)</option>
-              <option value="4">٤ × ٤ (١٦ بطاقة)</option>
-              <option value="5" selected>٥ × ٥ (٢٥ بطاقة)</option>
-            </select>
-          </div>
-          <div class="group">
-            <label class="label" for="pickMode">اختيار البطاقة:</label>
-            <select id="pickMode">
-              <option value="manual">يختارها الطالب</option>
-              <option value="random">عشوائي</option>
-            </select>
-          </div>
+    <header>
+        <div class="game-title" id="mainTitle">بينجو التعلم المتمايز: جمع العدد ونفسه </div>
+        <div class="header-controls">
+            <button onclick="toggleSound()" id="soundBtn">🔊 الصوت</button>
+            <button onclick="toggleTeacherPanel()">⚙️ تحكم المعلم</button>
+            <button onclick="toggleFullScreen()">⛶ ملء الشاشة</button>
         </div>
-        <div class="toolbar">
-          <button type="button" id="newBoardBtn"><i class="ph-bold ph-arrows-clockwise" aria-hidden="true"></i> لوحة جديدة</button>
-        </div>`,
-      gameAreaHTML: `
-        <div class="choices" id="choices"></div>
-        <div class="bingo-extra" id="bingoExtra" hidden>
-          <button type="button" id="hintBtn"><i class="ph-bold ph-lightbulb" aria-hidden="true"></i> تلميح</button>
-          <p class="bingo-note" id="hintText" hidden></p>
-          <details class="bingo-answer" id="answerBox" hidden>
-            <summary><i class="ph-bold ph-chalkboard-teacher" aria-hidden="true"></i> الإجابة المقترحة للمعلم</summary>
-            <p class="bingo-note" id="answerText"></p>
-          </details>
-          <div class="judge-row" id="judge" hidden>
-            <button type="button" class="is-ok" id="judgeOk"><i class="ph-bold ph-check" aria-hidden="true"></i> إجابة صحيحة</button>
-            <button type="button" class="is-bad" id="judgeBad"><i class="ph-bold ph-x" aria-hidden="true"></i> إجابة خاطئة</button>
-          </div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar" id="teamsSidebar"></div>
+
+        <div class="board-wrapper" id="boardWrapper">
+            <div class="bingo-board board-mode-manual" id="bingoBoard"></div>
+            <button class="randomizer-btn" id="randomPickBtn" onclick="pickRandomTile()">🎲 اختيار عشوائي</button>
         </div>
-        <div class="bingo-board" id="bingoBoard" aria-label="لوحة البينجو"></div>
-        <div class="bingo-legend" aria-hidden="true">
-          <span class="kind-chip" style="--fc:var(--c6)"><i class="ph-bold ph-puzzle-piece"></i>&nbsp;مهارة أساسية</span>
-          <span class="kind-chip" style="--fc:var(--c4)"><i class="ph-bold ph-book-open"></i>&nbsp;تطبيق</span>
-          <span class="kind-chip" style="--fc:var(--c2)"><i class="ph-bold ph-fire"></i>&nbsp;تحدي</span>
-        </div>`,
-      newRound,
-      onNumbersToggle() {
-        // أرقام اللوحة والسؤال المفتوح تتبع نوع الأرقام، دون تغيير السؤال
-        if (board.length) renderBoard();
-        if (gameStarted && !answered && active !== null) renderQuestion();
-        return false;
-      },
-      onReady() {
-        ensureBoard();
-        renderBoard();
-        $('bingoBoard').addEventListener('click', e => {
-          const t = e.target.closest('.tile');
-          if (t) openTile(parseInt(t.dataset.index, 10));
-        });
-        $('hintBtn').addEventListener('click', () => { $('hintText').hidden = false; game.sfx('pop', 3); });
-        $('judgeOk').addEventListener('click', () => finish(true));
-        $('judgeBad').addEventListener('click', () => finish(false));
-        const resetBoard = () => {
-          if (gameStarted && !answered) return;
-          board = []; ensureBoard(); renderBoard();
+    </div>
+
+    <div class="setup-screen" id="setupScreen">
+        <div class="setup-container">
+            <div class="setup-header">إعداد اللعبة والفرق</div>
+            
+            <div class="setup-row">
+                <div class="setup-panel">
+                    <h3>١. إضافة الطلاب <button class="btn-action danger" style="padding: 5px 10px; font-size:0.9rem;" onclick="deleteAllStudents()">🗑️ مسح الكل</button></h3>
+                    <div class="form-group">
+                        <label>أسماء الطلاب (كل اسم في سطر):</label>
+                        <textarea id="studentsInput" placeholder="أحمد&#10;علي&#10;خالد..."></textarea>
+                    </div>
+                    <div class="form-group" style="display:flex; gap:10px;">
+                        <input type="file" id="fileInput" accept=".txt,.csv" onchange="handleFileUpload(event)" style="flex:1; padding:8px;">
+                        <button class="btn-action" style="flex:1;" onclick="addStudentsFromText()">➕ إضافة للقائمة</button>
+                    </div>
+                </div>
+                
+                <div class="setup-panel">
+                    <h3>٢. إعدادات اللوحة وتوزيع الفرق</h3>
+                    <div class="form-group">
+                        <label>حجم لوحة البينجو:</label>
+                        <select id="boardSizeSelect" style="border-color: #f59e0b; font-weight:bold;">
+                            <option value="3">٣ × ٣ (٩ بطاقات)</option>
+                            <option value="4">٤ × ٤ (١٦ بطاقة)</option>
+                            <option value="5" selected>٥ × ٥ (٢٥ بطاقة)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>عدد الفرق:</label>
+                        <select id="teamCountSelect" onchange="generateTeamZones()">
+                            <option value="2">فريقين</option>
+                            <option value="3">٣ فرق</option>
+                            <option value="4" selected>٤ فرق</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                        <button class="btn-action" style="background:#fbbf24; color:black; flex:1;" onclick="distributeRandomly()">🎲 توزيع عشوائي</button>
+                        <button class="btn-action" style="background:#ef4444; flex:1;" onclick="resetDistribution()">🔄 تفريغ الفرق</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setup-panel">
+                <h3>٣. تشكيل الفرق وتسميتها</h3>
+                <p style="font-size:1rem; color:#94a3b8; margin-bottom:15px;">
+                    - انقر على اسم الفريق لتغييره.<br>
+                    - اسحب وأفلت الطلاب لتوزيعهم.<br>
+                    - انقر على التاج (👑) لتعيين القائد، أو (❌) لحذف الطالب.
+                </p>
+                <div class="teams-grid">
+                    <div class="team-dropzone" id="zone-unassigned" ondragover="allowDrop(event)" ondrop="drop(event, 'unassigned')">
+                        <div style="font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 1.2rem; color:#cbd5e1;">الطلاب غير الموزعين</div>
+                        <div id="list-unassigned" style="flex:1;"></div>
+                    </div>
+                    <div id="dynamic-team-zones" style="display:contents;"></div>
+                </div>
+            </div>
+
+            <button class="start-game-big-btn" onclick="finishSetupAndStart()">🚀 بدء اللعبة (وتصفير النقاط)</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="questionModal">
+        <div class="question-card">
+            <div class="q-header">
+                <div class="q-task-type">
+                    <span id="qIcon">🧩</span> 
+                    <span id="qTaskTypeText">سؤال</span>
+                </div>
+                <button class="secret-teacher-btn" title="للمعلم: إظهار/إخفاء التلميح للطلاب" onclick="toggleSecretHintVisibility()">👁️</button>
+                <div class="q-points" id="qPointsText">٢٠ نقطة</div>
+            </div>
+            
+            <div class="q-body" id="qBodyText">نص السؤال يظهر هنا...</div>
+            
+            <div class="support-content" id="supportContent"></div>
+            
+            <div class="teacher-answer-area" id="teacherAnswerArea">
+                <strong>💡 الإجابة المقترحة للمُعلم:</strong> <br> <span id="qAnsText"></span>
+            </div>
+
+            <div class="q-options" id="qOptionsContainer"></div>
+            
+            <div class="teacher-judge" id="teacherJudgeControls">
+                <button class="btn-accept" onclick="handleSubjective(true)">✓ إجابة صحيحة</button>
+                <button class="btn-retry" onclick="handleSubjective(false)">↻ حاول مرة أخرى</button>
+            </div>
+
+            <div class="support-tools" id="supportTools">
+                <button class="btn-support" id="btnHint" onclick="useSupport('hint')">💡 تلميح (-٥)</button>
+                <button class="btn-support" onclick="closeModal()">⏭ تمرير للفريق التالي</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="teacher-panel" id="teacherPanel">
+        <div class="tc-header">
+            <span>لوحة المعلم</span>
+            <button class="tc-btn" style="padding:5px 12px; border:none;" onclick="toggleTeacherPanel()">×</button>
+        </div>
+        
+        <div class="tc-toggle-group">
+            <label>طريقة اختيار البطاقة:</label>
+            <select class="form-group select" id="selectionMode" onchange="toggleSelectionMode(this.value)" style="width:100%; padding:10px; background:#1e293b; color:white; border-radius:8px; border:1px solid rgba(255,255,255,0.2);">
+                <option value="manual">يدوي (يضغط الطالب على البطاقة)</option>
+                <option value="random">عشوائي (عجلة الحظ)</option>
+            </select>
+        </div>
+
+        <button class="tc-btn" onclick="nextTurn()">⏭ تخطي الدور الحالي</button>
+        <button class="tc-btn" onclick="revealAnswers()">👁️ كشف جميع البطاقات (للمراجعة)</button>
+        
+        <hr style="border-color:rgba(255,255,255,0.1); margin:10px 0;">
+        <button class="tc-btn success" onclick="endGameByPoints()">🏆 إنهاء اللعبة وإعلان الفائز بالنقاط</button>
+        <button class="tc-btn" onclick="returnToSetup()">🔙 العودة للإعدادات (تعديل الفرق)</button>
+        
+        <hr style="border-color:rgba(255,255,255,0.1); margin:10px 0;">
+        <button class="tc-btn danger" onclick="fullReset()">⚠️ حذف كل شيء والبدء من الصفر</button>
+    </div>
+
+    <div class="bingo-overlay" id="bingoOverlay">
+        <div class="bingo-text" id="winTitle">بينجو! 🎉</div>
+        <div class="bingo-subtext" id="winSubtitle">نفس الهدف... مسارات مختلفة.</div>
+        <div class="winning-team-display" id="winTeamName">اسم الفريق</div>
+        <div class="winning-members" id="winTeamMembers">الأعضاء...</div>
+        
+        <div class="overlay-buttons">
+            <button class="btn-action" style="font-size:1.5rem; padding: 15px 40px; border-radius:30px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" onclick="continueGame()">▶️ متابعة اللعب</button>
+            <button class="btn-action" style="font-size:1.5rem; padding: 15px 40px; border-radius:30px; background: #6366f1;" onclick="returnToSetup()">🔄 لعبة جديدة (نفس الفرق)</button>
+        </div>
+    </div>
+
+    <script>
+        const toArNum = (str) => {
+            if (str == null) return '';
+            return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
         };
-        $('boardSize').addEventListener('change', resetBoard);
-        $('newBoardBtn').addEventListener('click', () => {
-          if (gameStarted && !answered) { alert('أنهِ الجولة الحالية أولاً'); return; }
-          if (!board.some(t => t.by) || confirm('سيُمسح ما كُسب على اللوحة الحالية. هل تريد لوحة جديدة؟')) resetBoard();
-        });
-      }
-    });
-  </script>
-</body>
 
+        const catLabels = { 'CORE': 'مهارة أساسية', 'APP': 'تطبيق', 'CHALL': 'تحدي' };
+        const catIcons = { 'CORE': '🟢', 'APP': '📘', 'CHALL': '🔥' };
+        const teamColors = ['#ec4899', '#8b5cf6', '#06b6d4', '#eab308'];
+
+        // بنك الأسئلة المتمايزة (متوافق مع أي حجم لوحة)
+        const allQuestions = [
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 4 + 4 = 8 ، فما هو ناتج 4 + 5 ؟', opts: ['7', '8', '9', '10'], ans: 2, hint: 'العدد 5 يزيد عن 4 بواحد، أضف 1 للناتج.' },
+            { cat: 'CORE', type: 'obj', task: 'اربط', q: 'لإيجاد ناتج 7 + 8 ، ما هي حقيقة جمع العدد ونفسه التي تساعدك؟', opts: ['6 + 6', '7 + 7', '8 + 8', '9 + 9'], ans: 1, hint: 'ابحث عن العدد الأصغر في الجملة.' },
+            { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'اشرح لفريقك: ماذا نعني بـ "جمع العدد ونفسه مضافاً إليه 1"؟', ansText: 'يعني أن نجمع عدداً مع نفسه، ثم نضيف 1 للناتج لأن أحد العددين يزيد عن الآخر بواحد.', hint: 'تذكر المكعبات عندما نضيف مكعباً واحداً إضافياً.' },
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 6 + 6 = 12 ، فكم يكون 6 + 7 ؟', opts: ['11', '12', '13', '14'], ans: 2, hint: 'الناتج سيكون أكبر بـ 1 من 12.' },
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'حقيقة (العدد ونفسه مطروحاً منه 1) تعني أن الناتج سيكون...', opts: ['أكبر بـ 1', 'أصغر بـ 1', 'نفس الناتج', 'الضعف'], ans: 1, hint: 'ركز في كلمة "مطروحاً منه".' },
+            { cat: 'CORE', type: 'obj', task: 'اربط', q: 'ما الحقيقة المناسبة لإيجاد ناتج 5 + 6 ؟', opts: ['4 + 4', '5 + 5', '6 + 6', '3 + 3'], ans: 1, hint: 'استخدم العدد الأول (الأصغر).' },
+            { cat: 'CORE', type: 'sub', task: 'اشرح', q: 'كيف تستفيد من حقيقة 9 + 9 لمعرفة 8 + 9 ؟', ansText: 'بما أن 8 أقل من 9 بواحد، فإن الناتج سيكون ناتج (9+9) ناقص 1.', hint: '8 أقل من 9 بواحد.' },
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'أي من الجمل التالية تمثل جمع العدد ونفسه؟', opts: ['4 + 5 = 9', '6 + 6 = 12', '7 + 8 = 15', '9 + 1 = 10'], ans: 1, hint: 'العدد يتكرر مرتين.' },
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'إذا كان 8 + 8 = 16 ، فإن 8 + 7 = ...', opts: ['15', '16', '17', '18'], ans: 0, hint: 'العدد 7 أصغر من 8، لذا نطرح 1.' },
+            { cat: 'CORE', type: 'obj', task: 'اختر', q: 'ناتج 2 + 3 هو نفس ناتج (2 + 2) مضافاً إليه...', opts: ['0', '1', '2', '3'], ans: 1, hint: '3 تزيد عن 2 بمقدار كم؟' },
+            
+            { cat: 'APP', type: 'obj', task: 'ابحث عن الخطأ', q: 'يقول زميلك: لحساب 6 + 5 نستخدم حقيقة 7 + 7. هل هذا صحيح؟', opts: ['صحيح', 'خطأ، نستخدم 6+6 أو 5+5', 'خطأ، نستخدم 4+4'], ans: 1, hint: 'يجب استخدام أحد الأرقام الموجودة في المسألة.' },
+            { cat: 'APP', type: 'sub', task: 'طبق', q: 'لديك 7 كرات حمراء و 8 كرات زرقاء. كيف تستخدم درس اليوم لمعرفة المجموع سريعاً؟', ansText: 'أستخدم حقيقة 7+7=14 ثم أضيف 1 ليصبح المجموع 15.', hint: 'العددان هما 7 و 8. فكر في 7+7.' },
+            { cat: 'APP', type: 'obj', task: 'اختر', q: 'أي الجمل تصف قاعدة (جمع العدد ونفسه مضافاً إليه 1)؟', opts: ['3 + 3 = 6', '4 + 5 = 9', '6 + 5 = 11', '1 + 8 = 9'], ans: 1, hint: 'يجب أن يكون العدد الثاني أكبر من الأول بواحد.' },
+            { cat: 'APP', type: 'sub', task: 'طبق', q: 'ارسم أو تخيل 4 مكعبات و 5 مكعبات. كيف تحسبها كـ (عدد ونفسه)؟', ansText: 'أضع 4 مكعبات بجانب 4 مكعبات (يساوي 8) ثم يتبقى مكعب واحد أضيفه ليصبح 9.', hint: 'قسّم العدد 5 إلى 4 و 1.' },
+            { cat: 'APP', type: 'sub', task: 'اكتشف', q: 'اكتب مسألة جمع يكون حلها باستخدام الحقيقة (8 + 8 + 1).', ansText: 'مسألة 8 + 9.', hint: 'الرقم الأساسي هو 8، والثاني يزيد عنه بواحد.' },
+            { cat: 'APP', type: 'obj', task: 'اختر', q: 'أنا أعرف أن 3 + 3 = 6 ، إذن 3 + 2 = ...', opts: ['7', '5', '4', '8'], ans: 1, hint: 'العدد 2 أقل من 3، فماذا نفعل بالناتج؟' },
+            { cat: 'APP', type: 'obj', task: 'اختر', q: 'الناتج يقل واحداً فقط عند استخدام قاعدة:', opts: ['العدد ونفسه زائد 1', 'العدد ونفسه ناقص 1', 'العدد ونفسه'], ans: 1, hint: 'يقل تعني طرح.' },
+            { cat: 'APP', type: 'sub', task: 'علّل', q: 'لماذا لا تساعدنا حقيقة 4+4 في حل 7+8 ؟', ansText: 'لأن الأرقام بعيدة جداً، قاعدة درس اليوم تشترط استخدام نفس الرقم الموجود في المسألة (7 أو 8).', hint: 'انظر للأرقام الموجودة في مسألة 7+8.' },
+            
+            { cat: 'CHALL', type: 'sub', task: 'حلّل', q: 'هل يمكننا استخدام حقيقة 5 + 5 لحل مسألة 5 + 7 ؟ ولماذا؟', ansText: 'لا، لأن درس اليوم يطبق فقط إذا كان الفرق بين العددين هو 1. هنا الفرق 2.', hint: 'الفرق بين 5 و 7 هو 2، وليس 1.' },
+            { cat: 'CHALL', type: 'obj', task: 'توقع', q: 'إذا كان جمع عدد ونفسه = 14 ، فما هو ناتج جمعه مع العدد السابق له؟', opts: ['13', '15', '14', '16'], ans: 0, hint: 'ما هو العدد الذي إذا جمعته مع نفسه كان 14؟ ثم ما هو العدد السابق له؟' },
+            { cat: 'CHALL', type: 'sub', task: 'إبداع', q: 'ابتكر قصة قصيرة عن طيور على شجرة تتطلب استخدام "جمع العدد ونفسه مضافاً إليه 1".', ansText: 'أمثلة: 6 عصافير على غصن، وانضم إليهم 7 عصافير على غصن آخر. 6+6+1=13.', hint: 'استخدم رقمين متتاليين مثل 6 و 7.' },
+            { cat: 'CHALL', type: 'sub', task: 'تحدي ذهني', q: 'إذا كان 50 + 50 = 100، كيف تستخدم درس اليوم لمعرفة 50 + 51 سريعاً؟', ansText: 'بما أن 51 تزيد عن 50 بواحد، إذن 100 + 1 = 101.', hint: 'القاعدة تعمل مع كل الأرقام حتى الكبيرة!' },
+            { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'ما هو النمط في النواتج عند تطبيق (العدد ونفسه + 1) بالترتيب: 1+2، 2+3، 3+4 ؟', opts: ['تزيد بمقدار 1', 'تزيد بمقدار 2', 'جميعها أعداد زوجية'], ans: 1, hint: 'النواتج هي: 3، 5، 7... ما هو النمط؟' },
+            { cat: 'CHALL', type: 'sub', task: 'قارن', q: 'أيهما أسهل لك في حل 8 + 9 : استخدام (8+8+1) أم (9+9-1)؟ برر إجابتك.', ansText: 'يقبل أي تبرير منطقي للطالب.', hint: 'لا توجد إجابة خاطئة، المهم أن تشرح السبب.' },
+            { cat: 'CHALL', type: 'obj', task: 'استنتج', q: 'إذا كان ضعف العدد يساوي 20، فما هو هذا العدد مضافاً إليه العدد الذي يليه؟', opts: ['19', '21', '20', '22'], ans: 1, hint: 'الضعف 20 يعني أن العدد هو 10. العدد الذي يليه هو 11.' }
+        ];
+
+        let state = {
+            boardSize: 5,
+            students: [],
+            teams: [],
+            currentTeamIdx: 0,
+            board: [],
+            activeTileId: null,
+            selectionMode: 'manual',
+            audioEnabled: true
+        };
+
+        let audioCtx;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playTone(freq, type, duration, vol=0.1) {
+            if (!state.audioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        const sfx = {
+            click: () => playTone(600, 'sine', 0.1, 0.05),
+            flip: () => playTone(300, 'triangle', 0.2, 0.05),
+            tick: () => playTone(800, 'square', 0.05, 0.02),
+            correct: () => { playTone(500, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.2), 100); },
+            wrong: () => { playTone(200, 'sawtooth', 0.3); },
+            bingo: () => { [300, 400, 500, 600, 800, 1000].forEach((f, i) => setTimeout(()=>playTone(f, 'square', 0.1), i*100)); }
+        };
+
+        window.onload = () => {
+            generateTeamZones();
+            createBgShapes();
+        };
+
+        function generateTeamZones() {
+            const count = parseInt(document.getElementById('teamCountSelect').value);
+            const container = document.getElementById('dynamic-team-zones');
+            container.innerHTML = '';
+            
+            // حفظ الأعضاء الحاليين إذا أمكن
+            let oldTeams = [...state.teams];
+            state.teams = [];
+            
+            for(let i=0; i<count; i++) {
+                let existingTeam = oldTeams[i];
+                state.teams.push({
+                    id: `team_${i}`,
+                    name: existingTeam ? existingTeam.name : `فريق ${toArNum(i+1)}`,
+                    color: teamColors[i % teamColors.length],
+                    score: 0,
+                    members: existingTeam ? existingTeam.members : []
+                });
+                
+                let div = document.createElement('div');
+                div.className = 'team-dropzone';
+                div.setAttribute('ondragover', 'allowDrop(event)');
+                div.setAttribute('ondrop', `drop(event, 'team_${i}')`);
+                div.innerHTML = `
+                    <input type="text" class="editable-team-name" value="${state.teams[i].name}" 
+                           onchange="updateTeamName(${i}, this.value)" title="انقر لتغيير اسم الفريق"
+                           style="color:${teamColors[i]}; border-color:${teamColors[i]}55;">
+                    <div id="list-team_${i}" style="flex:1; display:flex; flex-direction:column; gap:5px;"></div>
+                `;
+                container.appendChild(div);
+            }
+            
+            // إرجاع الأعضاء الفائضين لقائمة غير الموزعين إذا قللنا عدد الفرق
+            for(let i=count; i<oldTeams.length; i++) {
+                state.students.push(...oldTeams[i].members);
+            }
+            
+            renderSetupLists();
+        }
+
+        function updateTeamName(idx, name) {
+            if(state.teams[idx]) state.teams[idx].name = name.trim() || `فريق ${toArNum(idx+1)}`;
+        }
+
+        function addStudentsFromText() {
+            const val = document.getElementById('studentsInput').value;
+            const names = val.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+            names.forEach(n => { if(!state.students.includes(n)) state.students.push(n); });
+            document.getElementById('studentsInput').value = '';
+            renderSetupLists();
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const names = ev.target.result.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                names.forEach(n => { if(!state.students.includes(n)) state.students.push(n); });
+                renderSetupLists();
+            };
+            reader.readAsText(file);
+        }
+
+        function deleteAllStudents() {
+            if(confirm('هل أنت متأكد من مسح جميع الطلاب من القوائم؟')) {
+                state.students = [];
+                state.teams.forEach(t => t.members = []);
+                renderSetupLists();
+            }
+        }
+
+        function removeStudent(name, source, e) {
+            e.stopPropagation();
+            if(source === 'unassigned') {
+                state.students = state.students.filter(n => n !== name);
+            } else {
+                let sTeam = state.teams.find(t => t.id === source);
+                if(sTeam) sTeam.members = sTeam.members.filter(n => n !== name);
+            }
+            renderSetupLists();
+        }
+
+        function resetDistribution() {
+            state.teams.forEach(t => {
+                state.students.push(...t.members);
+                t.members = [];
+            });
+            renderSetupLists();
+        }
+
+        function distributeRandomly() {
+            resetDistribution();
+            let shuffled = [...state.students].sort(() => Math.random() - 0.5);
+            state.students = [];
+            
+            let tIdx = 0;
+            while(shuffled.length > 0) {
+                state.teams[tIdx].members.push(shuffled.pop());
+                tIdx = (tIdx + 1) % state.teams.length;
+            }
+            renderSetupLists();
+        }
+
+        function renderSetupLists() {
+            const uList = document.getElementById('list-unassigned');
+            uList.innerHTML = '';
+            state.students.forEach((student, idx) => {
+                uList.appendChild(createDraggableStudent(student, 'unassigned', idx));
+            });
+
+            state.teams.forEach((t, i) => {
+                const tList = document.getElementById(`list-team_${i}`);
+                if(tList) {
+                    tList.innerHTML = '';
+                    t.members.forEach((student, idx) => {
+                        let el = createDraggableStudent(student, `team_${i}`, idx);
+                        if(idx === 0) {
+                            el.classList.add('leader');
+                            let actions = el.querySelector('.student-actions');
+                            actions.insertAdjacentHTML('afterbegin', `<span class="leader-badge">قائد الفريق</span>`);
+                        } else {
+                            let crownBtn = document.createElement('button');
+                            crownBtn.innerHTML = '👑';
+                            crownBtn.className = 'make-leader-btn';
+                            crownBtn.title = 'تعيين كقائد';
+                            crownBtn.onclick = (e) => makeLeader(student, `team_${i}`, e);
+                            let actions = el.querySelector('.student-actions');
+                            actions.insertBefore(crownBtn, actions.firstChild);
+                        }
+                        tList.appendChild(el);
+                    });
+                }
+            });
+        }
+
+        function makeLeader(studentName, teamId, e) {
+            e.stopPropagation();
+            let team = state.teams.find(t => t.id === teamId);
+            if(team) {
+                team.members = team.members.filter(n => n !== studentName);
+                team.members.unshift(studentName);
+                renderSetupLists();
+            }
+        }
+
+        function createDraggableStudent(name, source, idx) {
+            let div = document.createElement('div');
+            div.className = 'student-item';
+            div.draggable = true;
+            div.id = `stu_${source}_${idx}`;
+            div.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({name: name, source: source}));
+            };
+            
+            let infoDiv = document.createElement('div');
+            infoDiv.className = 'student-info';
+            infoDiv.innerText = name;
+            
+            let actionsDiv = document.createElement('div');
+            actionsDiv.className = 'student-actions';
+            
+            let delBtn = document.createElement('button');
+            delBtn.innerHTML = '❌';
+            delBtn.className = 'del-student-btn';
+            delBtn.title = 'حذف الطالب';
+            delBtn.onclick = (e) => removeStudent(name, source, e);
+            
+            actionsDiv.appendChild(delBtn);
+            div.appendChild(infoDiv);
+            div.appendChild(actionsDiv);
+            
+            return div;
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+        function drop(e, targetZone) {
+            e.preventDefault();
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const { name, source } = data;
+                if(source === targetZone) return; 
+                
+                if(source === 'unassigned') state.students = state.students.filter(n => n !== name);
+                else {
+                    let sTeam = state.teams.find(t => t.id === source);
+                    if(sTeam) sTeam.members = sTeam.members.filter(n => n !== name);
+                }
+
+                if(targetZone === 'unassigned') state.students.push(name);
+                else {
+                    let tTeam = state.teams.find(t => t.id === targetZone);
+                    if(tTeam) tTeam.members.push(name);
+                }
+                renderSetupLists();
+            } catch(err) { console.error("Drop error", err); }
+        }
+
+        function returnToSetup() {
+            document.getElementById('teacherPanel').classList.remove('open');
+            document.getElementById('bingoOverlay').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'flex';
+            renderSetupLists();
+        }
+
+        function finishSetupAndStart() {
+            initAudio();
+            sfx.click();
+            document.getElementById('setupScreen').style.display = 'none';
+            
+            // تصفير النقاط عند بدء اللعبة
+            state.teams.forEach(t => t.score = 0);
+            state.currentTeamIdx = 0;
+            
+            generateDynamicBoard();
+            renderSidebar();
+            renderBoard();
+        }
+
+        function generateDynamicBoard() {
+            const size = parseInt(document.getElementById('boardSizeSelect').value);
+            state.boardSize = size;
+            const totalTiles = size * size;
+            
+            let pool = [];
+            const coreCount = Math.ceil(totalTiles * 0.36); 
+            const appCount = Math.ceil(totalTiles * 0.32);  
+            const challCount = totalTiles - coreCount - appCount; 
+            
+            for(let i=0; i<coreCount; i++) pool.push('CORE');
+            for(let i=0; i<appCount; i++) pool.push('APP');
+            for(let i=0; i<challCount; i++) pool.push('CHALL');
+            
+            let layout = [...pool].sort(() => Math.random() - 0.5);
+            let qBank = JSON.parse(JSON.stringify(allQuestions)).sort(() => Math.random() - 0.5);
+            
+            state.board = [];
+            layout.forEach((cat, idx) => {
+                let qIdx = qBank.findIndex(q => q.cat === cat);
+                if(qIdx === -1) {
+                    qBank = JSON.parse(JSON.stringify(allQuestions)).sort(() => Math.random() - 0.5);
+                    qIdx = qBank.findIndex(q => q.cat === cat);
+                }
+                let q = qBank.splice(qIdx, 1)[0];
+                
+                state.board.push({
+                    id: idx,
+                    cat: cat,
+                    q: q,
+                    pts: cat === 'CORE' ? 10 : (cat === 'APP' ? 20 : 30),
+                    claimed: false,
+                    teamId: null,
+                    penalty: 0
+                });
+            });
+        }
+
+        function renderSidebar() {
+            const sb = document.getElementById('teamsSidebar');
+            sb.innerHTML = '';
+            state.teams.forEach((tm, idx) => {
+                let div = document.createElement('div');
+                div.className = `team-card ${idx === state.currentTeamIdx ? 'active-team' : ''}`;
+                div.style.color = tm.color;
+                
+                let membersHTML = tm.members.map((m, i) => 
+                    `<div class="member-row ${i===0 ? 'leader' : ''}">${i===0 ? '👑' : '👤'} ${m}</div>`
+                ).join('');
+
+                div.innerHTML = `
+                    <div class="team-indicator" style="background:${tm.color};"></div>
+                    <div class="team-header">
+                        <div class="team-name">${tm.name}</div>
+                        <div class="team-score">${toArNum(tm.score)}</div>
+                    </div>
+                    <div class="team-members">${membersHTML}</div>
+                `;
+                sb.appendChild(div);
+            });
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('bingoBoard');
+            boardEl.innerHTML = '';
+            
+            boardEl.style.gridTemplateColumns = `repeat(${state.boardSize}, 1fr)`;
+            boardEl.style.gridTemplateRows = `repeat(${state.boardSize}, 1fr)`;
+            boardEl.className = `bingo-board board-mode-${state.selectionMode}`;
+            
+            state.board.forEach(tile => {
+                let tEl = document.createElement('div');
+                tEl.className = `tile ${tile.claimed ? 'claimed flipped' : ''}`;
+                tEl.setAttribute('data-id', tile.id);
+                tEl.setAttribute('data-cat', tile.cat);
+                
+                let innerHTML = `
+                    <div class="tile-face tile-front">
+                        <div class="cat-badge cat-${tile.cat}">${catLabels[tile.cat]}</div>
+                        <div class="points-display">${toArNum(tile.pts)}</div>
+                    </div>
+                    <div class="tile-face tile-back" ${tile.claimed ? `style="background:${state.teams[tile.teamId].color}dd;"` : ''}>
+                        ${tile.claimed ? `<div class="claimed-team-name">${state.teams[tile.teamId].name}</div>` : ''}
+                    </div>
+                `;
+                tEl.innerHTML = innerHTML;
+                
+                if(!tile.claimed) {
+                    tEl.onclick = () => openTile(tile.id, tEl);
+                }
+                boardEl.appendChild(tEl);
+            });
+        }
+
+        function toggleSelectionMode(mode) {
+            state.selectionMode = mode;
+            const btn = document.getElementById('randomPickBtn');
+            const board = document.getElementById('bingoBoard');
+            
+            if(mode === 'random') {
+                btn.style.display = 'flex';
+                board.classList.remove('board-mode-manual');
+                board.classList.add('board-mode-random');
+            } else {
+                btn.style.display = 'none';
+                board.classList.remove('board-mode-random');
+                board.classList.add('board-mode-manual');
+            }
+        }
+
+        function pickRandomTile() {
+            const available = state.board.filter(t => !t.claimed);
+            if(available.length === 0) return;
+            
+            sfx.click();
+            const btn = document.getElementById('randomPickBtn');
+            btn.disabled = true;
+            
+            const allEls = document.querySelectorAll('.tile');
+            let counter = 0;
+            let interval = setInterval(() => {
+                allEls.forEach(el => el.classList.remove('spinning'));
+                let randomTile = available[Math.floor(Math.random() * available.length)];
+                let el = document.querySelector(`[data-id="${randomTile.id}"]`);
+                if(el) el.classList.add('spinning');
+                sfx.tick();
+                
+                counter++;
+                if(counter > 15) { 
+                    clearInterval(interval);
+                    allEls.forEach(el => el.classList.remove('spinning'));
+                    let finalTile = available[Math.floor(Math.random() * available.length)];
+                    let finalEl = document.querySelector(`[data-id="${finalTile.id}"]`);
+                    finalEl.classList.add('spinning');
+                    setTimeout(() => {
+                        finalEl.classList.remove('spinning');
+                        openTile(finalTile.id, finalEl);
+                        btn.disabled = false;
+                    }, 600);
+                }
+            }, 100);
+        }
+
+        function openTile(id, element) {
+            if(state.activeTileId !== null) return;
+            sfx.flip();
+            state.activeTileId = id;
+            
+            const wrapper = document.getElementById('boardWrapper');
+            wrapper.classList.add('zoomed');
+            element.classList.add('flipped');
+
+            setTimeout(() => {
+                populateModal(state.board.find(t => t.id === id));
+                document.getElementById('questionModal').classList.add('active');
+            }, 600);
+        }
+
+        function populateModal(tile) {
+            const q = tile.q;
+            tile.penalty = 0;
+            
+            document.getElementById('qIcon').innerText = catIcons[tile.cat];
+            document.getElementById('qTaskTypeText').innerText = q.task;
+            document.getElementById('qPointsText').innerText = toArNum(tile.pts) + ' نقطة';
+            
+            let formattedQ = q.q.replace(/\d+/g, m => toArNum(m));
+            document.getElementById('qBodyText').innerText = formattedQ;
+
+            const optsCont = document.getElementById('qOptionsContainer');
+            const judgeCont = document.getElementById('teacherJudgeControls');
+            const ansArea = document.getElementById('teacherAnswerArea');
+            
+            optsCont.innerHTML = '';
+            
+            if(q.type === 'obj') {
+                optsCont.style.display = 'grid'; 
+                judgeCont.style.display = 'none';
+                ansArea.style.display = 'none';
+                
+                q.opts.forEach((opt, idx) => {
+                    let btn = document.createElement('button');
+                    btn.className = 'btn-option';
+                    btn.innerText = opt.replace(/\d+/g, m => toArNum(m));
+                    btn.onclick = () => checkAnswer(idx, btn, tile);
+                    optsCont.appendChild(btn);
+                });
+            } else {
+                optsCont.style.display = 'none'; 
+                judgeCont.style.display = 'flex';
+                if(q.ansText) {
+                    ansArea.style.display = 'block';
+                    document.getElementById('qAnsText').innerText = q.ansText.replace(/\d+/g, m => toArNum(m));
+                } else {
+                    ansArea.style.display = 'none';
+                }
+            }
+
+            document.getElementById('supportContent').style.display = 'none';
+            document.getElementById('btnHint').style.display = 'none';
+            document.getElementById('btnHint').disabled = !q.hint;
+        }
+
+        function toggleSecretHintVisibility() {
+            const hintBtn = document.getElementById('btnHint');
+            if(hintBtn.style.display === 'none' || hintBtn.style.display === '') {
+                hintBtn.style.display = 'flex';
+            } else {
+                hintBtn.style.display = 'none';
+            }
+        }
+
+        function useSupport(type) {
+            sfx.click();
+            const tile = state.board.find(t => t.id === state.activeTileId);
+            const contentDiv = document.getElementById('supportContent');
+            contentDiv.style.display = 'block';
+            
+            if(type === 'hint') {
+                contentDiv.innerText = '💡 ' + tile.q.hint.replace(/\d+/g, m => toArNum(m));
+                if(tile.penalty < 5) tile.penalty += 5;
+            }
+            let currentPts = Math.max(5, tile.pts - tile.penalty);
+            document.getElementById('qPointsText').innerText = toArNum(currentPts) + ' نقطة';
+        }
+
+        function checkAnswer(selectedIdx, btnEl, tile) {
+            const buttons = document.querySelectorAll('.btn-option');
+            buttons.forEach(b => b.style.pointerEvents = 'none'); 
+            
+            if(selectedIdx === tile.q.ans) {
+                btnEl.classList.add('correct');
+                sfx.correct();
+                setTimeout(() => finalizeTurn(true, tile), 1500);
+            } else {
+                btnEl.classList.add('wrong');
+                sfx.wrong();
+                setTimeout(() => {
+                    buttons.forEach(b => b.style.pointerEvents = 'auto');
+                    btnEl.style.opacity = '0.5';
+                }, 1000);
+            }
+        }
+
+        function handleSubjective(isCorrect) {
+            const tile = state.board.find(t => t.id === state.activeTileId);
+            if(isCorrect) { sfx.correct(); finalizeTurn(true, tile); } 
+            else { sfx.wrong(); }
+        }
+
+        function finalizeTurn(success, tile) {
+            if(success) {
+                tile.claimed = true;
+                tile.teamId = state.currentTeamIdx;
+                let earned = Math.max(0, tile.pts - tile.penalty);
+                state.teams[state.currentTeamIdx].score += earned;
+            }
+            
+            closeModal();
+            
+            setTimeout(() => {
+                renderBoard(); 
+                renderSidebar(); 
+                let won = false;
+                if(success) won = checkBingo();
+                
+                let allClaimed = state.board.every(t => t.claimed);
+                if(!won && allClaimed) {
+                    setTimeout(endGameByPoints, 1000);
+                } else if (!won) {
+                    nextTurn();
+                }
+            }, 600);
+        }
+
+        function closeModal() {
+            document.getElementById('questionModal').classList.remove('active');
+            document.getElementById('boardWrapper').classList.remove('zoomed');
+            
+            const activeEl = document.querySelector(`[data-id="${state.activeTileId}"]`);
+            if(activeEl && !state.board.find(t=>t.id===state.activeTileId).claimed) {
+                activeEl.classList.remove('flipped');
+            }
+            state.activeTileId = null;
+        }
+
+        function nextTurn() {
+            state.currentTeamIdx = (state.currentTeamIdx + 1) % state.teams.length;
+            renderSidebar();
+        }
+
+        function checkBingo() {
+            const b = state.board;
+            const tid = state.currentTeamIdx;
+            const size = state.boardSize;
+            
+            const isValidLine = (indices) => {
+                let isOwned = indices.every(i => b[i] && b[i].claimed && b[i].teamId === tid);
+                if(!isOwned) return false;
+                let cats = new Set(indices.map(i => b[i].cat));
+                return cats.size >= Math.min(2, size);
+            };
+            
+            let hasBingo = false;
+            
+            for(let r=0; r<size; r++) {
+                let row = [];
+                for(let c=0; c<size; c++) row.push(r*size + c);
+                if(isValidLine(row)) hasBingo = true;
+            }
+            for(let c=0; c<size; c++) {
+                let col = [];
+                for(let r=0; r<size; r++) col.push(r*size + c);
+                if(isValidLine(col)) hasBingo = true;
+            }
+            let diag1 = [], diag2 = [];
+            for(let i=0; i<size; i++) {
+                diag1.push(i*size + i);
+                diag2.push(i*size + (size - 1 - i));
+            }
+            if(isValidLine(diag1) || isValidLine(diag2)) hasBingo = true;
+            
+            if(hasBingo) {
+                sfx.bingo();
+                const team = state.teams[tid];
+                
+                document.getElementById('winTitle').innerText = "بينجو! 🎉";
+                document.getElementById('winSubtitle').innerText = "نفس الهدف... مسارات مختلفة.";
+                document.getElementById('winTeamName').innerText = team.name;
+                document.getElementById('winTeamName').style.color = team.color;
+                
+                let membersText = team.members.map((m,i) => i===0 ? `👑 ${m}` : m).join(' - ');
+                document.getElementById('winTeamMembers').innerText = membersText || 'عمل جماعي رائع!';
+                
+                document.getElementById('bingoOverlay').style.display = 'flex';
+                return true;
+            }
+            return false;
+        }
+        
+        function endGameByPoints() {
+            document.getElementById('teacherPanel').classList.remove('open');
+            
+            let maxScore = -1;
+            let winners = [];
+            state.teams.forEach(t => {
+                if(t.score > maxScore) { maxScore = t.score; winners = [t]; }
+                else if (t.score === maxScore) { winners.push(t); }
+            });
+
+            if (maxScore === 0 && state.board.every(t => !t.claimed)) {
+                 alert("لم يتم كسب أي نقاط بعد!"); return;
+            }
+
+            sfx.bingo(); 
+            
+            if(winners.length === 1) {
+                document.getElementById('winTitle').innerText = "نهاية اللعبة! 🎉";
+                document.getElementById('winSubtitle').innerText = "الفريق الفائز بأعلى نقاط 🏆";
+                document.getElementById('winTeamName').innerText = winners[0].name;
+                document.getElementById('winTeamName').style.color = winners[0].color;
+                
+                let membersText = winners[0].members.map((m,i) => i===0 ? `👑 ${m}` : m).join(' - ');
+                document.getElementById('winTeamMembers').innerText = `الرصيد: ${toArNum(maxScore)} نقطة\n\n${membersText || 'عمل جماعي رائع!'}`;
+            } else {
+                document.getElementById('winTitle').innerText = "تعادل! 🎉";
+                document.getElementById('winSubtitle').innerText = "الفرق الفائزة بأعلى نقاط 🏆";
+                document.getElementById('winTeamName').innerText = winners.map(w => w.name).join(' و ');
+                document.getElementById('winTeamName').style.color = '#fff';
+                document.getElementById('winTeamMembers').innerText = `برصيد ${toArNum(maxScore)} نقطة لكل فريق`;
+            }
+            
+            document.getElementById('bingoOverlay').style.display = 'flex';
+        }
+
+        function continueGame() {
+            document.getElementById('bingoOverlay').style.display = 'none';
+            nextTurn(); 
+        }
+
+        function toggleTeacherPanel() {
+            document.getElementById('teacherPanel').classList.toggle('open');
+        }
+
+        function revealAnswers() {
+            state.board.forEach(t => { 
+                let el = document.querySelector(`[data-id="${t.id}"]`);
+                if(el && !t.claimed) el.classList.add('flipped');
+            });
+            toggleTeacherPanel();
+        }
+
+        function toggleSound() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('soundBtn').innerText = state.audioEnabled ? '🔊 الصوت مفعل' : '🔇 مكتوم';
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function fullReset() {
+            if(confirm('سيؤدي هذا إلى مسح كل شيء تماماً (الطلاب والفرق) والبدء من الصفر. هل أنت متأكد؟')) {
+                location.reload();
+            }
+        }
+
+        function createBgShapes() {
+            const container = document.getElementById('bgShapes');
+            container.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                let div = document.createElement('div');
+                div.className = 'shape';
+                div.style.width = Math.random() * 80 + 30 + 'px';
+                div.style.height = div.style.width;
+                div.style.left = Math.random() * 100 + '%';
+                div.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                div.style.animationDelay = (Math.random() * -20) + 's';
+                div.style.borderRadius = Math.random() > 0.5 ? '50%' : '10%';
+                container.appendChild(div);
+            }
+        }
+    </script>
+</body>
 </html>

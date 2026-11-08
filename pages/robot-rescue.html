@@ -1,373 +1,1184 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
-
+<html dir="rtl" lang="ar">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>مهمة إنقاذ الروبوت حاسوب</title>
-  <link rel="stylesheet" href="../style.css" />
-  <style>
-    /* only what is specific to this game; the look comes from ../style.css */
-    :root { --game: oklch(0.84 0.09 215); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مهمة إنقاذ الروبوت - حاسوب (3D Adventure)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    /* ---- dice row ---- */
-    .dice-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--s-4); margin-block: var(--s-2) var(--s-4); }
-    .die { font-size: 4rem; line-height: 1; color: var(--ink); }
-    .dice-text { min-width: 8rem; font: 800 1.4rem/1.2 var(--f-display); }
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #f59e0b;
+            --bg-dark: #0f172a;
+            --glass: rgba(15, 23, 42, 0.85);
+            --font-main: 'Cairo', sans-serif;
+            --cube-size: 250px;
+            --tz: 125px;
+        }
 
-    /* ---- the track: 25 stones in a snake, the crew's rocket on one of them, the trapped robot at the end ---- */
-    .robot-board {
-      position: relative; container-type: inline-size; width: min(100%, 36rem); aspect-ratio: 100 / 68; margin: var(--s-6) auto 0;
-      border-radius: 1.5rem; background: var(--white); box-shadow: 0 0 0 3px var(--ink), 0 0.4rem 0 3px oklch(0.27 0.06 250 / 0.25);
-    }
-    .track { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--sea); }
-    .track polyline { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 0.1 3; }
-    .stone {
-      --st: var(--c3);
-      position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) / 0.68 * 1%); translate: -50% -50%;
-      display: grid; place-items: center; width: clamp(1.6rem, 6.5cqw, 2.6rem); aspect-ratio: 1; border-radius: 50%;
-      background: var(--st); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); font: 800 0.9rem/1 var(--f-display);
-    }
-    .stone[data-zone="2"] { --st: var(--c4); }
-    .stone[data-zone="3"] { --st: var(--c5); }
-    .stone--start, .stone--end { --st: var(--sun); width: clamp(2.4rem, 9cqw, 3.6rem); font-size: 1.6rem; }
-    .stone--end { --st: var(--coral); }
-    .crew {
-      position: absolute; left: 0; top: 0; z-index: 2; display: grid; place-items: center;
-      width: clamp(2rem, 8cqw, 3.2rem); aspect-ratio: 1; border-radius: 50%; background: var(--sun); color: var(--ink);
-      box-shadow: 0 0 0 3px var(--ink), 0 0.25rem 0 3px oklch(0.27 0.06 250 / 0.3); font-size: clamp(1.1rem, 4.5cqw, 1.8rem);
-      translate: calc(var(--x) * 1cqw - 50%) calc(var(--y) * 1cqw - 50%);
-    }
-    .crew.is-hopping { transition: translate 0.3s var(--ease-out); }
-    .stage { text-align: center; margin-top: var(--s-3); }
+        body {
+            font-family: var(--font-main);
+            background: radial-gradient(circle at center, #1e3a8a 0%, #020617 100%);
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
 
-    /* ---- extras under a card ---- */
-    .robot-extra { display: grid; justify-items: center; gap: var(--s-3); margin-top: var(--s-4); }
+        .hidden { display: none !important; }
+        .glass-panel { background: var(--glass); backdrop-filter: blur(15px); border: 2px solid rgba(255,255,255,0.1); }
+        
+        /* 3D Global Buttons */
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0px 8px 0px rgba(0,0,0,0.6), 0px 8px 15px rgba(0,0,0,0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            transform: translateY(0);
+        }
+        .btn-3d:active {
+            transform: translateY(6px);
+            box-shadow: 0px 2px 0px rgba(0,0,0,0.6), 0px 2px 5px rgba(0,0,0,0.4);
+        }
 
-    @media (max-width: 40rem) {
-      .die { font-size: 3.25rem; }
-      .robot-extra > button { width: 100%; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .crew.is-hopping { transition: none; }
-    }
-  </style>
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; z-index: 10;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        .screen.active { opacity: 1; pointer-events: auto; }
+
+        /* Setup UI */
+        .setup-container {
+            max-width: 1200px; width: 95%; height: 90vh; overflow-y: auto;
+            margin: auto; padding: 30px; border-radius: 20px;
+        }
+        .team-box {
+            border: 2px dashed #475569; border-radius: 15px; padding: 15px; min-height: 200px;
+            background: rgba(0,0,0,0.4); transition: 0.3s;
+        }
+        .team-box.over { border-color: #10b981; background: rgba(16, 185, 129, 0.2); }
+        .student-pill {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 8px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;
+            margin: 5px; cursor: grab; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        .student-pill:hover { transform: scale(1.05); }
+        .student-pill:active { cursor: grabbing; }
+        .leader-crown { cursor: pointer; transition: transform 0.2s; filter: grayscale(1); font-size: 1.2rem; }
+        .is-leader { background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #fcd34d; }
+        .is-leader .leader-crown { filter: grayscale(0); transform: scale(1.3); }
+
+        /* ----------------------------------------------------- */
+        /* Game Board Responsive Full Screen Styles */
+        /* ----------------------------------------------------- */
+        #board-wrapper {
+            flex: 1 1 0%;
+            min-height: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px 12px;
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #game-board-container {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            max-width: 100%;
+            max-height: 100%;
+            
+            /* Map image beside the HTML file */
+            background-image: url('board.png');
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            /* Fallback color if image is missing */
+            background-color: #f8fafc; 
+            
+            border-radius: 18px;
+            border: 4px solid #1e293b;
+            
+            /* Clean Flat View - Fully visible in Full Screen mode */
+            transform: none;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.8), 
+                inset 0 0 30px rgba(0,0,0,0.3),
+                0 0 25px rgba(59, 130, 246, 0.3); 
+        }
+
+        /* Message to show if background fails to load */
+        .board-placeholder {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #475569;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 3D Pawns */
+        .pawn {
+            position: absolute;
+            width: 4%; height: 8%; 
+            z-index: 20;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-size: contain; background-repeat: no-repeat; background-position: center bottom;
+            transform-origin: bottom center;
+            
+            /* Counter-rotate to stand straight */
+            transform: rotateX(-15deg) translateY(0); 
+            filter: drop-shadow(0 20px 10px rgba(0,0,0,0.8));
+        }
+        
+        .pawn.moving { animation: pawnBounce 0.6s infinite; }
+        
+        @keyframes pawnBounce {
+            0%, 100% { transform: rotateX(-15deg) translateY(0) scale(1); }
+            50% { transform: rotateX(-15deg) translateY(-30px) scale(1.15); filter: drop-shadow(0 40px 15px rgba(0,0,0,0.5)); }
+        }
+
+        #pawn-1 { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="70" rx="15" fill="%232563eb"/><rect x="35" y="5" width="30" height="15" rx="5" fill="%2394a3b8"/><path d="M50 35 L40 55 L50 55 L45 75 L65 45 L50 45 Z" fill="%23fcd34d"/></svg>'); }
+        #pawn-2 { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="25" y="20" width="50" height="70" rx="15" fill="%23dc2626"/><rect x="35" y="5" width="30" height="15" rx="5" fill="%2394a3b8"/><path d="M45 75 Q50 35 65 45 Q40 55 50 35" stroke="%23fcd34d" fill="none" stroke-width="8" stroke-linecap="round"/></svg>'); }
+
+        /* ----------------------------------------------------- */
+        /* Cinematic 3D Dice */
+        /* ----------------------------------------------------- */
+        #dice-screen {
+            background: radial-gradient(circle at center, rgba(15,23,42,0.95), rgba(0,0,0,1));
+            z-index: 100; justify-content: center; align-items: center;
+        }
+        .dice-scene { 
+            width: var(--cube-size); height: var(--cube-size); 
+            perspective: 1200px; transition: transform 2s cubic-bezier(0.25, 1, 0.5, 1); 
+        }
+        .dice-scene.zoom-in { transform: scale(2.5); } 
+        
+        .cube {
+            width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
+            transform: translateZ(calc(var(--tz) * -1)) rotateX(-20deg) rotateY(-30deg);
+            transition: transform 3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+        .cube.spinning { animation: spinCube 0.5s linear infinite; transition: none; }
+        
+        @keyframes spinCube {
+            0% { transform: translateZ(calc(var(--tz) * -1)) rotateX(0deg) rotateY(0deg); }
+            100% { transform: translateZ(calc(var(--tz) * -1)) rotateX(360deg) rotateY(360deg); }
+        }
+
+        .cube__face {
+            position: absolute; width: var(--cube-size); height: var(--cube-size);
+            background: linear-gradient(145deg, #ffffff, #e2e8f0);
+            border: 5px solid #cbd5e1; border-radius: 25px;
+            display: flex; flex-wrap: wrap; justify-content: center; align-content: center; padding: 25px; gap: 20px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.1), 0 0 20px rgba(0,0,0,0.3); 
+            backface-visibility: hidden;
+        }
+        .dot { width: 45px; height: 45px; background: #0f172a; border-radius: 50%; box-shadow: inset 0 5px 10px rgba(0,0,0,0.6); }
+        
+        .cube__face--front  { transform: rotateY(  0deg) translateZ(var(--tz)); }
+        .cube__face--right  { transform: rotateY( 90deg) translateZ(var(--tz)); }
+        .cube__face--back   { transform: rotateY(180deg) translateZ(var(--tz)); }
+        .cube__face--left   { transform: rotateY(-90deg) translateZ(var(--tz)); }
+        .cube__face--top    { transform: rotateX( 90deg) translateZ(var(--tz)); }
+        .cube__face--bottom { transform: rotateX(-90deg) translateZ(var(--tz)); }
+
+        /* ----------------------------------------------------- */
+        /* 3D Interactive Cards */
+        /* ----------------------------------------------------- */
+        .card-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 80;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+            perspective: 1500px;
+        }
+        .card-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .interactive-card {
+            width: 90%; max-width: 600px; min-height: 650px;
+            border-radius: 25px; padding: 0; text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.9), 0 0 30px rgba(255,255,255,0.2);
+            transform: scale(0.5) rotateY(90deg); 
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background-size: cover; background-position: center; position: relative;
+            transform-style: preserve-3d;
+            border: 6px solid #fff;
+        }
+        .card-overlay.active .interactive-card { transform: scale(1) rotateY(0deg); }
+        .interactive-card:hover { transform: scale(1.02) rotateY(2deg) rotateX(2deg); }
+        
+        .card-content-glass {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
+            border-bottom-left-radius: 19px; border-bottom-right-radius: 19px; border-top: 4px solid var(--secondary);
+            padding: 30px 20px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .mcq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        
+        /* Teacher Manual Mission Buttons */
+        .teacher-grid { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; width: 100%; }
+        
+        .mcq-btn {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 3px solid #3b82f6; border-radius: 15px; padding: 15px;
+            font-size: 1.8rem; font-weight: bold; color: white;
+            transition: all 0.2s; box-shadow: 0 6px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        .mcq-btn:hover { background: #3b82f6; transform: translateY(-5px); box-shadow: 0 10px 15px rgba(59, 130, 246, 0.5); }
+        .mcq-btn:active { transform: translateY(2px); }
+
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); border: 4px solid #34d399; }
+        .btn-success:hover { background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 15px 25px rgba(16, 185, 129, 0.6); }
+        
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); border: 4px solid #f87171; }
+        .btn-danger:hover { background: linear-gradient(135deg, #b91c1c, #991b1b); box-shadow: 0 15px 25px rgba(239, 68, 68, 0.6); }
+
+        /* Floating Controls */
+        .floating-controls { position: fixed; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 90; }
+        .control-btn {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--glass);
+            display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+            border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .control-btn:hover { background: #334155; transform: translateY(-3px) scale(1.08); border-color: var(--secondary); }
+
+        /* SweetAlert Customization */
+        .swal2-popup { font-family: 'Cairo', sans-serif !important; border-radius: 20px !important; border: 4px solid #3b82f6; background: rgba(15, 23, 42, 0.95) !important; color: white !important; }
+        .swal2-title { font-weight: 900 !important; color: #fcd34d !important; }
+        .swal2-html-container { color: #cbd5e1 !important; font-size: 1.2rem !important; }
+    </style>
 </head>
-
 <body>
-  <div id="app"></div>
 
-  <script src="../common.js"></script>
-  <script src="../game-shell.js"></script>
-  <script>
-    /* ===== المسار: ٢٥ حجراً (٠ = البداية، ٢٤ = مكان الروبوت) بشكل ثعبان من ٥ صفوف ===== */
-    const LAST = 24;
-    const spot = i => {            // x: ٠–١٠٠ من عرض اللوحة، y: بنفس الوحدة (ارتفاع اللوحة ٦٨)
-      const row = Math.floor(i / 5), col = i % 5;
-      return { x: row % 2 === 0 ? 86 - 18 * col : 14 + 18 * col, y: 60 - 12.5 * row };
-    };
-    const zoneOf = i => (i < 8 ? 1 : i < 16 ? 2 : 3);
-    const STAGES = ['المرحلة الأولى: الوصول إلى مكان الروبوت', 'المرحلة الثانية: تجهيز خطة الإنقاذ', 'المرحلة الثالثة: مهمة الإنقاذ!'];
+    <!-- Global Controls -->
+    <div class="floating-controls">
+        <button class="control-btn" onclick="toggleNumbers()" id="btn-num-toggle" title="تغيير الأرقام (هندي/عربي)">١٢٣</button>
+        <button class="control-btn" onclick="toggleSound()" id="btn-sound" title="الصوت">🔊</button>
+        <button class="control-btn" onclick="toggleFullScreen()" title="ملء الشاشة">⛶</button>
+    </div>
 
-    /* ===== البطاقات (من ملف المعلم) =====
-       challenge: سؤال اختيار من متعدد · surprise: مكافأة أو عقبة تنفَّذ فوراً (reward 0 = رمية نرد إضافية) · mission: مهمة جماعية يحكم عليها المعلم */
-    const MASTER = [
-      { type: 'challenge', text: 'جسر الأرقام السحري: قفوا عند 9 واقفزوا 3 خطوات للأمام تصاعدياً. أين ستصلون؟', options: [11, 12, 13, 14], answer: 12, reward: 1, penalty: 0 },
-      { type: 'challenge', text: 'صندوق الطاقة المزدوج: وجدتم صندوقاً يفتح بكلمة سر. ما هي كلمة السر (7 + 7)؟', options: [13, 14, 15, 12], answer: 14, reward: 1, penalty: 0 },
-      { type: 'challenge', text: 'لغز البطاريات الثلاث: ناتج 2 + 8 + 4 ؟ (مع أي بطاريتين ستدمجون أولاً لتسهيل المهمة؟)', options: ['4 و 8', '8 و 2', '4 و 2', 'لا يمكن الدمج'], answer: '8 و 2', reward: 2, penalty: 0 },
-      { type: 'challenge', text: 'الشفرة الناقصة لتشغيل الشاشة: 9 = 5 + ؟', options: [3, 4, 5, 6], answer: 4, reward: 1, penalty: -1 },
-      { type: 'challenge', text: 'حكمة سلمى: حفظت 3 سور ثم 4 سور. كم سورة حفظت؟', options: [6, 7, 8, 9], answer: 7, reward: 1, penalty: 0 },
-      { type: 'challenge', text: 'خاصية الصفر: طاقة الروبوت الحالية صفر، أضفنا 6 بطاريات. كم المجموع ( 0 + 6 )؟', options: [0, 6, 60, 10], answer: 6, reward: 1, penalty: 0 },
-
-      { type: 'surprise', text: 'زلاجة الجاذبية!\nعثرتم على زلاجة سريعة تختصر المسافة.. تقدموا مربعين للأمام مجاناً!', icon: 'rocket-launch', reward: 2 },
-      { type: 'surprise', text: 'شحنة طاقة إضافية!\nفريقكم مليء بالحماس! يحق لكم رمي النرد مرة أخرى.', icon: 'lightning', reward: 0 },
-      { type: 'surprise', text: 'ممر سري!\nاكتشفتم نفقاً يوصلكم فوراً للأعلى. تقدموا 3 مربعات!', icon: 'flag-checkered', reward: 3 },
-      { type: 'surprise', text: 'رياح التوقف!\nهبت عاصفة رملية غطت طريقكم. تراجعوا خطوة واحدة للحماية.', icon: 'wind', penalty: -1 },
-
-      { type: 'mission', text: 'عاصفة الأرقام:\nليتمكن فريقكم من الرؤية وسط العاصفة، يجب أن يتعاون 3 أعضاء لذكر 3 عمليات جمع مختلفة نتيجتها 10 خلال 30 ثانية!', reward: 2, penalty: 0 },
-      { type: 'mission', text: 'الباب المزدوج:\nاشرحوا كيف يمكننا استخدام حقيقة الجمع (6 + 6 = 12) لمعرفة ناتج (7 + 6) لفتح هذا الباب.', reward: 2, penalty: 0 },
-      { type: 'mission', text: 'اكتشف الخطأ:\nوجدتم خريطة قديمة مكتوب عليها: (17 = 17 + 8 + 2). تشاوروا معاً.. هل الخريطة صحيحة؟ صححوا الخطأ لتجدوا الطريق!', reward: 2, penalty: -1 }
-    ];
-    const KINDS = {
-      challenge: { title: 'تحدي الإنقاذ', icon: 'target', tone: 'var(--c4)' },
-      surprise: { title: 'مفاجأة سارة', icon: 'gift', tone: 'var(--c5)' },
-      mission: { title: 'مهمة ذهبية جماعية', icon: 'handshake', tone: 'var(--c2)' }
-    };
-
-    /* ===== حالة اللعبة =====
-       المركبة واحدة للصف كله: كل طالب يرمي النرد ويجيب، وكل إجابة صحيحة تقرّبنا من الروبوت. تُحفظ في الذاكرة فقط. */
-    const $ = id => document.getElementById(id);
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const DICE = ['one', 'two', 'three', 'four'];
-    let pos = 0;               // مكان المركبة
-    let roundId = 0;           // يتغير مع كل جولة: أي حركة قديمة تتوقف
-    let roundCounted = true;   // false بعد "أعد توليد السؤال": تدريب، لا تتحرك فيه المركبة ولا تُحسب نتيجته
-    let phase = 'idle';        // idle | roll | busy | card
-    let deck = [], deckKey = '';
-    let card = null;
-    let claimResolve = null;
-
-    const alive = my => my === roundId && gameStarted && !answered;
-    const stepsText = n => (n === 1 ? 'خطوة واحدة' : n === 2 ? 'خطوتين' : `${toArabicNumber(n)} خطوات`);
-    const cardText = t => esc(toArabicText(t)).replace(/\n/g, '<br>');
-
-    /* ===== الرسم ===== */
-    function renderBoard() {
-      const stones = [];
-      for (let i = 0; i <= LAST; i++) {
-        const { x, y } = spot(i);
-        const cls = i === 0 ? ' stone--start' : i === LAST ? ' stone--end' : '';
-        const inner = i === 0 ? '<i class="ph-fill ph-flag-checkered" aria-hidden="true"></i>' : i === LAST ? '<i class="ph-fill ph-robot" aria-hidden="true"></i>' : toArabicNumber(i);
-        stones.push(`<span class="stone${cls}" data-zone="${zoneOf(i)}" style="--x:${x};--y:${y}">${inner}</span>`);
-      }
-      const points = Array.from({ length: LAST + 1 }, (_, i) => { const s = spot(i); return `${s.x},${s.y}`; }).join(' ');
-      $('robotBoard').innerHTML =
-        `<svg class="track" viewBox="0 0 100 68" preserveAspectRatio="none" aria-hidden="true"><polyline points="${points}"/></svg>${stones.join('')}` +
-        `<span class="crew" id="crew" aria-hidden="true"><i class="ph-fill ph-rocket-launch"></i></span>`;
-      placeCrew();
-    }
-    function placeCrew() {
-      const { x, y } = spot(pos);
-      const crew = $('crew');
-      crew.style.setProperty('--x', x); crew.style.setProperty('--y', y);
-      $('stage').textContent = STAGES[zoneOf(pos) - 1];
-      $('robotBoard').setAttribute('aria-label', `مسار الإنقاذ: المركبة عند الحجر ${toArabicNumber(pos)} من ${toArabicNumber(LAST)}`);
-    }
-
-    function setDie(n) { $('die').className = 'die ph-fill ph-dice-' + DICE[n - 1]; }
-
-    function clearCard() {
-      $('choices').innerHTML = '';
-      $('robotExtra').hidden = true;
-      $('judge').hidden = true;
-      document.querySelectorAll('#judge button').forEach(b => { b.disabled = false; });
-      $('claimBtn').hidden = true;
-      claimResolve = null;
-    }
-
-    function renderCard() {
-      const k = KINDS[card.type];
-      $('problem').innerHTML =
-        `<span class="kind-chip" style="--fc:${k.tone}"><i class="ph-bold ph-${card.icon || k.icon}" aria-hidden="true"></i>&nbsp;${k.title}</span>` +
-        `<div class="problem-text">${cardText(card.text)}</div>`;
-      if (phase !== 'card') return;
-      clearCard();
-      if (card.type === 'challenge') {
-        correctAnsGlobal = card.answer;
-        card.options.forEach((opt, i) => {
-          const b = document.createElement('button');
-          b.type = 'button'; b.className = 'choice'; b.dataset.key = toArabicNumber(i + 1);
-          b.innerHTML = esc(toArabicText(opt)); b._value = opt;
-          b.onclick = () => answerChoice(opt);
-          $('choices').appendChild(b);
-        });
-      } else if (card.type === 'mission') {
-        correctAnsGlobal = null;
-        $('robotExtra').hidden = false;
-        $('judge').hidden = false;
-      }
-    }
-
-    /* ===== حركة المركبة، حجراً حجراً ===== */
-    async function moveTo(target, my) {
-      target = Math.max(0, Math.min(LAST, target));
-      const crew = $('crew');
-      crew.classList.add('is-hopping');
-      while (pos !== target && my === roundId) {
-        pos += pos < target ? 1 : -1;
-        placeCrew();
-        game.sfx('pop', pos % 6);
-        await sleep(320);
-      }
-      crew.classList.remove('is-hopping');
-    }
-
-    /* ===== الجولة =====
-       ارمِ النرد ← تتقدم المركبة ← تُسحب بطاقة. المفاجأة تنفَّذ ثم تُسحب بطاقة أخرى (أو رمية إضافية)، والتحدي والمهمة هما ما يُحسب للطالب. */
-    function enabledTypes() {
-      const on = new Set(['challenge']);
-      document.querySelectorAll('input[name="cards"]:checked').forEach(i => on.add(i.value));
-      return on;
-    }
-    function draw() {
-      const on = enabledTypes(), key = [...on].sort().join();
-      if (key !== deckKey || !deck.length) { deckKey = key; deck = shuffle(MASTER.filter(c => on.has(c.type))); }
-      return deck.pop();
-    }
-
-    function newRound(ctx, { counted }) {
-      roundCounted = counted;
-      roundId++;
-      card = null; phase = 'roll';
-      clearCard();
-      $('problem').innerHTML = `<span class="problem-text">ارمِ النرد لتتقدّم المركبة نحو الروبوت</span>${counted ? '' : '<div class="problem-hint">جولة تدريب: لا تتحرك فيها المركبة ولا تُحسب</div>'}`;
-      $('dieText').textContent = '';
-      $('rollBtn').disabled = false;
-      startTimer(() => finish(false, '❌ الوقت انتهى!'));   // الوقت يشمل النرد والبطاقة معاً، فلا تتعطل الجولة إن لم يرمِ أحد النرد
-    }
-
-    async function roll() {
-      if (phase !== 'roll' || !gameStarted || answered) return;
-      const my = roundId;
-      phase = 'busy'; $('rollBtn').disabled = true;
-      for (let i = 0; i < 10 && alive(my); i++) { setDie(rnd(1, 4)); game.sfx('pop', i % 6); await sleep(90); }
-      if (!alive(my)) return;
-      const steps = rnd(1, 4);
-      setDie(steps);
-      $('dieText').textContent = 'النتيجة: ' + toArabicNumber(steps);
-      await sleep(500);
-      if (!alive(my)) return;
-      if (roundCounted) {
-        await moveTo(pos + steps, my);
-        if (!alive(my)) return;
-        if (pos >= LAST) return rescued('وصلت المركبة بنفسها!');
-      }
-      await nextCard(my);
-    }
-
-    /* نسحب بطاقات حتى نصل إلى تحدٍّ أو مهمة (هذان يُحسبان)، وننفذ المفاجآت في الطريق */
-    async function nextCard(my) {
-      while (alive(my)) {
-        card = draw();
-        if (card.type !== 'surprise') {
-          phase = 'card';
-          renderCard();
-          return;
-        }
-        // مفاجأة: تظهر، ثم يضغط الطالب "استلام" فتُنفَّذ
-        phase = 'busy';
-        renderCard();
-        $('robotExtra').hidden = false; $('claimBtn').hidden = false;
-        await new Promise(res => { claimResolve = res; });
-        if (!alive(my)) return;
-        clearCard();
-        const move = (card.reward || 0) + (card.penalty || 0);
-        if (roundCounted && move) {
-          await moveTo(pos + move, my);
-          if (!alive(my)) return;
-          if (pos >= LAST) return rescued('المفاجأة أوصلتنا إلى الروبوت!');
-        }
-        if (card.reward === 0) {   // رمية نرد إضافية
-          phase = 'roll'; $('rollBtn').disabled = false;
-          $('problem').innerHTML = '<span class="problem-text">ارمِ النرد مرة أخرى!</span>';
-          return;
-        }
-      }
-    }
-
-    function answerChoice(opt) {
-      if (phase !== 'card' || !gameStarted || answered) return;
-      document.querySelectorAll('#choices .choice').forEach(b => {
-        if (b._value === card.answer) b.classList.add('correct');
-        else if (b._value === opt) b.classList.add('wrong');
-        b.disabled = true;
-      });
-      finish(opt === card.answer);
-    }
-
-    /* نهاية جولة فيها بطاقة: الإجابة الصحيحة تقدّم المركبة (reward) والخاطئة قد ترجعها (penalty) */
-    function finish(correct, message) {
-      if (!gameStarted || answered) return;
-      const my = roundId;
-      phase = 'busy';
-      $('rollBtn').disabled = true;
-      $('claimBtn').hidden = true; claimResolve = null;
-      document.querySelectorAll('#choices .choice').forEach(b => { if (card && b._value === card.answer) b.classList.add('correct'); b.disabled = true; });
-      document.querySelectorAll('#judge button').forEach(b => { b.disabled = true; });
-      const move = roundCounted && card && card.type !== 'surprise' ? (correct ? card.reward || 0 : card.penalty || 0) : 0;
-      const arrives = pos + move >= LAST;
-      const name = currentStudent;
-      if (!message && roundCounted) {
-        message = correct
-          ? (arrives ? `🎉 أحسنت يا ${name}! وصلنا إلى الروبوت` : `✅ أحسنت يا ${name}! تتقدّم المركبة ${stepsText(move)}`)
-          : (move < 0 ? `❌ محاولة غير موفقة: عطل في النظام والمركبة تتراجع ${stepsText(-move)}` : '❌ محاولة غير موفقة، تبقى المركبة في مكانها');
-      } else if (message && move < 0) {
-        message += ` — والمركبة تتراجع ${stepsText(-move)}`;
-      }
-      game.finishRound(correct, { counted: roundCounted, message, delay: 1800 });
-      if (move) moveTo(pos + move, my).then(() => { if (pos >= LAST) rescued(); });
-    }
-
-    /* وصلت المركبة إلى الروبوت: احتفال ثم مهمة إنقاذ جديدة من البداية */
-    function rescued(why) {
-      try { confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } }); } catch (e) { /* the library may not have loaded */ }
-      game.sfx('win', 8);
-      $('stage').textContent = '🎉 تم إنقاذ الروبوت حاسوب!';
-      if (!answered && gameStarted) {   // وصلنا قبل أي سؤال: الجولة نجاح للطالب
-        phase = 'busy';
-        game.finishRound(true, { counted: roundCounted, message: `🎉 ${why || 'أنقذنا الروبوت!'} أحسنت يا ${currentStudent}، أنقذتم الروبوت حاسوب!`, face: '🎉', delay: 2600 });
-      }
-      $('rollBtn').disabled = true;
-      setTimeout(() => { pos = 0; placeCrew(); }, 2600);
-    }
-
-    const game = GameShell.mount({
-      id: 'robot-rescue',
-      storagePrefix: 'robot_rescue',
-      title: 'مهمة إنقاذ الروبوت حاسوب',
-      heading: 'مهمة إنقاذ الروبوت حاسوب',
-      emoji: { code: '1f916', fallback: '🤖' },   // نفس إيموجي جزيرتها على الخريطة
-      exportFilename: 'نتائج_إنقاذ_الروبوت.xlsx',
-      timer: { value: 45, min: 15, max: 120 },
-      intro: 'اختر طالباً واضغط «ابدأ اللعب»، ثم ارمِ النرد. كل إجابة صحيحة تقرّب مركبة الصف من الروبوت حاسوب!',
-      footerHTML: 'تسابَقوا لجمع الطاقة للروبوت حاسوب، واستخدموا طرائق الجمع لتخطي العقبات.',
-      settingsHTML: `
-        <div class="toolbar">
-          <div class="group group--stack">
-            <span class="label">البطاقات مع التحدي:</span>
-            <div class="checkbox-group">
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="cards" value="surprise" checked>
-                <i class="ph-bold ph-gift" aria-hidden="true"></i><span>مفاجآت</span>
-              </label>
-              <label class="checkbox-option checked">
-                <input type="checkbox" name="cards" value="mission" checked>
-                <i class="ph-bold ph-handshake" aria-hidden="true"></i><span>مهام جماعية (يحكم المعلم)</span>
-              </label>
+    <!-- Screen: Start -->
+    <div id="screen-start" class="screen active justify-center items-center">
+        <div class="glass-panel p-12 rounded-3xl text-center max-w-3xl border-4 border-blue-500 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 text-9xl opacity-20 animate-spin-slow">⚙️</div>
+            <div class="absolute -bottom-10 -left-10 text-9xl opacity-20">🤖</div>
+            
+            <h1 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-yellow-400 mb-6 drop-shadow-2xl">مهمة إنقاذ الروبوت</h1>
+            <h2 class="text-5xl font-bold text-yellow-400 mb-12 drop-shadow-lg">حاسوب 🤖</h2>
+            
+            <div class="flex flex-col gap-6 relative z-10">
+                <button onclick="showSetup()" class="btn-3d btn-blue bg-blue-600 text-white font-black text-4xl py-6 rounded-2xl">
+                    العب الآن 🚀
+                </button>
+                <button onclick="showHowToPlay()" class="btn-3d bg-slate-700 text-white font-bold text-2xl py-4 rounded-2xl">
+                    طريقة اللعب 📖
+                </button>
             </div>
-          </div>
         </div>
-        <div class="toolbar">
-          <button type="button" id="restartTrack"><i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i> إعادة المركبة إلى البداية</button>
-        </div>`,
-      gameAreaHTML: `
-        <div class="dice-row">
-          <i class="die ph-fill ph-dice-one" id="die" aria-hidden="true"></i>
-          <span class="dice-text" id="dieText" aria-live="polite"></span>
-          <button type="button" class="btn--sun" id="rollBtn" disabled><i class="ph-bold ph-dice-five" aria-hidden="true"></i> ارمِ النرد</button>
-        </div>
-        <div class="choices" id="choices"></div>
-        <div class="robot-extra" id="robotExtra" hidden>
-          <button type="button" class="btn--primary" id="claimBtn" hidden><i class="ph-bold ph-gift" aria-hidden="true"></i> استلام المفاجأة</button>
-          <div class="judge-row" id="judge" hidden>
-            <button type="button" class="is-ok" id="judgeOk"><i class="ph-bold ph-check" aria-hidden="true"></i> نجحت المهمة</button>
-            <button type="button" class="is-bad" id="judgeBad"><i class="ph-bold ph-x" aria-hidden="true"></i> لم تنجح</button>
-          </div>
-        </div>
-        <div class="robot-board" id="robotBoard" role="img"></div>
-        <p class="problem-hint stage" id="stage"></p>`,
-      newRound,
-      onNumbersToggle() {
-        // أرقام المسار والبطاقة المفتوحة تتبع نوع الأرقام، دون تغيير البطاقة
-        renderBoard();
-        if (card && (phase === 'card' || phase === 'busy') && gameStarted) renderCard();
-        return false;
-      },
-      onReady() {
-        renderBoard();
-        $('rollBtn').addEventListener('click', roll);
-        $('claimBtn').addEventListener('click', () => { if (claimResolve) { const r = claimResolve; claimResolve = null; $('claimBtn').hidden = true; r(); } });
-        $('judgeOk').addEventListener('click', () => finish(true));
-        $('judgeBad').addEventListener('click', () => finish(false));
-        $('restartTrack').addEventListener('click', () => { pos = 0; placeCrew(); });
-        document.addEventListener('keydown', e => {   // مسافة أو Enter خارج الحقول ترمي النرد أيضاً
-          if (e.key === ' ' && phase === 'roll' && gameStarted && !answered && !/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test((e.target || {}).tagName || '')) { e.preventDefault(); roll(); }
-        });
-      }
-    });
-  </script>
-</body>
+    </div>
 
+    <!-- Screen: Setup Teams & Image Upload -->
+    <div id="screen-setup" class="screen glass-panel justify-center">
+        <div class="setup-container glass-panel shadow-2xl relative">
+            <button onclick="goHome()" class="absolute top-4 left-4 bg-red-600 p-2 rounded-lg font-bold hover:bg-red-500 transition">❌ إغلاق</button>
+            
+            <h2 class="text-4xl font-black text-yellow-400 mb-8 text-center drop-shadow-lg">إعداد الفرق واللاعبين</h2>
+            
+            <!-- Student Entry -->
+            <div class="flex flex-wrap gap-4 mb-4 bg-slate-800 p-5 rounded-2xl items-center border-2 border-slate-600 shadow-lg">
+                <input type="text" id="manual-student" placeholder="اكتب اسم الطالب هنا..." class="flex-1 px-5 py-3 rounded-xl bg-slate-900 border-2 border-slate-500 focus:outline-none focus:border-blue-500 text-lg">
+                <button onclick="addStudent()" class="btn-3d bg-green-600 text-white px-8 py-3 rounded-xl font-black text-xl">إضافة ➕</button>
+                
+                <div class="w-px h-10 bg-slate-500 mx-4"></div>
+                
+                <label class="font-bold text-slate-300 text-lg flex items-center gap-2 cursor-pointer bg-slate-700 px-4 py-3 rounded-xl hover:bg-slate-600 transition">
+                    <span>📄 رفع ملف أسماء</span>
+                    <input type="file" id="file-upload" accept=".xlsx,.xls,.docx,.txt" onchange="handleFileUpload(event)" class="hidden">
+                </label>
+            </div>
+
+            <!-- Fix for Board Image Upload -->
+            <div class="flex flex-wrap justify-center mb-6 bg-yellow-900/40 p-4 rounded-2xl border-2 border-yellow-600 shadow-lg text-center">
+                <p class="text-yellow-200 font-bold mb-2 w-full">إذا لم تظهر الخريطة، اضغط هنا لرفع صورة البورد يدوياً:</p>
+                <label class="btn-3d bg-yellow-600 text-white font-bold text-lg flex items-center gap-2 cursor-pointer px-6 py-2 rounded-xl hover:bg-yellow-500 transition">
+                    <span>🗺️ رفع صورة الخريطة</span>
+                    <input type="file" accept="image/*" onchange="handleBoardUpload(event)" class="hidden">
+                </label>
+            </div>
+
+            <!-- Teams Controls -->
+            <div class="flex flex-wrap gap-4 mb-8 items-center bg-slate-800 p-4 rounded-xl border border-slate-600">
+                <label class="font-bold text-xl">عدد الفرق:</label>
+                <select id="team-count" onchange="renderSetupGrid()" class="bg-slate-900 border-2 border-blue-500 rounded-xl px-6 py-2 text-xl font-bold">
+                    <option value="2" selected>فريقين (2)</option>
+                    <option value="3">3 فرق</option>
+                    <option value="4">4 فرق</option>
+                </select>
+                <button onclick="distributeRandomly()" class="btn-3d bg-blue-600 px-6 py-2 rounded-xl font-bold text-lg ml-auto">توزيع عشوائي 🔀</button>
+                <button onclick="clearStudents()" class="btn-3d bg-red-700 px-6 py-2 rounded-xl font-bold text-lg">مسح الكل 🗑️</button>
+            </div>
+
+            <div id="teams-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Teams injected here -->
+            </div>
+
+            <div class="mt-10 text-center pb-10">
+                <button onclick="startGame()" class="btn-3d bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-3xl py-5 px-16 rounded-2xl border-4 border-green-400">ابدأ المغامرة! 🏁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen: Game Board -->
+    <div id="screen-game" class="screen bg-slate-900 flex-col h-full overflow-hidden">
+        <!-- HUD -->
+        <div class="bg-slate-800 py-1 px-4 md:px-6 shadow-2xl flex justify-between items-center z-30 border-b-4 border-slate-700 flex-shrink-0">
+            <div id="hud-team1" class="flex items-center gap-3 bg-blue-900/60 py-1 px-3 md:py-1.5 md:px-5 rounded-xl border-2 border-blue-400 transition-all shadow-inner">
+                <div class="text-2xl md:text-3xl">⚡</div>
+                <div>
+                    <div id="disp-name-t1" class="font-black text-sm md:text-base text-blue-200">فريق البرق</div>
+                    <div class="text-xs text-blue-100">المربع: <span class="format-num font-black text-base md:text-lg text-white" id="disp-pos-t1">0</span></div>
+                </div>
+            </div>
+
+            <div class="text-center flex flex-col items-center justify-center mx-2">
+                <div class="text-xs text-gray-200 font-bold bg-slate-700 inline-block px-3 py-0.5 rounded-full border border-slate-500" id="round-indicator">الجولة الأولى</div>
+                <div id="turn-banner" class="mt-1 text-sm md:text-lg font-black py-1 px-6 rounded-full inline-block shadow-[0_0_15px_rgba(59,130,246,0.6)] border-2 border-white animate-pulse bg-blue-600">
+                    دور فريق البرق
+                </div>
+            </div>
+
+            <div id="hud-team2" class="flex items-center gap-3 bg-red-900/60 py-1 px-3 md:py-1.5 md:px-5 rounded-xl border-2 border-red-400 transition-all opacity-50 justify-end text-left shadow-inner">
+                <div>
+                    <div id="disp-name-t2" class="font-black text-sm md:text-base text-red-200">فريق الشعلة</div>
+                    <div class="text-xs text-red-100">المربع: <span class="format-num font-black text-base md:text-lg text-white" id="disp-pos-t2">0</span></div>
+                </div>
+                <div class="text-2xl md:text-3xl">🔥</div>
+            </div>
+        </div>
+
+        <!-- 3D Board Area -->
+        <div id="board-wrapper">
+            <div id="game-board-container">
+                <div class="board-placeholder">إذا ظهرت هذه الشاشة البيضاء<br>قم برفع صورة الخريطة من صفحة الإعدادات</div>
+                <!-- Pawns -->
+                <div id="pawn-1" class="pawn"></div>
+                <div id="pawn-2" class="pawn"></div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="bg-slate-800 py-2 px-4 md:px-8 border-t-4 border-slate-700 flex justify-between items-center z-30 flex-shrink-0 relative">
+            <!-- Left Side in RTL: Settings & Utility Controls -->
+            <div class="flex items-center gap-2">
+                <button onclick="pauseGame()" class="btn-3d bg-slate-600 hover:bg-slate-500 text-white px-3 md:px-4 py-2 rounded-xl font-bold text-sm md:text-base flex items-center gap-1.5">
+                    <span>⚙️ الإعدادات</span>
+                </button>
+                <button class="control-btn !w-9 !h-9 !text-sm" onclick="toggleNumbers()" id="btn-num-toggle-game" title="تغيير الأرقام (هندي/عربي)">١٢٣</button>
+                <button class="control-btn !w-9 !h-9 !text-sm" onclick="toggleSound()" id="btn-sound-game" title="الصوت">🔊</button>
+                <button class="control-btn !w-9 !h-9 !text-sm" onclick="toggleFullScreen()" title="ملء الشاشة">⛶</button>
+            </div>
+
+            <!-- Center: Roll Dice Button -->
+            <button id="btn-roll" onclick="startDiceRoll()" class="btn-3d bg-gradient-to-b from-yellow-400 to-yellow-600 text-black px-8 md:px-14 py-2 md:py-2.5 rounded-2xl font-black text-2xl md:text-3xl flex items-center gap-3 border-4 border-yellow-200 shadow-xl">
+                <span>ارمِ النرد</span>
+                <span class="text-3xl md:text-4xl animate-bounce">🎲</span>
+            </button>
+            
+            <!-- Right Side in RTL: End Game Button -->
+            <button onclick="endGameEarly()" class="btn-3d bg-red-800 hover:bg-red-700 text-white px-3 md:px-4 py-2 rounded-xl font-bold text-sm md:text-base flex items-center gap-1.5">
+                <span>🛑 إنهاء المسابقة</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Screen: Cinematic 3D Dice -->
+    <div id="dice-screen" class="screen">
+        <h2 class="text-5xl font-black text-yellow-400 mb-16 drop-shadow-[0_5px_10px_rgba(0,0,0,0.8)]" id="dice-rolling-text">جاري رمي النرد...</h2>
+        <div class="dice-scene" id="dice-scene">
+            <div class="cube" id="game-cube">
+                <!-- Faces injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay: 3D Cards -->
+    <div id="card-overlay" class="card-overlay">
+        <div class="interactive-card" id="active-card">
+            <!-- Background image applied via JS -->
+            <div class="card-content-glass">
+                <div class="mb-4">
+                    <div class="inline-block bg-slate-900/90 px-8 py-2 rounded-full border-2 border-yellow-400 text-yellow-400 font-black text-2xl shadow-lg mb-4" id="card-header">
+                        تحدي الإنقاذ
+                    </div>
+                    <div id="card-leader" class="text-emerald-300 font-bold text-xl mb-2 bg-slate-800/80 inline-block px-4 py-1 rounded-lg"></div>
+                    <h3 id="card-text" class="text-3xl font-bold leading-relaxed mt-4 text-white drop-shadow-md">نص السؤال يظهر هنا؟</h3>
+                </div>
+                
+                <!-- Options for standard questions -->
+                <div id="card-mcq" class="mcq-grid"></div>
+
+                <!-- Teacher Actions for Manual / Essay Cards (Team Missions) -->
+                <div id="card-teacher" class="teacher-grid hidden">
+                    <button onclick="resolveChallenge(true)" class="btn-3d btn-success text-white py-4 rounded-2xl font-black text-3xl shadow-xl flex items-center justify-center gap-3">
+                        <span class="text-4xl">✅</span> إجابة صحيحة (نجاح المهمة)
+                    </button>
+                    <button onclick="resolveChallenge(false)" class="btn-3d btn-danger text-white py-4 rounded-2xl font-black text-3xl shadow-xl flex items-center justify-center gap-3">
+                        <span class="text-4xl">❌</span> إجابة خاطئة (محاولة غير موفقة)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen: Winner -->
+    <div id="screen-winner" class="screen bg-slate-900 justify-center items-center">
+        <div class="winner-cert relative shadow-[0_0_50px_rgba(245,158,11,0.5)] bg-slate-800 border-4 border-yellow-500 rounded-3xl p-10 text-center max-w-4xl">
+            <div class="absolute top-4 right-4 text-6xl animate-spin-slow">⚙️</div>
+            <div class="absolute bottom-4 left-4 text-6xl animate-bounce">🤖</div>
+            <h1 class="text-6xl font-black text-blue-400 mb-6 mt-8 drop-shadow-md">شهادة بطولة وإنقاذ</h1>
+            <h2 class="text-4xl font-bold text-gray-200 mb-10">تمت مهمة إنقاذ الروبوت "حاسوب" بنجاح! 🎉</h2>
+            <p class="text-3xl font-bold mb-4 text-gray-400">تُمنح هذه الشهادة المتميزة إلى أبطال:</p>
+            <div id="winner-team-name" class="text-7xl font-black text-yellow-400 mb-10 py-6 border-y-8 border-yellow-500 border-dashed inline-block px-16 bg-slate-900 rounded-3xl shadow-inner">
+                اسم الفريق
+            </div>
+            <p class="text-2xl font-bold text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
+                لتفوقهم المذهل في استخدام الرياضيات، وعملهم الجماعي الرائع في تذليل العقبات وإعادة الطاقة للروبوت.
+            </p>
+            <button onclick="location.reload()" class="btn-3d bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-4 rounded-2xl font-black text-3xl mx-auto block shadow-xl border-4 border-blue-300">العب مرة أخرى 🔄</button>
+        </div>
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- Core State ---
+        let state = {
+            useHindiNumbers: true, 
+            sound: true,
+            unassigned: [],
+            teams: [],
+            activeTeams: [],
+            turn: 0,
+            isMoving: false,
+            currentCard: null,
+            deck: []
+        };
+
+        // --- Custom Path Coordinates mapped to S-Curve ---
+        const boardPath = [
+            {x: 82, y: 80}, {x: 72, y: 82}, {x: 60, y: 83}, {x: 48, y: 82}, {x: 35, y: 79}, // 0 (Start) - 4
+            {x: 25, y: 73}, {x: 22, y: 62}, {x: 30, y: 55}, {x: 42, y: 53}, {x: 55, y: 55}, // 5 - 9
+            {x: 68, y: 56}, {x: 78, y: 52}, {x: 82, y: 40}, {x: 72, y: 30}, {x: 60, y: 26}, // 10 - 14
+            {x: 48, y: 25}, {x: 35, y: 28}, {x: 25, y: 35}, {x: 18, y: 45}, {x: 25, y: 53}, // 15 - 19
+            {x: 38, y: 53}, {x: 52, y: 45}, {x: 65, y: 35}, {x: 75, y: 28}, {x: 85, y: 22}  // 20 - 24 (Finish near crane)
+        ];
+        const TOTAL_SPACES = boardPath.length - 1;
+
+        // --- Cards Database ---
+        const masterDeck = [
+            // Challenges (MCQs)
+            { type: 'challenge', bg: 'صور كروت التحدي_2.jpg', text: 'جسر الأرقام السحري: قفوا عند 9 واقفزوا 3 خطوات للأمام تصاعدياً. أين ستصلون؟', options: [11, 12, 13, 14], answer: 12, reward: 1, penalty: 0 },
+            { type: 'challenge', bg: 'صور كروت التحدي_2.jpg', text: 'صندوق الطاقة المزدوج: وجدتم صندوقاً يفتح بكلمة سر. ما هي كلمة السر (7 + 7)؟', options: [13, 14, 15, 12], answer: 14, reward: 1, penalty: 0 },
+            { type: 'challenge', bg: 'صور كروت التحدي.jpg', text: 'لغز البطاريات الثلاث: ناتج 2+8+4؟ (مع أي بطاريتين ستدمجون أولاً لتسهيل المهمة؟)', options: ['4 و 8', '8 و 2', '4 و 2', 'لا يمكن الدمج'], answer: '8 و 2', reward: 2, penalty: 0 },
+            { type: 'challenge', bg: 'صور كروت التحدي_2.jpg', text: 'الشفرة الناقصة لتشغيل الشاشة: 9 = 5 + ؟', options: [3, 4, 5, 6], answer: 4, reward: 1, penalty: -1 },
+            { type: 'challenge', bg: 'صور كروت التحدي.jpg', text: 'حكمة سلمى: حفظت 3 سور ثم 4 سور. كم سورة حفظت؟', options: [6, 7, 8, 9], answer: 7, reward: 1, penalty: 0 },
+            { type: 'challenge', bg: 'صور كروت التحدي_2.jpg', text: 'خاصية الصفر: طاقة الروبوت الحالية صفر، أضفنا 6 بطاريات. كم المجموع ( 0 + 6 )؟', options: [0, 6, 60, 10], answer: 6, reward: 1, penalty: 0 },
+            
+            // Surprises (Auto/Manual Resolve)
+            { type: 'surprise', bg: 'صور كروت المفاجأت_2.jpg', text: 'زلاجة الجاذبية! 🚀\nعثرتم على زلاجة سريعة تختصر المسافة.. تقدموا مربعين للأمام مجاناً!', manual: true, typeAuto: 'reward', reward: 2, popupIcon: '🚀' },
+            { type: 'surprise', bg: 'صور كروت المفاجأت_2.jpg', text: 'شحنة طاقة إضافية! ⚡\nفريقكم مليء بالحماس! يحق لكم رمي النرد مرة أخرى.', manual: true, typeAuto: 'reward', reward: 0, popupIcon: '⚡' },
+            { type: 'surprise', bg: 'صور كروت المفاجأت.jpg', text: 'ممر سري! (Shortcut) 🚇\nاكتشفتم نفقاً يوصلكم فوراً للأعلى. تقدموا 3 مربعات!', manual: true, typeAuto: 'reward', reward: 3, popupIcon: '🚇' },
+            { type: 'surprise', bg: 'صور كروت المفاجأت.jpg', text: 'رياح التوقف! 🌪️\nهبت عاصفة رملية غطت طريقكم. تراجعوا خطوة واحدة للحماية.', manual: true, typeAuto: 'penalty', penalty: -1, popupIcon: '🌪️' },
+
+            // Team Missions (Manual Essay Tasks with Teacher Buttons)
+            { type: 'mission', bg: 'صور كروت مهام الفريق_2.jpg', text: 'عاصفة الأرقام: 🌩️\nليتمكن فريقكم من الرؤية وسط العاصفة، يجب أن يتعاون 3 أعضاء لذكر 3 عمليات جمع مختلفة نتيجتها (10) خلال 30 ثانية!', manual: true, reward: 2, penalty: 0 },
+            { type: 'mission', bg: 'صور كروت مهام الفريق.jpg', text: 'الباب المزدوج: 🚪\nاشرحوا كيف يمكننا استخدام حقيقة الجمع (6+6=12) لمعرفة ناتج (7+6) لفتح هذا الباب.', manual: true, reward: 2, penalty: 0 },
+            { type: 'mission', bg: 'صور كروت مهام الفريق_2.jpg', text: 'اكتشف الخطأ: 🗺️\nوجدتم خريطة قديمة مكتوب عليها: (17=17+8+2). تشاوروا معاً.. هل الخريطة صحيحة؟ صححوا الخطأ لتجدوا الطريق!', manual: true, reward: 2, penalty: -1 }
+        ];
+
+        // --- Audio System ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol=0.1) {
+            if(!state.sound) return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        const sfx = {
+            click: () => playTone(600, 'sine', 0.1),
+            roll: () => { let t=0; for(let i=0;i<8;i++){ setTimeout(()=>playTone(300+Math.random()*400,'square',0.05),t); t+=150;} },
+            step: () => playTone(450, 'triangle', 0.1),
+            win: () => { playTone(523.25,'sine',0.1); setTimeout(()=>playTone(659.25,'sine',0.1),100); setTimeout(()=>playTone(783.99,'sine',0.3),200); },
+            fail: () => { playTone(300,'sawtooth',0.2); setTimeout(()=>playTone(250,'sawtooth',0.4),200); },
+            victory: () => { [523, 659, 783, 1046, 1318].forEach((f,i) => setTimeout(()=>playTone(f,'square',0.5), i*200)); }
+        };
+
+        const toHindi = (num) => String(num).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+        function formatNum(num) { return state.useHindiNumbers ? toHindi(num) : num; }
+        
+        function toggleNumbers() {
+            state.useHindiNumbers = !state.useHindiNumbers;
+            const text = state.useHindiNumbers ? '١٢٣' : '123';
+            const b1 = document.getElementById('btn-num-toggle');
+            if (b1) b1.innerText = text;
+            const b2 = document.getElementById('btn-num-toggle-game');
+            if (b2) b2.innerText = text;
+            updateAllNumbers();
+            sfx.click();
+        }
+
+        function updateAllNumbers() {
+            document.querySelectorAll('.format-num').forEach(el => {
+                let orig = el.getAttribute('data-val') || el.innerText;
+                if(!el.getAttribute('data-val')) el.setAttribute('data-val', orig);
+                el.innerText = formatNum(el.getAttribute('data-val'));
+            });
+            if(state.currentCard && document.getElementById('card-overlay').classList.contains('active')){
+                renderCardContent(state.currentCard);
+            }
+        }
+
+        function toggleSound() { 
+            state.sound = !state.sound; 
+            const text = state.sound ? '🔊' : '🔇';
+            const b1 = document.getElementById('btn-sound');
+            if (b1) b1.innerText = text;
+            const b2 = document.getElementById('btn-sound-game');
+            if (b2) b2.innerText = text;
+            if(state.sound) sfx.click(); 
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) { 
+                document.documentElement.requestFullscreen().catch(err => {}); 
+            } else { 
+                if (document.exitFullscreen) { document.exitFullscreen(); } 
+            }
+        }
+
+        // --- Fit Game Board Responsively in Full Screen & Normal Views ---
+        function fitGameBoard() {
+            const wrapper = document.getElementById('board-wrapper');
+            const board = document.getElementById('game-board-container');
+            if (!wrapper || !board) return;
+
+            const padX = 16;
+            const padY = 8;
+            const availW = Math.max(0, wrapper.clientWidth - padX);
+            const availH = Math.max(0, wrapper.clientHeight - padY);
+            if (availW <= 0 || availH <= 0) return;
+
+            const ratio = 16 / 9;
+            let targetW, targetH;
+
+            if (availW / availH > ratio) {
+                targetH = availH;
+                targetW = availH * ratio;
+            } else {
+                targetW = availW;
+                targetH = availW / ratio;
+            }
+
+            board.style.width = `${Math.floor(targetW)}px`;
+            board.style.height = `${Math.floor(targetH)}px`;
+        }
+
+        function goHome() { 
+            sfx.click();
+            switchScreen('screen-start'); 
+        }
+        function pauseGame() {
+            sfx.click();
+            switchScreen('screen-setup');
+            document.querySelector('#screen-setup button[onclick="startGame()"]').innerText = "عودة للعب ▶️";
+        }
+        function endGameEarly() {
+            if(confirm("هل أنت متأكد من إنهاء المسابقة الآن؟ سيتم إعلان الفريق المتقدم كفائز.")){
+                let t1 = state.activeTeams[0];
+                let t2 = state.activeTeams[1];
+                let winner = t1.pos >= t2.pos ? t1 : t2; 
+                endGame(winner);
+            }
+        }
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Toggle global floating controls (only visible on start & setup screens)
+            const fc = document.querySelector('.floating-controls');
+            if (fc) {
+                fc.style.display = (id === 'screen-game') ? 'none' : 'flex';
+            }
+
+            if (id === 'screen-game') {
+                setTimeout(fitGameBoard, 40);
+                setTimeout(fitGameBoard, 150);
+            }
+        }
+
+        function showSetup() {
+            sfx.click(); switchScreen('screen-setup');
+            if(state.teams.length === 0) renderSetupGrid();
+            document.querySelector('#screen-setup button[onclick="startGame()"]').innerText = "ابدأ المغامرة! 🏁";
+        }
+
+        function sortTeam(team) {
+            if(team.leader) {
+                team.members = team.members.filter(m => m !== team.leader);
+                team.members.unshift(team.leader); 
+            }
+        }
+
+        function renderSetupGrid() {
+            const count = parseInt(document.getElementById('team-count').value);
+            while(state.teams.length < count) {
+                state.teams.push({ id: state.teams.length, name: `فريق ${state.teams.length + 1}`, members: [], leader: null });
+            }
+            while(state.teams.length > count) {
+                const removed = state.teams.pop();
+                state.unassigned.push(...removed.members);
+            }
+
+            const grid = document.getElementById('teams-grid');
+            grid.innerHTML = '';
+            
+            grid.appendChild(createTeamDropBox('unassigned', 'الطلاب غير الموزعين 🤷‍♂️', state.unassigned));
+            
+            state.teams.forEach(t => {
+                sortTeam(t);
+                const box = createTeamDropBox(t.id, t.name, t.members, t.leader);
+                
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text'; nameInput.value = t.name;
+                nameInput.className = 'bg-slate-700 text-white font-black text-xl px-2 py-2 rounded-lg mt-2 w-full text-center border-2 border-slate-500 focus:border-yellow-400 focus:outline-none';
+                nameInput.onchange = (e) => { t.name = e.target.value || `فريق ${t.id+1}`; };
+                box.insertBefore(nameInput, box.firstChild.nextSibling);
+                grid.appendChild(box);
+            });
+        }
+
+        let draggedStudent = null, draggedSource = null;
+
+        function createTeamDropBox(id, title, members, leader = null) {
+            const box = document.createElement('div');
+            box.className = 'team-box';
+            let titleColor = id === 'unassigned' ? 'text-gray-400' : (id===0 ? 'text-blue-400' : 'text-red-400');
+            box.innerHTML = `<h3 class="text-center font-black text-2xl ${titleColor} mb-2 border-b-2 border-slate-600 pb-2">${title} (${members.length})</h3>`;
+            
+            box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
+            box.addEventListener('dragleave', () => box.classList.remove('over'));
+            box.addEventListener('drop', e => handleDrop(e, id));
+
+            members.forEach(m => {
+                const isLeader = m === leader;
+                const pill = document.createElement('div');
+                pill.className = `student-pill ${isLeader ? 'is-leader' : ''} shadow-md`;
+                pill.draggable = true;
+                
+                let leaderText = isLeader ? '<span class="text-xs ml-1 text-yellow-100">(قائد الفريق)</span>' : '';
+                
+                pill.innerHTML = `
+                    <span class="leader-crown" onclick="setLeader('${m}', '${id}')" title="تعيين كقائد">👑</span>
+                    <span class="text-lg">${m} ${leaderText}</span> 
+                    <button onclick="removeStudent('${m}', '${id}')" class="text-red-200 hover:text-white bg-red-800 hover:bg-red-600 rounded-full w-6 h-6 flex items-center justify-center font-bold mr-2 transition pb-1">x</button>
+                `;
+                pill.addEventListener('dragstart', () => { draggedStudent = m; draggedSource = id; });
+                box.appendChild(pill);
+            });
+            return box;
+        }
+
+        function handleDrop(e, targetId) {
+            e.preventDefault(); e.currentTarget.classList.remove('over');
+            if(draggedSource === targetId) return;
+
+            if(draggedSource === 'unassigned') state.unassigned = state.unassigned.filter(s => s !== draggedStudent);
+            else {
+                let t = state.teams[draggedSource];
+                t.members = t.members.filter(s => s !== draggedStudent);
+                if(t.leader === draggedStudent) t.leader = null;
+            }
+
+            if(targetId === 'unassigned') state.unassigned.push(draggedStudent);
+            else state.teams[targetId].members.push(draggedStudent);
+
+            renderSetupGrid(); sfx.click();
+        }
+
+        function addStudent() {
+            const inp = document.getElementById('manual-student');
+            if(inp.value.trim()) { state.unassigned.push(inp.value.trim()); inp.value = ''; renderSetupGrid(); sfx.click(); }
+        }
+        
+        function removeStudent(name, sourceId) {
+            if(sourceId === 'unassigned') {
+                state.unassigned = state.unassigned.filter(s => s !== name);
+            } else {
+                let t = state.teams[sourceId];
+                t.members = t.members.filter(s => s !== name);
+                if(t.leader === name) t.leader = null;
+                state.unassigned.push(name); 
+            }
+            renderSetupGrid(); sfx.click();
+        }
+        
+        function setLeader(name, teamId) {
+            if(teamId === 'unassigned') return;
+            if(state.teams[teamId].leader === name) {
+                state.teams[teamId].leader = null;
+            } else {
+                state.teams[teamId].leader = name;
+            }
+            renderSetupGrid(); sfx.click();
+        }
+        
+        function clearStudents() {
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: "سيتم مسح جميع الطلاب والفرق!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'نعم، امسح الكل!',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    state.unassigned = []; 
+                    state.teams.forEach(t => {t.members=[]; t.leader=null;}); 
+                    renderSetupGrid();
+                }
+            });
+        }
+        
+        function distributeRandomly() {
+            let all = [...state.unassigned];
+            state.teams.forEach(t => { all.push(...t.members); t.members = []; t.leader = null; });
+            state.unassigned = [];
+            all.sort(() => Math.random() - 0.5);
+            let i = 0;
+            all.forEach(s => { state.teams[i].members.push(s); i = (i + 1) % state.teams.length; });
+            renderSetupGrid(); sfx.click();
+        }
+
+        async function handleFileUpload(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            const reader = new FileReader();
+            
+            if(ext === 'xlsx' || ext === 'xls') {
+                reader.onload = evt => {
+                    const wb = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                    let names = []; json.forEach(r => r.forEach(c => { if(typeof c === 'string' && c.trim().length>1) names.push(c.trim()); }));
+                    names.forEach(n => { if(!state.unassigned.includes(n)) state.unassigned.push(n); }); renderSetupGrid();
+                    Swal.fire('تم بنجاح', 'تمت إضافة الطلاب من الملف', 'success');
+                }; reader.readAsArrayBuffer(file);
+            } else if(ext === 'docx') {
+                reader.onload = evt => { 
+                    mammoth.extractRawText({arrayBuffer: evt.target.result}).then(r => {
+                        parseRawText(r.value);
+                        Swal.fire('تم بنجاح', 'تمت إضافة الطلاب من الملف', 'success');
+                    }); 
+                }; 
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.onload = evt => {
+                    parseRawText(evt.target.result);
+                    Swal.fire('تم بنجاح', 'تمت إضافة الطلاب من الملف', 'success');
+                }; 
+                reader.readAsText(file);
+            }
+        }
+        function parseRawText(text) {
+            let names = text.split(/[\n,\t\r]+/).map(n => n.trim()).filter(n => n.length>1);
+            names.forEach(n => { if(!state.unassigned.includes(n)) state.unassigned.push(n); }); renderSetupGrid();
+        }
+
+        // --- NEW: Board Image Upload Handler ---
+        function handleBoardUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                // Set the uploaded image as the background
+                document.getElementById('game-board-container').style.backgroundImage = `url('${evt.target.result}')`;
+                // Hide the placeholder text
+                document.querySelector('.board-placeholder').style.display = 'none';
+                Swal.fire('تم بنجاح', 'تم تحميل صورة الخريطة', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function startGame() {
+            if(state.teams.length < 2) return;
+            
+            if(state.activeTeams.length > 0) {
+                switchScreen('screen-game');
+                updatePawns();
+                return;
+            }
+
+            state.activeTeams = state.teams.slice(0, 2);
+            state.activeTeams.forEach(t => { 
+                t.pos = 0; 
+                t.pawnEl = document.getElementById(`pawn-${t.id + 1}`); 
+            });
+            
+            state.deck = JSON.parse(JSON.stringify(masterDeck)).sort(() => Math.random() - 0.5);
+            
+            const cube = document.getElementById('game-cube'); cube.innerHTML = '';
+            ['front','right','back','left','top','bottom'].forEach((cls, i) => {
+                let face = document.createElement('div'); face.className = `cube__face cube__face--${cls}`;
+                for(let d=0; d<i+1; d++) { let dot = document.createElement('div'); dot.className = 'dot'; face.appendChild(dot); }
+                cube.appendChild(face);
+            });
+
+            switchScreen('screen-game');
+            updateTurnUI();
+            updatePawns();
+            sfx.click();
+            
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'مهمة إنقاذ الروبوت تبدأ!',
+                    text: 'تسابَقوا لجمع الطاقة للروبوت حاسوب. استخدموا طرائق الجمع لتخطي العقبات.',
+                    iconHtml: '🤖',
+                    confirmButtonText: 'انطلاق! 🚀',
+                    confirmButtonColor: '#3b82f6'
+                });
+            }, 500);
+        }
+
+        function updateTurnUI() {
+            let current = state.activeTeams[state.turn];
+            
+            document.getElementById('disp-name-t1').innerText = state.activeTeams[0].name;
+            document.getElementById('disp-pos-t1').innerText = formatNum(state.activeTeams[0].pos);
+            document.getElementById('disp-pos-t1').setAttribute('data-val', state.activeTeams[0].pos);
+            
+            document.getElementById('disp-name-t2').innerText = state.activeTeams[1].name;
+            document.getElementById('disp-pos-t2').innerText = formatNum(state.activeTeams[1].pos);
+            document.getElementById('disp-pos-t2').setAttribute('data-val', state.activeTeams[1].pos);
+
+            let banner = document.getElementById('turn-banner');
+            banner.innerText = `دور: ${current.name}`;
+            banner.className = `mt-1 text-sm md:text-lg font-black py-1 px-6 rounded-full inline-block shadow-[0_0_15px_rgba(59,130,246,0.6)] border-2 border-white text-white ${state.turn===0 ? 'bg-blue-600' : 'bg-red-600'} transition-all`;
+            
+            document.getElementById('hud-team1').classList.toggle('opacity-50', state.turn !== 0);
+            document.getElementById('hud-team2').classList.toggle('opacity-50', state.turn !== 1);
+            document.getElementById('hud-team1').classList.toggle('scale-105', state.turn === 0);
+            document.getElementById('hud-team2').classList.toggle('scale-105', state.turn === 1);
+
+            let maxP = Math.max(state.activeTeams[0].pos, state.activeTeams[1].pos);
+            let roundText = maxP < 8 ? 'الجولة الأولى: الوصول لمكان الروبوت' : (maxP < 16 ? 'الجولة الثانية: تجهيز خطة الإنقاذ' : 'الجولة الثالثة: مهمة الإنقاذ!');
+            document.getElementById('round-indicator').innerText = roundText;
+        }
+
+        function updatePawns() {
+            state.activeTeams.forEach(t => {
+                if(t.pos >= TOTAL_SPACES) t.pos = TOTAL_SPACES;
+                let coords = boardPath[t.pos];
+                // Offset logically based on 3D perspective
+                let offsetX = t.id === 0 ? -1 : 1.5;
+                let offsetY = t.id === 0 ? -1 : 1.5;
+                t.pawnEl.style.left = `${coords.x + offsetX}%`;
+                t.pawnEl.style.top = `${coords.y + offsetY}%`;
+            });
+        }
+
+        function startDiceRoll() {
+            if(state.isMoving) return;
+            state.isMoving = true;
+            document.getElementById('btn-roll').classList.add('opacity-50', 'pointer-events-none');
+            
+            switchScreen('dice-screen');
+            let scene = document.getElementById('dice-scene');
+            scene.classList.remove('zoom-in');
+            let cube = document.getElementById('game-cube');
+            
+            sfx.roll();
+            cube.classList.add('spinning');
+            document.getElementById('dice-rolling-text').innerText = 'جاري رمي النرد... 🎲';
+
+            setTimeout(() => {
+                cube.classList.remove('spinning');
+                let result = Math.floor(Math.random() * 4) + 1; 
+                let faceIdx = result - 1; 
+                
+                let rotX = 1440, rotY = 1440; 
+                if(faceIdx === 1) rotY -= 90;       
+                else if(faceIdx === 2) rotY -= 180; 
+                else if(faceIdx === 3) rotY += 90;  
+
+                cube.style.transform = `translateZ(calc(var(--tz) * -1)) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                
+                setTimeout(() => {
+                    scene.classList.add('zoom-in');
+                    document.getElementById('dice-rolling-text').innerText = `النتيجة: ${formatNum(result)}`;
+                    sfx.win();
+                    
+                    setTimeout(() => {
+                        switchScreen('screen-game');
+                        movePawn(result, true);
+                    }, 2500);
+                }, 2000);
+            }, 1500);
+        }
+
+        function movePawn(steps, triggerCard) {
+            let team = state.activeTeams[state.turn];
+            let target = team.pos + steps;
+            if(target < 0) target = 0;
+            if(target > TOTAL_SPACES) target = TOTAL_SPACES;
+
+            let dir = target > team.pos ? 1 : -1;
+            team.pawnEl.classList.add('moving');
+            
+            let moveInterval = setInterval(() => {
+                if(team.pos === target) {
+                    clearInterval(moveInterval);
+                    team.pawnEl.classList.remove('moving');
+                    updateTurnUI();
+                    
+                    if(target === TOTAL_SPACES) {
+                        endGame(team);
+                    } else if(triggerCard && target > 0) {
+                        setTimeout(pullCard, 600);
+                    } else {
+                        endTurn();
+                    }
+                    return;
+                }
+                team.pos += dir;
+                updatePawns();
+                sfx.step();
+            }, 400); 
+        }
+
+        function pullCard() {
+            if(state.deck.length === 0) state.deck = JSON.parse(JSON.stringify(masterDeck)).sort(() => Math.random() - 0.5);
+            state.currentCard = state.deck.pop();
+            renderCardContent(state.currentCard);
+            
+            let overlay = document.getElementById('card-overlay');
+            overlay.classList.add('active');
+            sfx.click();
+        }
+
+        function renderCardContent(card) {
+            let container = document.getElementById('active-card');
+            container.style.backgroundImage = `url('${card.bg}')`;
+            
+            let header = document.getElementById('card-header');
+            if(card.type === 'challenge') { 
+                header.innerText = 'تحدي الإنقاذ 🎯'; 
+                header.className = "inline-block bg-blue-900/90 px-8 py-2 rounded-full border-2 border-blue-400 text-blue-200 font-black text-2xl shadow-lg mb-4"; 
+                container.style.borderColor = '#3b82f6';
+            }
+            else if(card.type === 'surprise') { 
+                header.innerText = 'مفاجأة سارة! 🎁'; 
+                header.className = "inline-block bg-purple-900/90 px-8 py-2 rounded-full border-2 border-purple-400 text-purple-200 font-black text-2xl shadow-lg mb-4"; 
+                container.style.borderColor = '#a855f7';
+            }
+            else { 
+                header.innerText = 'مهمة ذهبية جماعية 🤝'; 
+                header.className = "inline-block bg-yellow-900/90 px-8 py-2 rounded-full border-2 border-yellow-400 text-yellow-300 font-black text-2xl shadow-lg mb-4"; 
+                container.style.borderColor = '#eab308';
+            }
+
+            let team = state.activeTeams[state.turn];
+            let leaderText = '';
+            if(team.leader) leaderText = `القيادة لـ: 👑 ${team.leader}`;
+            else if (team.members.length > 0) {
+                let randomMember = team.members[Math.floor(Math.random() * team.members.length)];
+                leaderText = `الموجه الحالي: 🙋‍♂️ ${randomMember}`;
+            }
+            document.getElementById('card-leader').innerText = leaderText;
+            document.getElementById('card-leader').classList.toggle('hidden', !leaderText);
+
+            let rawText = card.text;
+            if(state.useHindiNumbers) rawText = toHindi(rawText);
+            document.getElementById('card-text').innerText = rawText;
+
+            let mcqGrid = document.getElementById('card-mcq');
+            let teacherArea = document.getElementById('card-teacher');
+            
+            mcqGrid.innerHTML = ''; 
+            mcqGrid.classList.add('hidden');
+            teacherArea.classList.add('hidden');
+            teacherArea.style.display = 'none';
+
+            if(card.manual) {
+                teacherArea.classList.remove('hidden');
+                
+                if (card.type === 'surprise') {
+                     teacherArea.style.display = 'block'; 
+                     teacherArea.innerHTML = `<button onclick="resolveChallenge(true)" class="btn-3d bg-purple-600 w-full text-white py-5 rounded-2xl font-black text-3xl shadow-xl flex items-center justify-center gap-3 border-4 border-purple-300"><span class="text-4xl">🎁</span> استلام المكافأة / تنفيذ الأمر</button>`;
+                } else {
+                     teacherArea.style.display = 'flex'; 
+                     teacherArea.innerHTML = `
+                        <button onclick="resolveChallenge(true)" class="btn-3d btn-success text-white py-4 rounded-2xl font-black text-3xl shadow-xl flex items-center justify-center gap-3">
+                            <span class="text-4xl">✅</span> إجابة صحيحة (نجاح المهمة)
+                        </button>
+                        <button onclick="resolveChallenge(false)" class="btn-3d btn-danger text-white py-4 rounded-2xl font-black text-3xl shadow-xl flex items-center justify-center gap-3">
+                            <span class="text-4xl">❌</span> إجابة خاطئة (محاولة غير موفقة)
+                        </button>
+                     `;
+                }
+            } else if (card.options) {
+                mcqGrid.classList.remove('hidden');
+                card.options.forEach(opt => {
+                    let btn = document.createElement('button');
+                    btn.className = 'mcq-btn';
+                    btn.innerText = formatNum(opt);
+                    btn.onclick = () => {
+                        let isCorrect = String(opt) === String(card.answer);
+                        resolveChallenge(isCorrect);
+                    };
+                    mcqGrid.appendChild(btn);
+                });
+            }
+        }
+
+        function resolveChallenge(isSuccess) {
+            document.getElementById('card-overlay').classList.remove('active');
+            let c = state.currentCard;
+            let steps = 0;
+
+            if(isSuccess) {
+                sfx.win();
+                steps = c.reward || 0;
+                
+                let icon = c.popupIcon || '🤖';
+                Swal.fire({
+                    title: 'أحسنت يا بطل!',
+                    text: steps > 0 ? `إجابة صحيحة! طاقة الروبوت تزداد. تقدم ${formatNum(steps)} خطوات.` : 'حصلتم على فرصة إضافية!',
+                    iconHtml: `<div class="animate-bounce">${icon}</div>`,
+                    customClass: { icon: 'border-none' },
+                    confirmButtonText: 'استمر 🚀',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    if(c.type === 'surprise' && steps === 0) {
+                        state.isMoving = false;
+                        document.getElementById('btn-roll').classList.remove('opacity-50', 'pointer-events-none');
+                    } else if(steps !== 0) {
+                        setTimeout(() => movePawn(steps, false), 300);
+                    } else {
+                        endTurn();
+                    }
+                });
+                
+            } else {
+                sfx.fail();
+                steps = c.penalty || 0;
+                
+                Swal.fire({
+                    title: 'أوه لا!',
+                    text: steps < 0 ? `محاولة خاطئة. عطل في النظام يؤدي لتراجعكم ${formatNum(Math.abs(steps))} خطوات.` : 'محاولة خاطئة. ابقوا في مكانكم للحماية.',
+                    iconHtml: '<div class="animate-shake">👾</div>',
+                    customClass: { icon: 'border-none text-red-500' },
+                    confirmButtonText: 'حسناً 😔',
+                    confirmButtonColor: '#ef4444'
+                }).then(() => {
+                    if(steps !== 0) {
+                        setTimeout(() => movePawn(steps, false), 300);
+                    } else {
+                        endTurn();
+                    }
+                });
+            }
+        }
+
+        function endTurn() {
+            state.turn = 1 - state.turn;
+            state.isMoving = false;
+            document.getElementById('btn-roll').classList.remove('opacity-50', 'pointer-events-none');
+            updateTurnUI();
+        }
+
+        function endGame(winningTeam) {
+            sfx.victory();
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+
+            document.getElementById('winner-team-name').innerText = winningTeam.name;
+            switchScreen('screen-winner');
+        }
+
+        window.onload = () => {
+            updateAllNumbers();
+
+            // Responsive auto-fit for game board on window resize & fullscreen toggle
+            window.addEventListener('resize', fitGameBoard);
+            document.addEventListener('fullscreenchange', () => {
+                setTimeout(fitGameBoard, 80);
+                setTimeout(fitGameBoard, 250);
+            });
+
+            // Verify board image loading & handle fallback
+            const img = new Image();
+            img.onload = () => {
+                const ph = document.querySelector('.board-placeholder');
+                if (ph) ph.style.display = 'none';
+                fitGameBoard();
+            };
+            img.onerror = () => {
+                // If board.png fails from root, check imgs/board.png as fallback
+                const fallback = new Image();
+                fallback.onload = () => {
+                    const board = document.getElementById('game-board-container');
+                    if (board) board.style.backgroundImage = "url('imgs/board.png')";
+                    const ph = document.querySelector('.board-placeholder');
+                    if (ph) ph.style.display = 'none';
+                    fitGameBoard();
+                };
+                fallback.onerror = () => {
+                    const ph = document.querySelector('.board-placeholder');
+                    if (ph) ph.style.display = 'block';
+                };
+                fallback.src = 'imgs/board.png';
+            };
+            img.src = 'board.png';
+        };
+    </script>
+</body>
 </html>
